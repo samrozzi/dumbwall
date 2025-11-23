@@ -445,6 +445,7 @@ export type Database = {
           avatar_url: string | null
           created_at: string
           display_name: string | null
+          email: string | null
           id: string
           last_username_change_at: string | null
           updated_at: string
@@ -454,6 +455,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id: string
           last_username_change_at?: string | null
           updated_at?: string
@@ -463,6 +465,7 @@ export type Database = {
           avatar_url?: string | null
           created_at?: string
           display_name?: string | null
+          email?: string | null
           id?: string
           last_username_change_at?: string | null
           updated_at?: string
@@ -611,6 +614,7 @@ export type Database = {
         }
         Returns: string
       }
+      get_current_user_email: { Args: never; Returns: string }
       get_user_email_by_id: { Args: { user_uuid: string }; Returns: string }
       get_user_id_by_email: { Args: { user_email: string }; Returns: string }
       is_circle_member: {

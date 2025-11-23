@@ -106,21 +106,23 @@ export function AddMemberDialog({
     }
   }, [searchTerm, selectedUser]);
 
-  // Get email from username lookup
+  // Get email from profiles table
   const getEmailFromUserId = async (userId: string): Promise<string | null> => {
     try {
       const { data, error } = await supabase
         .from('profiles')
-        .select('id')
+        .select('email')
         .eq('id', userId)
         .single();
 
-      if (error || !data) return null;
+      if (error) {
+        console.error("Error fetching user email:", error);
+        return null;
+      }
 
-      // Use the edge function to get user email
-      const { data: userData } = await supabase.auth.admin.getUserById(userId);
-      return userData?.user?.email || null;
-    } catch {
+      return data?.email || null;
+    } catch (error) {
+      console.error("Error in getEmailFromUserId:", error);
       return null;
     }
   };
@@ -155,11 +157,9 @@ export function AddMemberDialog({
       // Get the actual email - either from selected user or from input
       let inviteEmail = email;
       if (selectedUser) {
-        // Fetch the user's actual email from auth.users via the function
-        const { data: userEmail, error: emailError } = await supabase.rpc('get_user_email_by_id', { 
-          user_uuid: selectedUser.id 
-        });
-        if (emailError || !userEmail) {
+        // Fetch the user's actual email from profiles table
+        const userEmail = await getEmailFromUserId(selectedUser.id);
+        if (!userEmail) {
           toast.error('Could not find user\'s email');
           setSending(false);
           return;

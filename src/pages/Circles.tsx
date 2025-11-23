@@ -100,13 +100,15 @@ const Circles = () => {
           circles!circle_invites_circle_id_fkey(name),
           profiles!circle_invites_invited_by_fkey(display_name)
         `)
-        .eq("status", "pending");
+        .eq("status", "pending")
+        .eq("invited_email", user.email);
 
       if (error) throw error;
 
       setPendingInvites(data as any || []);
     } catch (error: any) {
       console.error("Error loading pending invites:", error);
+      toast.error("Failed to load invites: " + error.message);
     }
   };
 

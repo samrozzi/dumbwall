@@ -99,6 +99,47 @@ const Wall = () => {
     };
   }, [user, circleId, navigate]);
 
+  // Handle window resize to keep items in bounds
+  useEffect(() => {
+    const handleResize = () => {
+      if (!canvasRef.current || items.length === 0) return;
+      
+      const canvas = canvasRef.current;
+      const canvasWidth = canvas.offsetWidth;
+      const canvasHeight = canvas.offsetHeight;
+      
+      items.forEach(item => {
+        // Estimate item dimensions (add padding for safety)
+        const itemWidth = 280;
+        const itemHeight = 280;
+        const padding = 20;
+        
+        let newX = item.x;
+        let newY = item.y;
+        let needsUpdate = false;
+        
+        // Check if item is out of bounds
+        if (item.x + itemWidth > canvasWidth) {
+          newX = Math.max(0, canvasWidth - itemWidth - padding);
+          needsUpdate = true;
+        }
+        
+        if (item.y + itemHeight > canvasHeight) {
+          newY = Math.max(0, canvasHeight - itemHeight - padding);
+          needsUpdate = true;
+        }
+        
+        // Update if position changed
+        if (needsUpdate && (newX !== item.x || newY !== item.y)) {
+          updateItem(item.id, { x: newX, y: newY });
+        }
+      });
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [items]);
+
   const loadItems = async () => {
     try {
       // Step 1: Get wall items
@@ -145,8 +186,15 @@ const Wall = () => {
   };
 
   const getSmartPosition = () => {
-    let x = 300;
-    let y = 300;
+    // Use actual canvas dimensions if available
+    const canvasWidth = canvasRef.current?.offsetWidth || 1200;
+    const canvasHeight = canvasRef.current?.offsetHeight || 800;
+    const itemWidth = 280;
+    const itemHeight = 280;
+    const padding = 40;
+    
+    let x = 100;
+    let y = 100;
     let attempts = 0;
     
     while (attempts < 10) {
@@ -160,8 +208,19 @@ const Wall = () => {
       
       x += 80;
       y += 80;
+      
+      // Wrap to next row if exceeding canvas width
+      if (x + itemWidth > canvasWidth - padding) {
+        x = 100;
+        y += 300;
+      }
+      
       attempts++;
     }
+    
+    // Ensure position is within bounds
+    x = Math.min(x, canvasWidth - itemWidth - padding);
+    y = Math.min(y, canvasHeight - itemHeight - padding);
     
     return { x, y };
   };
@@ -295,13 +354,30 @@ const Wall = () => {
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!draggedItem) return;
+    if (!draggedItem || !canvasRef.current) return;
+
+    const canvas = canvasRef.current;
+    const canvasWidth = canvas.offsetWidth;
+    const canvasHeight = canvas.offsetHeight;
+    
+    // Estimate item dimensions
+    const itemWidth = 280;
+    const itemHeight = 280;
+    const padding = 20;
 
     const newX = e.clientX - dragOffset.x;
     const newY = e.clientY - dragOffset.y;
 
-    const snappedX = Math.round(newX / GRID_SIZE) * GRID_SIZE;
-    const snappedY = Math.round(newY / GRID_SIZE) * GRID_SIZE;
+    // Clamp to boundaries
+    const maxX = canvasWidth - itemWidth - padding;
+    const maxY = canvasHeight - itemHeight - padding;
+    
+    const clampedX = Math.max(0, Math.min(maxX, newX));
+    const clampedY = Math.max(0, Math.min(maxY, newY));
+
+    // Snap to grid
+    const snappedX = Math.round(clampedX / GRID_SIZE) * GRID_SIZE;
+    const snappedY = Math.round(clampedY / GRID_SIZE) * GRID_SIZE;
 
     setItems((prev) =>
       prev.map((item) =>
@@ -569,7 +645,7 @@ const Wall = () => {
         {viewMode === "wall" ? (
           <div
             ref={canvasRef}
-            className="relative w-full min-h-[calc(100vh-120px)] bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border overflow-hidden"
+            className="relative w-full max-w-full min-h-[calc(100vh-120px)] bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border overflow-hidden"
             style={{
               backgroundImage: `
                 linear-gradient(hsl(var(--border)) 1px, transparent 1px),

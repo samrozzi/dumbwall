@@ -50,6 +50,7 @@ export function AddMemberDialog({
   const [sending, setSending] = useState(false);
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
   const [showUserPicker, setShowUserPicker] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
 
@@ -57,21 +58,34 @@ export function AddMemberDialog({
     const searchUsers = async () => {
       if (!searchTerm || searchTerm.length < 2) {
         setSearchResults([]);
+        setSearchError(null);
         return;
       }
 
       setSearching(true);
+      setSearchError(null);
       try {
         const cleanTerm = searchTerm.startsWith('@') ? searchTerm.slice(1) : searchTerm;
+        
+        console.log('Searching for:', cleanTerm);
         
         const { data, error } = await supabase.rpc('search_users_by_username_or_email', {
           search_term: cleanTerm
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error('Search error:', error);
+          setSearchError(error.message);
+          setSearchResults([]);
+          throw error;
+        }
+        
+        console.log('Search results:', data?.length || 0);
         setSearchResults(data || []);
       } catch (error: any) {
         console.error('Search error:', error);
+        setSearchError(error.message || 'Failed to search users');
+        setSearchResults([]);
       } finally {
         setSearching(false);
       }
@@ -274,11 +288,17 @@ export function AddMemberDialog({
                   />
                 </div>
               </PopoverTrigger>
-              {searchResults.length > 0 && (
+              {(searchResults.length > 0 || searchError || (searching && searchTerm.length >= 2)) && (
                 <PopoverContent className="w-[400px] p-0" align="start">
                   <Command>
                     <CommandList>
-                      <CommandEmpty>No users found.</CommandEmpty>
+                      {searching ? (
+                        <CommandEmpty>Searching...</CommandEmpty>
+                      ) : searchError ? (
+                        <CommandEmpty className="text-destructive">Error: {searchError}</CommandEmpty>
+                      ) : searchResults.length === 0 ? (
+                        <CommandEmpty>No users found.</CommandEmpty>
+                      ) : null}
                       <CommandGroup>
                         {searchResults.map((result) => (
                           <CommandItem

@@ -32,6 +32,7 @@ interface ThreadMember {
 
 interface ThreadWithMembers extends ChatThread {
   members: ThreadMember[];
+  unreadCount: number;
 }
 
 interface ChatMessage {
@@ -66,10 +67,31 @@ const Chat = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (circleId) {
+    if (circleId && user) {
       loadThreads();
     }
-  }, [circleId]);
+  }, [circleId, user]);
+  
+  // Subscribe to thread updates for real-time re-ordering
+  useEffect(() => {
+    if (!circleId || !user) return;
+    
+    const channel = supabase
+      .channel('threads-updates')
+      .on('postgres_changes', {
+        event: 'UPDATE',
+        schema: 'public',
+        table: 'chat_threads',
+        filter: `circle_id=eq.${circleId}`
+      }, () => {
+        loadThreads();
+      })
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [circleId, user]);
 
   useEffect(() => {
     const urlThreadId = searchParams.get("thread");
@@ -87,6 +109,8 @@ const Chat = () => {
   }, [messages]);
 
   const loadThreads = async () => {
+    if (!user) return;
+    
     const { data: threadsData, error } = await supabase
       .from("chat_threads")
       .select("*")
@@ -116,8 +140,35 @@ const Chat = () => {
       .select("id, avatar_url, username, display_name")
       .in("id", userIds);
 
-    // Combine data
-    const threadsWithMembers = threadsData.map(thread => {
+    // Fetch read status for current user
+    const { data: readStatusData } = await supabase
+      .from("thread_read_status")
+      .select("thread_id, last_read_at")
+      .eq("user_id", user.id)
+      .in("thread_id", threadIds);
+
+    // Calculate unread counts for each thread
+    const threadsWithUnread = await Promise.all(
+      threadsData.map(async (thread) => {
+        const readStatus = readStatusData?.find(rs => rs.thread_id === thread.id);
+        const lastReadAt = readStatus?.last_read_at || "1970-01-01";
+        
+        const { count } = await supabase
+          .from("chat_messages")
+          .select("*", { count: "exact", head: true })
+          .eq("thread_id", thread.id)
+          .gt("created_at", lastReadAt)
+          .neq("sender_id", user.id);
+        
+        return {
+          thread,
+          unreadCount: count || 0
+        };
+      })
+    );
+
+    // Combine all data
+    const threadsWithMembers = threadsWithUnread.map(({ thread, unreadCount }) => {
       const threadMembers = membersData?.filter(m => m.thread_id === thread.id) || [];
       const members = threadMembers
         .map(tm => profilesData?.find(p => p.id === tm.user_id))
@@ -125,7 +176,8 @@ const Chat = () => {
       
       return {
         ...thread,
-        members
+        members,
+        unreadCount
       };
     });
 
@@ -147,6 +199,8 @@ const Chat = () => {
   };
 
   const loadMessages = async () => {
+    if (!user || !threadId) return;
+    
     const { data, error } = await supabase
       .from("chat_messages")
       .select("*")
@@ -171,9 +225,25 @@ const Chat = () => {
     }));
 
     setMessages(messagesWithProfiles as ChatMessage[]);
+    
+    // Mark thread as read
+    await supabase
+      .from("thread_read_status")
+      .upsert({
+        thread_id: threadId,
+        user_id: user.id,
+        last_read_at: new Date().toISOString()
+      }, {
+        onConflict: "thread_id,user_id"
+      });
+    
+    // Refresh thread list to update badges
+    loadThreads();
   };
 
   const subscribeToMessages = () => {
+    if (!user || !threadId) return;
+    
     const channel = supabase
       .channel(`chat:${threadId}`)
       .on(
@@ -195,6 +265,17 @@ const Chat = () => {
             ...prev,
             { ...payload.new, profiles: profile } as ChatMessage,
           ]);
+          
+          // Auto-mark as read when viewing thread
+          await supabase
+            .from("thread_read_status")
+            .upsert({
+              thread_id: threadId,
+              user_id: user.id,
+              last_read_at: new Date().toISOString()
+            }, {
+              onConflict: "thread_id,user_id"
+            });
         }
       )
       .subscribe();
@@ -398,6 +479,11 @@ const Chat = () => {
                         onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
                         className="w-full text-left p-3 rounded-lg transition-all hover:bg-card bg-card/40 flex items-center gap-3"
                       >
+                        {thread.unreadCount > 0 && (
+                          <div className="flex-shrink-0 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                            {thread.unreadCount > 9 ? "9+" : thread.unreadCount}
+                          </div>
+                        )}
                         <ThreadAvatarStack 
                           members={thread.members} 
                           currentUserId={user?.id || ""} 
@@ -573,18 +659,25 @@ const Chat = () => {
                   onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
                   className={`w-full text-left p-3 rounded-lg transition-all hover:bg-card ${
                     threadId === thread.id ? "bg-card shadow-md" : "bg-card/40"
-                  }`}
+                  } flex items-center gap-3`}
                 >
-                  <div className="font-medium flex items-center gap-2">
-                    {thread.linked_wall_item_id && (
-                      <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
-                        Wall
-                      </span>
-                    )}
-                    {thread.title}
-                  </div>
-                  <div className="text-xs text-muted-foreground mt-1">
-                    {new Date(thread.updated_at).toLocaleDateString()}
+                  {thread.unreadCount > 0 && (
+                    <div className="flex-shrink-0 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                      {thread.unreadCount > 9 ? "9+" : thread.unreadCount}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium flex items-center gap-2">
+                      {thread.linked_wall_item_id && (
+                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
+                          Wall
+                        </span>
+                      )}
+                      <span className="truncate">{thread.title}</span>
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">
+                      {new Date(thread.updated_at).toLocaleDateString()}
+                    </div>
                   </div>
                 </button>
               ))}

@@ -174,12 +174,7 @@ const Games = () => {
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
       
-      <div className="px-4 sm:pl-24 sm:pr-8 py-8 relative">
-        {/* Notification Bell */}
-        <div className={`absolute z-50 ${isMobile ? 'top-2 left-4' : 'top-8 right-8'}`}>
-          <NotificationCenter />
-        </div>
-        
+      <div className="px-4 sm:pl-24 sm:pr-8 py-8">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Game Invites */}
           <GameInvites />
@@ -191,13 +186,15 @@ const Games = () => {
               <h1 className="text-3xl font-bold">Games</h1>
             </div>
             
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create Game
-                </Button>
-              </DialogTrigger>
+            <div className="flex items-center gap-2">
+              <NotificationCenter />
+              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Create Game
+                  </Button>
+                </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Create New Game</DialogTitle>
@@ -249,6 +246,7 @@ const Games = () => {
                 </div>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
           {/* Games Grid */}

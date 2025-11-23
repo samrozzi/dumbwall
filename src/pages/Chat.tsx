@@ -451,57 +451,56 @@ const Chat = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
-      <div className={`${isMobile ? 'px-4 pt-4 pb-20' : 'pl-24 pr-8 pt-8'} ${isMobile ? 'h-screen pb-20' : 'flex gap-4 h-[calc(100vh-80px)]'} relative`}>
-        {/* Notification Bell - Positioned to avoid conflicts */}
-        <div className={`absolute z-50 ${isMobile ? 'top-2 left-4' : 'top-8 right-8'}`}>
-          <NotificationCenter />
-        </div>
+      <div className={`${isMobile ? 'px-4 pt-4 pb-20' : 'pl-24 pr-8 pt-8'} ${isMobile ? 'h-screen pb-20' : 'flex gap-4 h-[calc(100vh-80px)]'}`}>
         {isMobile ? (
           /* Mobile: Show either thread list OR chat view */
           <>
             {!threadId ? (
               /* Thread List View */
               <div className="flex flex-col gap-4 h-full">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between mb-4">
                   <h2 className="text-2xl font-bold">Threads</h2>
-                  <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="default">
-                        <Plus className="w-4 h-4 mr-2" />
-                        New
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Create New Thread</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <Input
-                          placeholder="Thread title..."
-                          value={newThreadTitle}
-                          onChange={(e) => setNewThreadTitle(e.target.value)}
-                        />
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">
-                            Add Members ({selectedMembers.length} selected)
-                          </label>
-                          <MemberPicker
-                            circleId={circleId!}
-                            selectedMembers={selectedMembers}
-                            onMemberToggle={handleMemberToggle}
-                            excludeUserIds={[user?.id || ""]}
-                          />
-                        </div>
-                        <Button 
-                          onClick={handleCreateThread} 
-                          className="w-full"
-                          disabled={!newThreadTitle.trim() || selectedMembers.length === 0}
-                        >
-                          Create Thread with {selectedMembers.length + 1} member{selectedMembers.length + 1 > 1 ? 's' : ''}
+                  <div className="flex items-center gap-2">
+                    <NotificationCenter />
+                    <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm" variant="default">
+                          <Plus className="w-4 h-4 mr-2" />
+                          New
                         </Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Create New Thread</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <Input
+                            placeholder="Thread title..."
+                            value={newThreadTitle}
+                            onChange={(e) => setNewThreadTitle(e.target.value)}
+                          />
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">
+                              Add Members ({selectedMembers.length} selected)
+                            </label>
+                            <MemberPicker
+                              circleId={circleId!}
+                              selectedMembers={selectedMembers}
+                              onMemberToggle={handleMemberToggle}
+                              excludeUserIds={[user?.id || ""]}
+                            />
+                          </div>
+                          <Button 
+                            onClick={handleCreateThread} 
+                            className="w-full"
+                            disabled={!newThreadTitle.trim() || selectedMembers.length === 0}
+                          >
+                            Create Thread with {selectedMembers.length + 1} member{selectedMembers.length + 1 > 1 ? 's' : ''}
+                          </Button>
+                        </div>
+                      </DialogContent>
+                    </Dialog>
+                  </div>
                 </div>
                 
                 <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
@@ -646,47 +645,50 @@ const Chat = () => {
           <>
             {/* Threads Sidebar */}
             <div className="w-[30%] flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-2xl font-bold">Threads</h2>
-            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-              <DialogTrigger asChild>
-                <Button size="sm" variant="default">
-                  <Plus className="w-4 h-4 mr-2" />
-                  New
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <DialogTitle>Create New Thread</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <Input
-                    placeholder="Thread title..."
-                    value={newThreadTitle}
-                    onChange={(e) => setNewThreadTitle(e.target.value)}
-                  />
-                  <div>
-                    <label className="text-sm font-medium mb-2 block">
-                      Add Members ({selectedMembers.length} selected)
-                    </label>
-                    <MemberPicker
-                      circleId={circleId!}
-                      selectedMembers={selectedMembers}
-                      onMemberToggle={handleMemberToggle}
-                      excludeUserIds={[user?.id || ""]}
-                    />
-                  </div>
-                  <Button 
-                    onClick={handleCreateThread} 
-                    className="w-full"
-                    disabled={!newThreadTitle.trim() || selectedMembers.length === 0}
-                  >
-                    Create Thread with {selectedMembers.length + 1} member{selectedMembers.length + 1 > 1 ? 's' : ''}
-                  </Button>
+              <div className="flex items-center justify-between">
+                <h2 className="text-2xl font-bold">Threads</h2>
+                <div className="flex items-center gap-2">
+                  <NotificationCenter />
+                  <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="default">
+                        <Plus className="w-4 h-4 mr-2" />
+                        New
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Create New Thread</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <Input
+                          placeholder="Thread title..."
+                          value={newThreadTitle}
+                          onChange={(e) => setNewThreadTitle(e.target.value)}
+                        />
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">
+                            Add Members ({selectedMembers.length} selected)
+                          </label>
+                          <MemberPicker
+                            circleId={circleId!}
+                            selectedMembers={selectedMembers}
+                            onMemberToggle={handleMemberToggle}
+                            excludeUserIds={[user?.id || ""]}
+                          />
+                        </div>
+                        <Button 
+                          onClick={handleCreateThread} 
+                          className="w-full"
+                          disabled={!newThreadTitle.trim() || selectedMembers.length === 0}
+                        >
+                          Create Thread with {selectedMembers.length + 1} member{selectedMembers.length + 1 > 1 ? 's' : ''}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
                 </div>
-              </DialogContent>
-            </Dialog>
-          </div>
+              </div>
 
           <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
             <TabsList className="w-full">

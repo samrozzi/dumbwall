@@ -1,125 +1,122 @@
+import { useEffect, useState } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
-import Navigation from "@/components/Navigation";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
-import { Send, ArrowLeft } from "lucide-react";
-import { notify } from "@/components/ui/custom-notification";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import Navigation from "@/components/Navigation";
+import { toast } from "sonner";
+import { MessageSquare, Plus, Send } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface ChatThread {
   id: string;
   title: string;
   created_at: string;
   updated_at: string;
+  linked_wall_item_id: string | null;
 }
 
 interface ChatMessage {
   id: string;
   body: string;
-  sender_id: string;
   created_at: string;
+  sender_id: string;
   profiles?: {
-    display_name: string;
+    display_name: string | null;
+    username: string | null;
   };
 }
 
 const Chat = () => {
   const { circleId } = useParams();
   const [searchParams] = useSearchParams();
-  const threadId = searchParams.get("threadId");
   const navigate = useNavigate();
+  const threadId = searchParams.get("threadId");
   const { user } = useAuth();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [currentThread, setCurrentThread] = useState<ChatThread | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const [filter, setFilter] = useState<"all" | "wall" | "convos">("all");
+  const [newThreadTitle, setNewThreadTitle] = useState("");
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
   useEffect(() => {
-    if (!user || !circleId) return;
+    if (circleId) {
+      loadThreads();
+    }
+  }, [circleId]);
 
+  useEffect(() => {
     if (threadId) {
       loadThread();
       loadMessages();
       subscribeToMessages();
-    } else {
-      loadThreads();
     }
-  }, [user, circleId, threadId]);
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  }, [threadId]);
 
   const loadThreads = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("chat_threads")
-        .select("*")
-        .eq("circle_id", circleId!)
-        .order("updated_at", { ascending: false });
+    const { data, error } = await supabase
+      .from("chat_threads")
+      .select("*")
+      .eq("circle_id", circleId!)
+      .order("updated_at", { ascending: false });
 
-      if (error) throw error;
-      setThreads(data || []);
-    } catch (error: any) {
-      notify(error.message, "error");
+    if (error) {
+      toast.error("Error loading threads");
+      return;
     }
+    setThreads(data || []);
   };
 
   const loadThread = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("chat_threads")
-        .select("*")
-        .eq("id", threadId!)
-        .single();
+    const { data, error } = await supabase
+      .from("chat_threads")
+      .select("*")
+      .eq("id", threadId!)
+      .single();
 
-      if (error) throw error;
-      setCurrentThread(data);
-    } catch (error: any) {
-      notify(error.message, "error");
+    if (error) {
+      toast.error("Error loading thread");
+      return;
     }
+    setCurrentThread(data);
   };
 
   const loadMessages = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("chat_messages")
-        .select("*")
-        .eq("thread_id", threadId!)
-        .order("created_at", { ascending: true });
+    const { data, error } = await supabase
+      .from("chat_messages")
+      .select("*")
+      .eq("thread_id", threadId!)
+      .order("created_at", { ascending: true });
 
-      if (error) throw error;
-
-      // Fetch profiles for all senders
-      const senderIds = [...new Set(data?.map((m) => m.sender_id) || [])];
-      const { data: profiles } = await supabase
-        .from("profiles")
-        .select("id, display_name")
-        .in("id", senderIds);
-
-      const messagesWithProfiles = (data || []).map((msg) => ({
-        ...msg,
-        profiles: profiles?.find((p) => p.id === msg.sender_id) || { display_name: "Unknown" },
-      }));
-
-      setMessages(messagesWithProfiles as ChatMessage[]);
-    } catch (error: any) {
-      notify(error.message, "error");
+    if (error) {
+      toast.error("Error loading messages");
+      return;
     }
+
+    // Fetch profiles for all senders
+    const senderIds = [...new Set(data?.map((m) => m.sender_id) || [])];
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, display_name, username")
+      .in("id", senderIds);
+
+    const messagesWithProfiles = (data || []).map((msg) => ({
+      ...msg,
+      profiles: profiles?.find((p) => p.id === msg.sender_id) || { display_name: null, username: null },
+    }));
+
+    setMessages(messagesWithProfiles as ChatMessage[]);
   };
 
   const subscribeToMessages = () => {
     const channel = supabase
-      .channel(`messages-${threadId}`)
+      .channel(`chat:${threadId}`)
       .on(
         "postgres_changes",
         {
@@ -129,10 +126,9 @@ const Chat = () => {
           filter: `thread_id=eq.${threadId}`,
         },
         async (payload) => {
-          // Fetch the sender's profile
           const { data: profile } = await supabase
             .from("profiles")
-            .select("display_name")
+            .select("display_name, username")
             .eq("id", payload.new.sender_id)
             .single();
 
@@ -150,134 +146,207 @@ const Chat = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !threadId) return;
+    if (!newMessage.trim() || !user || !threadId) return;
 
-    try {
-      const { error } = await supabase.from("chat_messages").insert({
-        thread_id: threadId,
-        sender_id: user!.id,
-        body: newMessage,
-      });
+    const messageText = newMessage.trim();
+    const tempId = `temp-${Date.now()}`;
+    
+    // Optimistic UI update
+    const optimisticMessage: ChatMessage = {
+      id: tempId,
+      body: messageText,
+      created_at: new Date().toISOString(),
+      sender_id: user.id,
+      profiles: {
+        display_name: user.user_metadata?.display_name || null,
+        username: user.user_metadata?.username || null,
+      },
+    };
+    
+    setMessages((prev) => [...prev, optimisticMessage]);
+    setNewMessage("");
 
-      if (error) throw error;
+    const { error } = await supabase.from("chat_messages").insert({
+      thread_id: threadId,
+      body: messageText,
+      sender_id: user.id,
+    });
 
-      // Update thread's updated_at
-      await supabase
-        .from("chat_threads")
-        .update({ updated_at: new Date().toISOString() })
-        .eq("id", threadId);
-
-      setNewMessage("");
-    } catch (error: any) {
-      notify(error.message, "error");
+    if (error) {
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
+      toast.error("Failed to send message");
+      setNewMessage(messageText);
+      return;
     }
+
+    await supabase
+      .from("chat_threads")
+      .update({ updated_at: new Date().toISOString() })
+      .eq("id", threadId);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
+  const handleCreateThread = async () => {
+    if (!newThreadTitle.trim() || !user || !circleId) return;
+
+    const { data, error } = await supabase
+      .from("chat_threads")
+      .insert({
+        circle_id: circleId,
+        created_by: user.id,
+        title: newThreadTitle,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      toast.error("Failed to create thread");
+      return;
     }
+
+    setCreateDialogOpen(false);
+    setNewThreadTitle("");
+    loadThreads();
+    navigate(`/circle/${circleId}/chat?threadId=${data.id}`);
   };
 
-  if (!threadId) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navigation circleId={circleId} />
-        <div className="pl-24 pr-8 pt-8">
-          <h1 className="text-3xl font-bold mb-6">Chat Threads</h1>
-          <div className="grid gap-4 max-w-4xl">
-            {threads.length === 0 ? (
-              <p className="text-muted-foreground">
-                No threads yet. Create one from The Wall!
-              </p>
-            ) : (
-              threads.map((thread) => (
-                <Card
-                  key={thread.id}
-                  className="p-4 cursor-pointer hover:shadow-lg transition-shadow"
-                  onClick={() =>
-                    navigate(
-                      `/circle/${circleId}/chat?threadId=${thread.id}`
-                    )
-                  }
-                >
-                  <h3 className="text-lg font-semibold">{thread.title}</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Updated: {new Date(thread.updated_at).toLocaleString()}
-                  </p>
-                </Card>
-              ))
-            )}
-          </div>
-        </div>
-      </div>
-    );
-  }
+  const filteredThreads = threads.filter((thread) => {
+    if (filter === "wall") return thread.linked_wall_item_id !== null;
+    if (filter === "convos") return thread.linked_wall_item_id === null;
+    return true;
+  });
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <Navigation circleId={circleId} />
-      <div className="pl-24 pr-8 pt-8 flex-1 flex flex-col">
-        <div className="flex items-center gap-4 mb-6">
-          <Button
-            variant="outline"
-            size="icon"
-            onClick={() => navigate(`/circle/${circleId}/chat`)}
-          >
-            <ArrowLeft className="w-4 h-4" />
-          </Button>
-          <h1 className="text-3xl font-bold">{currentThread?.title}</h1>
-        </div>
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+      <Navigation />
+      <div className="container mx-auto px-4 py-8 flex gap-4 h-[calc(100vh-80px)]">
+        {/* Threads Sidebar */}
+        <div className="w-[30%] flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-bold">Threads</h2>
+            <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm" variant="default">
+                  <Plus className="w-4 h-4 mr-2" />
+                  New
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Create New Thread</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <Input
+                    placeholder="Thread title..."
+                    value={newThreadTitle}
+                    onChange={(e) => setNewThreadTitle(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleCreateThread()}
+                  />
+                  <Button onClick={handleCreateThread} className="w-full">
+                    Create Thread
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          </div>
 
-        <Card className="flex-1 flex flex-col max-w-4xl w-full mb-4 overflow-hidden">
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${
-                  message.sender_id === user?.id
-                    ? "justify-end"
-                    : "justify-start"
-                }`}
-              >
-                <div
-                  className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                    message.sender_id === user?.id
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-accent text-accent-foreground"
+          <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
+            <TabsList className="w-full">
+              <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
+              <TabsTrigger value="wall" className="flex-1">Wall Threads</TabsTrigger>
+              <TabsTrigger value="convos" className="flex-1">Convos</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <ScrollArea className="flex-1 border rounded-lg bg-white/50 backdrop-blur">
+            <div className="p-2 space-y-2">
+              {filteredThreads.map((thread) => (
+                <button
+                  key={thread.id}
+                  onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
+                  className={`w-full text-left p-3 rounded-lg transition-all hover:bg-white/80 ${
+                    threadId === thread.id ? "bg-white shadow-md" : "bg-white/40"
                   }`}
                 >
-                  {message.sender_id !== user?.id && (
-                    <p className="text-xs opacity-70 mb-1">
-                      {message.profiles?.display_name || "Unknown"}
-                    </p>
-                  )}
-                  <p className="whitespace-pre-wrap break-words">{message.body}</p>
-                  <p className="text-xs opacity-70 mt-1">
-                    {new Date(message.created_at).toLocaleTimeString()}
-                  </p>
+                  <div className="font-medium flex items-center gap-2">
+                    {thread.linked_wall_item_id && (
+                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
+                        Wall
+                      </span>
+                    )}
+                    {thread.title}
+                  </div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {new Date(thread.updated_at).toLocaleDateString()}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
+
+        {/* Chat Area */}
+        <div className="flex-1 flex flex-col border rounded-lg bg-white/50 backdrop-blur overflow-hidden">
+          {threadId && currentThread ? (
+            <>
+              {/* Chat Header */}
+              <div className="p-4 border-b bg-white/80">
+                <h3 className="text-xl font-bold">{currentThread.title}</h3>
+              </div>
+
+              {/* Messages */}
+              <ScrollArea className="flex-1 p-4">
+                <div className="space-y-4">
+                  {messages.map((message) => (
+                    <div
+                      key={message.id}
+                      className={`flex ${
+                        message.sender_id === user?.id ? "justify-end" : "justify-start"
+                      }`}
+                    >
+                      <div
+                        className={`max-w-[70%] rounded-lg p-3 ${
+                          message.sender_id === user?.id
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-secondary text-secondary-foreground"
+                        }`}
+                      >
+                        <div className="text-xs opacity-70 mb-1">
+                          @{message.profiles?.username || message.profiles?.display_name || "Unknown"}
+                        </div>
+                        <div>{message.body}</div>
+                        <div className="text-xs opacity-50 mt-1">
+                          {new Date(message.created_at).toLocaleTimeString()}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </ScrollArea>
+
+              {/* Input */}
+              <div className="p-4 border-t bg-white/80">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Type a message..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                  />
+                  <Button onClick={handleSendMessage} size="icon">
+                    <Send className="w-4 h-4" />
+                  </Button>
                 </div>
               </div>
-            ))}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div className="border-t p-4">
-            <div className="flex gap-2">
-              <Input
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type a message..."
-                className="flex-1"
-              />
-              <Button onClick={handleSendMessage} size="icon">
-                <Send className="w-4 h-4" />
-              </Button>
+            </>
+          ) : (
+            <div className="flex-1 flex items-center justify-center text-muted-foreground">
+              <div className="text-center">
+                <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p>Select a thread to start chatting</p>
+              </div>
             </div>
-          </div>
-        </Card>
+          )}
+        </div>
       </div>
     </div>
   );

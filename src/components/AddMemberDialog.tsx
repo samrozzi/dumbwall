@@ -81,18 +81,36 @@ export function AddMemberDialog({
       // Determine invite type based on permissions
       const needsApproval = !isOwner && invitePermission === 'owner_only';
 
-      // Check if user is already a member
+      // Check if invite already exists for this email
+      const { data: existingInvite } = await supabase
+        .from('circle_invites')
+        .select('id')
+        .eq('circle_id', circleId)
+        .eq('invited_email', email)
+        .eq('status', 'pending')
+        .maybeSingle();
+
+      if (existingInvite) {
+        toast.error('An invitation has already been sent to this email');
+        setSending(false);
+        return;
+      }
+
+      // For existing users, check if they're already members via profiles table
       if (userExists) {
-        const { data: userId } = await supabase.rpc('get_user_id_by_email', { user_email: email });
-        
-        const { data: existing } = await supabase
-          .from('circle_members')
-          .select('id')
-          .eq('circle_id', circleId)
-          .eq('user_id', userId)
+        const { data: existingMember } = await supabase
+          .from('profiles')
+          .select(`
+            id,
+            circle_members!inner (
+              circle_id
+            )
+          `)
+          .eq('circle_members.circle_id', circleId)
+          .ilike('username', email.split('@')[0])
           .maybeSingle();
 
-        if (existing) {
+        if (existingMember) {
           toast.error('User is already a member of this circle');
           setSending(false);
           return;

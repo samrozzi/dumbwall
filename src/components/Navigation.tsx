@@ -1,5 +1,5 @@
 import { NavLink } from "react-router-dom";
-import { StickyNote, MessageCircle, Users, Settings } from "lucide-react";
+import { StickyNote, MessageCircle, Users, Settings, Gamepad2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface NavigationProps {
@@ -9,6 +9,7 @@ interface NavigationProps {
 const Navigation = ({ circleId }: NavigationProps) => {
   const navItems = [
     { icon: StickyNote, label: "Wall", path: `/circle/${circleId}/wall` },
+    { icon: Gamepad2, label: "Games", path: `/circle/${circleId}/games` },
     { icon: MessageCircle, label: "Chat", path: `/circle/${circleId}/chat` },
     { icon: Users, label: "People", path: `/circle/${circleId}/people` },
     { icon: Settings, label: "Settings", path: `/circle/${circleId}/settings` },

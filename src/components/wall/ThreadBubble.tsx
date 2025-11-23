@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
-import { X, MessageSquare, Send } from "lucide-react";
+import { X, MessageSquare, Send, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -129,19 +129,20 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
         <MessageSquare className="w-5 h-5 text-purple-600 flex-shrink-0 mt-1" />
         <div className="flex-1 min-w-0 flex flex-col min-h-0">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-semibold text-purple-900">{content.title}</h3>
+            <h3 className="font-semibold text-purple-900 truncate">{content.title}</h3>
             <button
               onClick={handleNavigate}
-              className="text-xs text-purple-600 hover:text-purple-800 underline"
+              className="text-purple-600 hover:text-purple-800 hover:scale-110 transition-transform flex-shrink-0 ml-2"
+              title="Open thread"
             >
-              Open
+              <ExternalLink className="w-4 h-4" />
             </button>
           </div>
-          <ScrollArea className="flex-1 min-h-0 max-h-[60px]">
-            <div className="space-y-1 text-sm text-purple-700">
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="space-y-1 text-sm text-purple-700 pb-1">
               {messages.length > 0 ? (
                 messages.map((msg) => (
-                  <p key={msg.id} className="line-clamp-1">• {msg.body}</p>
+                  <p key={msg.id} className="break-words">• {msg.body}</p>
                 ))
               ) : (
                 <p className="text-purple-500 italic">No messages yet</p>

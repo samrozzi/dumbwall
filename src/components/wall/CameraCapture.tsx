@@ -13,9 +13,11 @@ const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
   const [error, setError] = useState<string>("");
 
   useEffect(() => {
+    let mediaStream: MediaStream | null = null;
+    
     const startCamera = async () => {
       try {
-        const mediaStream = await navigator.mediaDevices.getUserMedia({
+        mediaStream = await navigator.mediaDevices.getUserMedia({
           video: { facingMode: "environment" },
           audio: false,
         });
@@ -32,11 +34,11 @@ const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
     startCamera();
 
     return () => {
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
+      if (mediaStream) {
+        mediaStream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, [stream]);
+  }, []);
 
   const capturePhoto = () => {
     if (!videoRef.current) return;

@@ -127,8 +127,7 @@ const Settings = () => {
 
     const file = e.target.files[0];
     const fileExt = file.name.split(".").pop();
-    const fileName = `${user.id}-${Math.random()}.${fileExt}`;
-    const filePath = `${fileName}`;
+    const filePath = `${user.id}/avatar.${fileExt}`;
 
     try {
       const { error: uploadError } = await supabase.storage
@@ -150,8 +149,10 @@ const Settings = () => {
 
       setAvatarUrl(publicUrl);
       toast.success("Avatar updated!");
+      loadProfile();
     } catch (error: any) {
-      toast.error(error.message);
+      console.error("Avatar upload error:", error);
+      toast.error(error.message || "Failed to upload avatar");
     }
   };
 

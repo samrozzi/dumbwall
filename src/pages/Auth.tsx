@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
+import { notify } from "@/components/ui/custom-notification";
 import { Sparkles } from "lucide-react";
 
 const Auth = () => {
@@ -28,7 +29,7 @@ const Auth = () => {
           password,
         });
         if (error) throw error;
-        toast.success("Welcome back!");
+        notify("Welcome back!", "success");
         navigate("/");
       } else {
         // Check if username is taken

@@ -118,7 +118,7 @@ const Circles = () => {
 
   return (
     <div className="min-h-screen bg-background p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
             <Sparkles className="w-8 h-8 text-primary" />
@@ -137,28 +137,32 @@ const Circles = () => {
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           {circles.map((circle) => (
-            <Card
+            <div
               key={circle.id}
-              className="p-6 cursor-pointer hover:bg-muted/50 transition-all hover:scale-105 border-border bg-card"
+              className="flex flex-col items-center cursor-pointer group"
               onClick={() => navigate(`/circle/${circle.id}/wall`)}
             >
-              <h3 className="text-xl font-semibold mb-2">{circle.name}</h3>
+              <div className="relative w-48 h-48 rounded-full bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 border-4 border-border hover:border-primary transition-all hover:scale-105 flex items-center justify-center mb-3">
+                <h3 className="text-xl font-semibold text-center px-6">{circle.name}</h3>
+              </div>
               <p className="text-sm text-muted-foreground">
                 {new Date(circle.created_at).toLocaleDateString()}
               </p>
-            </Card>
+            </div>
           ))}
 
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-              <Card className="p-6 cursor-pointer hover:bg-primary/10 transition-all hover:scale-105 border-dashed border-2 border-primary/50 flex items-center justify-center min-h-[120px]">
-                <div className="text-center">
-                  <Plus className="w-8 h-8 mx-auto mb-2 text-primary" />
-                  <p className="font-semibold text-primary">New Circle</p>
+              <div className="flex flex-col items-center cursor-pointer group">
+                <div className="relative w-48 h-48 rounded-full border-dashed border-4 border-primary/50 hover:border-primary transition-all hover:scale-105 flex items-center justify-center mb-3 hover:bg-primary/10">
+                  <div className="text-center">
+                    <Plus className="w-8 h-8 mx-auto mb-2 text-primary" />
+                    <p className="font-semibold text-primary">New Circle</p>
+                  </div>
                 </div>
-              </Card>
+              </div>
             </DialogTrigger>
             <DialogContent className="bg-card border-border">
               <DialogHeader>

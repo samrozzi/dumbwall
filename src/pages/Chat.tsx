@@ -639,8 +639,8 @@ const Chat = () => {
                   </TabsList>
                 </Tabs>
                 
-            <ScrollArea className="flex-1 border rounded-lg bg-card/50 backdrop-blur h-0">
-                  <div className="p-1 space-y-1">
+            <ScrollArea className="flex-1 h-0">
+                  <div className="space-y-1">
                     {filteredThreads.map((thread) => (
                       <button
                         key={thread.id}

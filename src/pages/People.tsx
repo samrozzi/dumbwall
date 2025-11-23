@@ -185,20 +185,18 @@ const People = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
-      <div className={`${isMobile ? 'px-4 pb-24' : 'pl-24 pr-8'} pt-8 relative`}>
-        {/* Notification Bell */}
-        <div className={`absolute z-50 ${isMobile ? 'top-2 left-4' : 'top-8 right-8'}`}>
-          <NotificationCenter />
-        </div>
-        
+      <div className={`${isMobile ? 'px-4 pb-24' : 'pl-24 pr-8'} pt-8`}>
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">People</h1>
-          {canAddMembers && (
-            <Button onClick={() => setAddMemberOpen(true)} className="gap-2">
-              <UserPlus className="w-4 h-4" />
-              Add Member
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <NotificationCenter />
+            {canAddMembers && (
+              <Button onClick={() => setAddMemberOpen(true)} className="gap-2">
+                <UserPlus className="w-4 h-4" />
+                Add Member
+              </Button>
+            )}
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {members.map((member) => (

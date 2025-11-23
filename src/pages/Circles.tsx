@@ -216,11 +216,7 @@ const Circles = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-8 relative">
-      {/* Notification Bell */}
-      <div className={`absolute z-50 ${isMobile ? 'top-2 left-4' : 'top-8 right-8'}`}>
-        <NotificationCenter />
-      </div>
+    <div className="min-h-screen bg-background p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">
@@ -229,15 +225,18 @@ const Circles = () => {
               Your Circles
             </h1>
           </div>
-          <Button
-            onClick={signOut}
-            variant="outline"
-            size="sm"
-            className="gap-2"
-          >
-            <LogOut className="w-4 h-4" />
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-2">
+            <NotificationCenter />
+            <Button
+              onClick={signOut}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <LogOut className="w-4 h-4" />
+              Sign Out
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">

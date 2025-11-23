@@ -65,13 +65,15 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
 
   const loadGame = async () => {
     try {
+      console.log('Loading game:', gameId);
       const data = await getGame(gameId);
+      console.log('Game data received:', data);
       setGame(data.game);
       setParticipants(data.participants);
       setEvents(data.events);
-    } catch (error) {
-      console.error("Error loading game:", error);
-      notify("Error loading game");
+    } catch (error: any) {
+      console.error('Failed to load game:', error);
+      notify(`Failed to load game: ${error.message}`);
     } finally {
       setLoading(false);
     }

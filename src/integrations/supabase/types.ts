@@ -564,6 +564,15 @@ export type Database = {
         Args: { _thread_id: string; _user_id: string }
         Returns: boolean
       }
+      search_users_by_username_or_email: {
+        Args: { search_term: string }
+        Returns: {
+          avatar_url: string
+          display_name: string
+          id: string
+          username: string
+        }[]
+      }
     }
     Enums: {
       game_status: "waiting" | "in_progress" | "finished" | "cancelled"

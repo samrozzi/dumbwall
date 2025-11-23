@@ -1,7 +1,6 @@
 import { NavLink } from "react-router-dom";
 import { StickyNote, MessageCircle, Users, Settings, Gamepad2 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { NotificationCenter } from "./NotificationCenter";
 
 interface NavigationProps {
   circleId?: string;
@@ -43,9 +42,6 @@ const Navigation = ({ circleId }: NavigationProps) => {
           ))}
         </div>
       </nav>
-      <div className="fixed right-4 top-4 z-50">
-        <NotificationCenter />
-      </div>
     </>
   );
 };

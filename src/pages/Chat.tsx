@@ -108,6 +108,13 @@ const Chat = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // Refresh threads when returning to thread list on mobile
+  useEffect(() => {
+    if (isMobile && !threadId && circleId && user) {
+      loadThreads();
+    }
+  }, [threadId, isMobile, circleId, user]);
+
   const loadThreads = async () => {
     if (!user) return;
     
@@ -237,8 +244,10 @@ const Chat = () => {
         onConflict: "thread_id,user_id"
       });
     
-    // Refresh thread list to update badges
-    loadThreads();
+    // Only refresh thread list on mobile (desktop shows both views simultaneously)
+    if (isMobile) {
+      loadThreads();
+    }
   };
 
   const subscribeToMessages = () => {
@@ -666,6 +675,10 @@ const Chat = () => {
                       {thread.unreadCount > 9 ? "9+" : thread.unreadCount}
                     </div>
                   )}
+                  <ThreadAvatarStack 
+                    members={thread.members} 
+                    currentUserId={user?.id || ""} 
+                  />
                   <div className="flex-1 min-w-0">
                     <div className="font-medium flex items-center gap-2">
                       {thread.linked_wall_item_id && (

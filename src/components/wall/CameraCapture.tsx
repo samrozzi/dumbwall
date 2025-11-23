@@ -11,14 +11,36 @@ const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string>("");
+  const [facingMode, setFacingMode] = useState<"user" | "environment">("environment");
+  const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
+
+  useEffect(() => {
+    // Detect available cameras
+    const detectCameras = async () => {
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(device => device.kind === 'videoinput');
+        setAvailableCameras(videoDevices);
+      } catch (err) {
+        console.error("Error detecting cameras:", err);
+      }
+    };
+
+    detectCameras();
+  }, []);
 
   useEffect(() => {
     let mediaStream: MediaStream | null = null;
     
     const startCamera = async () => {
       try {
+        // Stop existing stream if any
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop());
+        }
+
         mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: "environment" },
+          video: { facingMode },
           audio: false,
         });
         setStream(mediaStream);
@@ -38,7 +60,11 @@ const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
         mediaStream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, []);
+  }, [facingMode]);
+
+  const toggleCamera = () => {
+    setFacingMode(prev => prev === "environment" ? "user" : "environment");
+  };
 
   const capturePhoto = () => {
     if (!videoRef.current) return;
@@ -84,11 +110,16 @@ const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
         playsInline
         className="w-full rounded-lg"
       />
-      <div className="flex gap-2 mt-4 justify-center">
+      <div className="flex gap-2 mt-4 justify-center flex-wrap">
         <Button onClick={capturePhoto} size="lg">
           <Camera className="w-5 h-5 mr-2" />
           Capture Photo
         </Button>
+        {availableCameras.length > 1 && (
+          <Button onClick={toggleCamera} variant="secondary" size="lg">
+            🔄 Switch Camera
+          </Button>
+        )}
         <Button onClick={onClose} variant="outline" size="lg">
           <X className="w-5 h-5 mr-2" />
           Cancel

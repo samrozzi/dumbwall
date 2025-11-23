@@ -33,6 +33,11 @@ export interface GameParticipant {
   user_id: string;
   role: 'player' | 'owner' | 'viewer' | string;
   joined_at: string;
+  profiles: {
+    username: string;
+    display_name: string | null;
+    avatar_url: string | null;
+  };
 }
 
 export interface GameEvent {

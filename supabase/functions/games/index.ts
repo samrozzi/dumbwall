@@ -184,7 +184,14 @@ async function getGame(_req: Request, userId: string, gameId: string): Promise<R
 
   const { data: participants, error: pErr } = await client
     .from("game_participants")
-    .select("*")
+    .select(`
+      *,
+      profiles (
+        username,
+        display_name,
+        avatar_url
+      )
+    `)
     .eq("game_id", gameId);
 
   if (pErr) {

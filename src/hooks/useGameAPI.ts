@@ -56,15 +56,23 @@ export const useGameAPI = () => {
     return response.json();
   };
 
-  const createGame = async (gameData: {
-    circle_id: string;
-    type: string;
-    title?: string;
-    description?: string;
-    metadata?: any;
-    status?: string;
-  }): Promise<{ game: Game }> => {
-    return callGameFunction('/', "POST", gameData);
+  const createGame = async (
+    circle_id: string,
+    type: string,
+    title?: string,
+    description?: string,
+    metadata?: any,
+    status?: string
+  ): Promise<string> => {
+    const result = await callGameFunction('/', "POST", {
+      circle_id,
+      type,
+      title,
+      description,
+      metadata,
+      status,
+    });
+    return result.game.id;
   };
 
   const getGame = async (gameId: string): Promise<{

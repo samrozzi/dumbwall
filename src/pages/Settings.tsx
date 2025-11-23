@@ -1,25 +1,56 @@
-import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/lib/auth";
+import { useEffect, useState } from "react";
+import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
 import Navigation from "@/components/Navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { toast } from "@/hooks/use-toast";
-import { differenceInDays } from "date-fns";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
+import { toast } from "sonner";
+import { Upload, LogOut, Trash2, Users, Plus, AlertTriangle, Settings2 } from "lucide-react";
+
+interface UserProfile {
+  id: string;
+  display_name: string | null;
+  username: string | null;
+  avatar_url: string | null;
+  last_username_change_at: string | null;
+}
+
+interface UserCircle {
+  id: string;
+  name: string;
+  created_by: string;
+  role: "owner" | "member";
+  memberCount: number;
+  isActive: boolean;
+}
 
 const Settings = () => {
-  const { user } = useAuth();
+  const { circleId } = useParams();
+  const { user, signOut } = useAuth();
   const navigate = useNavigate();
-  const [profile, setProfile] = useState<any>(null);
+
+  // Profile state
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+
+  // Circles state
+  const [circles, setCircles] = useState<UserCircle[]>([]);
+  const [newCircleName, setNewCircleName] = useState("");
+  const [createCircleOpen, setCreateCircleOpen] = useState(false);
+  const [deleteCircleId, setDeleteCircleId] = useState<string | null>(null);
+  const [renameCircleId, setRenameCircleId] = useState<string | null>(null);
+  const [renameValue, setRenameValue] = useState("");
 
   useEffect(() => {
     if (!user) {
@@ -27,6 +58,8 @@ const Settings = () => {
       return;
     }
     loadProfile();
+    loadUserCircles();
+    setUserEmail(user.email || "");
   }, [user, navigate]);
 
   const loadProfile = async () => {
@@ -39,14 +72,54 @@ const Settings = () => {
       .single();
 
     if (error) {
-      toast({ title: "Error loading profile", variant: "destructive" });
+      toast.error("Error loading profile");
       return;
     }
 
     setProfile(data);
     setDisplayName(data.display_name || "");
     setUsername(data.username || "");
-    setAvatarUrl(data.avatar_url);
+    setAvatarUrl(data.avatar_url || "");
+  };
+
+  const loadUserCircles = async () => {
+    if (!user) return;
+
+    const { data: memberCircles, error } = await supabase
+      .from("circle_members")
+      .select(`
+        role,
+        circles (
+          id,
+          name,
+          created_by
+        )
+      `)
+      .eq("user_id", user.id);
+
+    if (error) {
+      toast.error("Error loading circles");
+      return;
+    }
+
+    // Get member counts for each circle
+    const circlesWithCounts = await Promise.all(
+      (memberCircles || []).map(async (mc: any) => {
+        const { count } = await supabase
+          .from("circle_members")
+          .select("*", { count: "exact", head: true })
+          .eq("circle_id", mc.circles.id);
+
+        return {
+          ...mc.circles,
+          role: mc.role,
+          memberCount: count || 0,
+          isActive: mc.circles.id === circleId
+        };
+      })
+    );
+
+    setCircles(circlesWithCounts);
   };
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,24 +127,20 @@ const Settings = () => {
 
     const file = e.target.files[0];
     const fileExt = file.name.split(".").pop();
-    const filePath = `${user.id}/avatar.${fileExt}`;
-
-    setUploading(true);
+    const fileName = `${user.id}-${Math.random()}.${fileExt}`;
+    const filePath = `${fileName}`;
 
     try {
-      // Upload to storage
       const { error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(filePath, file, { upsert: true });
 
       if (uploadError) throw uploadError;
 
-      // Get public URL
       const { data: { publicUrl } } = supabase.storage
         .from("avatars")
         .getPublicUrl(filePath);
 
-      // Update profile
       const { error: updateError } = await supabase
         .from("profiles")
         .update({ avatar_url: publicUrl })
@@ -80,181 +149,538 @@ const Settings = () => {
       if (updateError) throw updateError;
 
       setAvatarUrl(publicUrl);
-      toast({ title: "Avatar updated successfully!" });
+      toast.success("Avatar updated!");
     } catch (error: any) {
-      toast({ title: "Error uploading avatar", description: error.message, variant: "destructive" });
-    } finally {
-      setUploading(false);
+      toast.error(error.message);
     }
   };
 
-  const handleSaveProfile = async () => {
-    if (!user || !profile) return;
-
-    // Validate username
-    if (!username || !/^[a-zA-Z0-9_]{3,20}$/.test(username)) {
-      toast({
-        title: "Invalid username",
-        description: "Username must be 3-20 characters (letters, numbers, underscore only)",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // Check username change restriction (30 days)
-    if (username !== profile.username && profile.last_username_change_at) {
-      const daysSinceLastChange = differenceInDays(
-        new Date(),
-        new Date(profile.last_username_change_at)
-      );
-
-      if (daysSinceLastChange < 30) {
-        toast({
-          title: "Username change restricted",
-          description: `You can change your username in ${30 - daysSinceLastChange} days`,
-          variant: "destructive",
-        });
-        return;
-      }
-    }
-
-    setSaving(true);
+  const handleDeleteAvatar = async () => {
+    if (!user) return;
 
     try {
-      // Check if username is taken
-      if (username !== profile.username) {
-        const { data: existingUser } = await supabase
-          .from("profiles")
-          .select("id")
-          .eq("username", username)
-          .single();
-
-        if (existingUser) {
-          toast({ title: "Username already taken", variant: "destructive" });
-          setSaving(false);
-          return;
-        }
-      }
-
-      // Update profile
-      const updates: any = {
-        display_name: displayName,
-        username: username,
-      };
-
-      // If username changed, update timestamp
-      if (username !== profile.username) {
-        updates.last_username_change_at = new Date().toISOString();
-      }
-
       const { error } = await supabase
         .from("profiles")
-        .update(updates)
+        .update({ avatar_url: null })
         .eq("id", user.id);
 
       if (error) throw error;
 
-      toast({ title: "Profile updated successfully!" });
-      loadProfile(); // Reload to get updated timestamp
+      setAvatarUrl("");
+      toast.success("Avatar removed!");
     } catch (error: any) {
-      toast({ title: "Error updating profile", description: error.message, variant: "destructive" });
-    } finally {
-      setSaving(false);
+      toast.error(error.message);
+    }
+  };
+
+  const handleSaveDisplayName = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ display_name: displayName })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      toast.success("Display name updated!");
+      loadProfile();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleSaveUsername = async () => {
+    if (!user || !profile) return;
+
+    // Validate username format
+    if (!/^[a-z0-9_]{3,20}$/.test(username)) {
+      toast.error("Username must be 3-20 characters (lowercase, numbers, underscores only)");
+      return;
+    }
+
+    // Check 30-day restriction
+    if (profile.last_username_change_at) {
+      const lastChange = new Date(profile.last_username_change_at);
+      const daysSinceChange = Math.floor((Date.now() - lastChange.getTime()) / (1000 * 60 * 60 * 24));
+      if (daysSinceChange < 30) {
+        toast.error(`You can change your username in ${30 - daysSinceChange} days`);
+        return;
+      }
+    }
+
+    // Check uniqueness
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", username)
+      .neq("id", user.id)
+      .single();
+
+    if (existing) {
+      toast.error("Username already taken");
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ 
+          username,
+          last_username_change_at: new Date().toISOString()
+        })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      toast.success("Username updated!");
+      loadProfile();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleCreateCircle = async () => {
+    if (!user || !newCircleName.trim()) return;
+
+    try {
+      const { data: newCircle, error: circleError } = await supabase
+        .from("circles")
+        .insert({ name: newCircleName, created_by: user.id })
+        .select()
+        .single();
+
+      if (circleError) throw circleError;
+
+      const { error: memberError } = await supabase
+        .from("circle_members")
+        .insert({ 
+          circle_id: newCircle.id, 
+          user_id: user.id, 
+          role: "owner" 
+        });
+
+      if (memberError) throw memberError;
+
+      toast.success("Circle created!");
+      setNewCircleName("");
+      setCreateCircleOpen(false);
+      loadUserCircles();
+      navigate(`/circle/${newCircle.id}/wall`);
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleLeaveCircle = async (circleId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("circle_members")
+        .delete()
+        .eq("circle_id", circleId)
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      toast.success("Left circle");
+      loadUserCircles();
+      
+      // Navigate to another circle if leaving the active one
+      const remainingCircles = circles.filter(c => c.id !== circleId);
+      if (remainingCircles.length > 0) {
+        navigate(`/circle/${remainingCircles[0].id}/wall`);
+      } else {
+        navigate("/circles");
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleDeleteCircle = async (circleId: string) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("circles")
+        .delete()
+        .eq("id", circleId)
+        .eq("created_by", user.id);
+
+      if (error) throw error;
+
+      toast.success("Circle deleted");
+      setDeleteCircleId(null);
+      loadUserCircles();
+      
+      const remainingCircles = circles.filter(c => c.id !== circleId);
+      if (remainingCircles.length > 0) {
+        navigate(`/circle/${remainingCircles[0].id}/wall`);
+      } else {
+        navigate("/circles");
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleRenameCircle = async () => {
+    if (!renameCircleId || !renameValue.trim()) return;
+
+    try {
+      const { error } = await supabase
+        .from("circles")
+        .update({ name: renameValue })
+        .eq("id", renameCircleId);
+
+      if (error) throw error;
+
+      toast.success("Circle renamed!");
+      setRenameCircleId(null);
+      setRenameValue("");
+      loadUserCircles();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handlePasswordReset = async () => {
+    if (!userEmail) return;
+
+    try {
+      await supabase.auth.resetPasswordForEmail(userEmail, {
+        redirectTo: `${window.location.origin}/auth`,
+      });
+      toast.success("Password reset email sent!");
+    } catch (error: any) {
+      toast.error(error.message);
     }
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    navigate("/auth");
+    await signOut();
   };
 
-  if (!user || !profile) return null;
+  const getDaysUntilUsernameChange = () => {
+    if (!profile?.last_username_change_at) return null;
+    const lastChange = new Date(profile.last_username_change_at);
+    const daysSinceChange = Math.floor((Date.now() - lastChange.getTime()) / (1000 * 60 * 60 * 24));
+    const daysRemaining = 30 - daysSinceChange;
+    return daysRemaining > 0 ? daysRemaining : 0;
+  };
+
+  const daysRemaining = getDaysUntilUsernameChange();
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
-      <div className="container mx-auto p-6 max-w-2xl">
-        <h1 className="text-3xl font-bold mb-6">Settings</h1>
+      <Navigation circleId={circleId} />
 
-        <Card className="mb-6">
-          <CardHeader>
-            <CardTitle>Profile Settings</CardTitle>
-            <CardDescription>Manage your profile information</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Avatar Section */}
-            <div className="flex items-center gap-4">
-              <Avatar className="w-20 h-20">
-                <AvatarImage src={avatarUrl || undefined} />
-                <AvatarFallback className="text-2xl">
-                  {username?.slice(0, 2).toUpperCase() || "??"}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <Label htmlFor="avatar" className="cursor-pointer">
-                  <Button variant="outline" disabled={uploading} asChild>
-                    <span>{uploading ? "Uploading..." : "Change Avatar"}</span>
+      <div className="pl-24 pr-8 pt-8 max-w-5xl mx-auto pb-16">
+        <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
+          <Settings2 className="w-8 h-8" />
+          Settings
+        </h1>
+
+        <Tabs defaultValue="profile" className="w-full">
+          <TabsList className="grid w-full grid-cols-3 mb-8">
+            <TabsTrigger value="profile">Profile</TabsTrigger>
+            <TabsTrigger value="circles">Circles</TabsTrigger>
+            <TabsTrigger value="account">Account</TabsTrigger>
+          </TabsList>
+
+          {/* Profile Tab */}
+          <TabsContent value="profile" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Avatar</CardTitle>
+                <CardDescription>Upload or manage your profile picture</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center gap-4">
+                <Avatar className="w-32 h-32">
+                  <AvatarImage src={avatarUrl || undefined} />
+                  <AvatarFallback className="text-4xl">
+                    {username?.slice(0, 2).toUpperCase() || displayName?.slice(0, 2).toUpperCase() || "??"}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex gap-2">
+                  <Button variant="outline" asChild>
+                    <label className="cursor-pointer">
+                      <Upload className="w-4 h-4 mr-2" />
+                      Upload Photo
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleAvatarUpload}
+                      />
+                    </label>
                   </Button>
-                </Label>
-                <Input
-                  id="avatar"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleAvatarUpload}
-                  className="hidden"
-                />
-                <p className="text-sm text-muted-foreground mt-2">
-                  Upload your own avatar or choose from icons (coming soon)
-                </p>
-              </div>
-            </div>
+                  {avatarUrl && (
+                    <Button variant="destructive" onClick={handleDeleteAvatar}>
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Remove
+                    </Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
 
-            {/* Display Name */}
-            <div className="space-y-2">
-              <Label htmlFor="displayName">Display Name</Label>
-              <Input
-                id="displayName"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Your display name"
-              />
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Display Name</CardTitle>
+                <CardDescription>Your public display name</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Display name"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
+                  />
+                  <Button onClick={handleSaveDisplayName}>Save</Button>
+                </div>
+              </CardContent>
+            </Card>
 
-            {/* Username */}
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Your unique username"
-              />
-              {profile.last_username_change_at && (
-                <p className="text-sm text-muted-foreground">
-                  Last changed:{" "}
-                  {new Date(profile.last_username_change_at).toLocaleDateString()}
-                  {" "}(Can change once every 30 days)
-                </p>
-              )}
-            </div>
+            <Card>
+              <CardHeader>
+                <CardTitle>Username</CardTitle>
+                <CardDescription>
+                  Your unique identifier (3-20 characters, lowercase only)
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+                    <Input
+                      className="pl-7"
+                      placeholder="username"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                      disabled={daysRemaining !== null && daysRemaining > 0}
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleSaveUsername}
+                    disabled={daysRemaining !== null && daysRemaining > 0}
+                  >
+                    Save
+                  </Button>
+                </div>
+                {daysRemaining !== null && daysRemaining > 0 && (
+                  <p className="text-sm text-muted-foreground">
+                    ℹ️ You can change your username in {daysRemaining} days
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-            <Button onClick={handleSaveProfile} disabled={saving}>
-              {saving ? "Saving..." : "Save Changes"}
-            </Button>
-          </CardContent>
-        </Card>
+          {/* Circles Tab */}
+          <TabsContent value="circles" className="space-y-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <div>
+                  <CardTitle>Your Circles</CardTitle>
+                  <CardDescription>Manage and switch between your circles</CardDescription>
+                </div>
+                <Button onClick={() => setCreateCircleOpen(true)}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Circle
+                </Button>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {circles.map((circle) => (
+                  <div
+                    key={circle.id}
+                    className={`p-4 border rounded-lg transition-all ${
+                      circle.isActive ? "bg-primary/10 border-primary" : "bg-card"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-lg">{circle.name}</h3>
+                          {circle.isActive && (
+                            <Badge variant="default">Active</Badge>
+                          )}
+                          <Badge variant="outline">
+                            {circle.role === "owner" ? "Owner" : "Member"}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          <Users className="w-3 h-3 inline mr-1" />
+                          {circle.memberCount} {circle.memberCount === 1 ? "member" : "members"}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        {!circle.isActive && (
+                          <Button
+                            variant="outline"
+                            onClick={() => navigate(`/circle/${circle.id}/wall`)}
+                          >
+                            Switch
+                          </Button>
+                        )}
+                        {circle.role === "owner" && (
+                          <>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setRenameCircleId(circle.id);
+                                setRenameValue(circle.name);
+                              }}
+                            >
+                              Rename
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              onClick={() => setDeleteCircleId(circle.id)}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
+                        {circle.role === "member" && (
+                          <Button
+                            variant="outline"
+                            onClick={() => handleLeaveCircle(circle.id)}
+                          >
+                            Leave
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                {circles.length === 0 && (
+                  <p className="text-center text-muted-foreground py-8">
+                    You're not a member of any circles yet
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Account Actions</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button variant="destructive" onClick={handleLogout}>
-              Logout
-            </Button>
-          </CardContent>
-        </Card>
+          {/* Account Tab */}
+          <TabsContent value="account" className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Email</CardTitle>
+                <CardDescription>Your account email address</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Input value={userEmail} disabled />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Password</CardTitle>
+                <CardDescription>Reset your password via email</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button onClick={handlePasswordReset}>
+                  Send Password Reset Email
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Separator />
+
+            <Card className="border-destructive">
+              <CardHeader>
+                <CardTitle className="text-destructive">Danger Zone</CardTitle>
+                <CardDescription>Irreversible account actions</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="destructive" onClick={handleLogout} className="w-full">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Log Out
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
+
+      {/* Create Circle Dialog */}
+      <Dialog open={createCircleOpen} onOpenChange={setCreateCircleOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Circle</DialogTitle>
+            <DialogDescription>
+              Create a new circle and invite members
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Circle Name</Label>
+              <Input
+                placeholder="My awesome circle"
+                value={newCircleName}
+                onChange={(e) => setNewCircleName(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleCreateCircle()}
+              />
+            </div>
+            <Button onClick={handleCreateCircle} className="w-full">
+              Create Circle
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Rename Circle Dialog */}
+      <Dialog open={renameCircleId !== null} onOpenChange={() => setRenameCircleId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Circle</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>New Name</Label>
+              <Input
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleRenameCircle()}
+              />
+            </div>
+            <Button onClick={handleRenameCircle} className="w-full">
+              Save
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Circle Dialog */}
+      <Dialog open={deleteCircleId !== null} onOpenChange={() => setDeleteCircleId(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="w-5 h-5" />
+              Delete Circle
+            </DialogTitle>
+            <DialogDescription>
+              This will permanently delete the circle and all its content. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteCircleId(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteCircleId && handleDeleteCircle(deleteCircleId)}
+            >
+              Delete Circle
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

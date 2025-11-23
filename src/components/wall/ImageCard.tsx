@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { X } from "lucide-react";
+import { CreatorBadge } from "@/components/CreatorBadge";
 
 interface ImageCardProps {
   content: {
@@ -8,9 +9,11 @@ interface ImageCardProps {
     caption?: string;
   };
   onDelete?: () => void;
+  creatorAvatar?: string | null;
+  creatorUsername?: string | null;
 }
 
-const ImageCard = ({ content, onDelete }: ImageCardProps) => {
+const ImageCard = ({ content, onDelete, creatorAvatar, creatorUsername }: ImageCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
@@ -19,6 +22,8 @@ const ImageCard = ({ content, onDelete }: ImageCardProps) => {
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      <CreatorBadge avatarUrl={creatorAvatar} username={creatorUsername} />
+      
       {onDelete && isHovered && (
         <button
           onClick={(e) => {

@@ -59,7 +59,6 @@ const TicTacToe = ({ content, onUpdate, onDelete }: TicTacToeProps) => {
 
   // Mobile touch handler
   const handleTouch = (e: React.TouchEvent, index: number) => {
-    e.preventDefault();
     handleClick(index);
   };
 

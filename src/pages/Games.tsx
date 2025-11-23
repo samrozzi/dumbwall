@@ -171,7 +171,7 @@ const Games = () => {
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
       
-      <div className="pl-24 pr-8 py-8">
+      <div className="px-4 sm:pl-24 sm:pr-8 py-8">
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Game Invites */}
           <GameInvites />

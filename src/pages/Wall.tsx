@@ -268,6 +268,10 @@ const Wall = () => {
     try {
       const { error } = await supabase.from("wall_items").delete().eq("id", id);
       if (error) throw error;
+      
+      // Immediately update local state to remove the item
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      
       notify("Item deleted", "info");
     } catch (error: any) {
       notify(error.message, "error");

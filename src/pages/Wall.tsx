@@ -307,7 +307,9 @@ const Wall = () => {
     const snappedX = Math.round(item.x / GRID_SIZE) * GRID_SIZE;
     const snappedY = Math.round(item.y / GRID_SIZE) * GRID_SIZE;
 
+    // Update immediately without checking for significant movement
     updateItem(draggedItem, { x: snappedX, y: snappedY });
+    
     setDraggedItem(null);
   };
 

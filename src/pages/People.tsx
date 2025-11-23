@@ -36,12 +36,19 @@ const People = () => {
         .from("circle_members")
         .select(`
           user_id,
-          profile:profiles(username, display_name, avatar_url)
+          profiles!circle_members_user_id_fkey(username, display_name, avatar_url)
         `)
         .eq("circle_id", circleId);
 
       if (error) throw error;
-      setMembers(data as unknown as Member[]);
+      
+      // Transform the data to match our interface
+      const transformedData = data?.map(item => ({
+        user_id: item.user_id,
+        profile: item.profiles as any
+      })) || [];
+      
+      setMembers(transformedData as Member[]);
     } catch (error: any) {
       toast.error(error.message);
     } finally {

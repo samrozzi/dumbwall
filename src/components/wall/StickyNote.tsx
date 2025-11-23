@@ -93,7 +93,7 @@ const StickyNote = ({ content, onDelete, onUpdate, isCreator, creatorAvatar, cre
         )}
         
         {isEditing ? (
-          <div className="h-full flex flex-col gap-2">
+          <div className="h-full flex flex-col gap-2" onClick={(e) => e.stopPropagation()}>
             <input
               type="text"
               value={editTitle}
@@ -106,7 +106,6 @@ const StickyNote = ({ content, onDelete, onUpdate, isCreator, creatorAvatar, cre
             <textarea
               value={editBody}
               onChange={(e) => setEditBody(e.target.value)}
-              onBlur={handleSave}
               onKeyDown={handleKeyDown}
               className="text-sm flex-1 bg-transparent outline-none resize-none"
               style={{ fontFamily: "'Caveat', cursive" }}

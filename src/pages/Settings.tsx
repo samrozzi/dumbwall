@@ -666,13 +666,13 @@ const Settings = () => {
 
             <Separator />
 
-            <Card className="border-destructive">
+            <Card>
               <CardHeader>
-                <CardTitle className="text-destructive">Danger Zone</CardTitle>
-                <CardDescription>Irreversible account actions</CardDescription>
+                <CardTitle>Account Actions</CardTitle>
+                <CardDescription>Sign out of your account</CardDescription>
               </CardHeader>
               <CardContent>
-                <Button variant="destructive" onClick={handleLogout} className="w-full">
+                <Button variant="outline" onClick={handleLogout} className="w-full">
                   <LogOut className="w-4 h-4 mr-2" />
                   Log Out
                 </Button>

@@ -103,7 +103,7 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
       className="p-4 hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-200 relative flex flex-col"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      style={{ minHeight: "200px", maxHeight: "280px" }}
+      style={{ minHeight: "200px", maxHeight: "280px", maxWidth: "400px" }}
     >
       {onDelete && isHovered && (
         <button

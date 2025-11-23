@@ -39,6 +39,18 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Unauthorized");
     }
 
+    // Create admin client for accessing auth.users
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    );
+
     const { inviteId, invitedEmail, circleName, inviterName, type, ownerId }: InviteEmailRequest = await req.json();
 
     let emailResponse;
@@ -103,7 +115,7 @@ const handler = async (req: Request): Promise<Response> => {
       });
     } else if (type === 'approval_request' && ownerId) {
       // Get owner's email from auth.users (server-side only)
-      const { data: ownerData, error: ownerError } = await supabase.auth.admin.getUserById(ownerId);
+      const { data: ownerData, error: ownerError } = await supabaseAdmin.auth.admin.getUserById(ownerId);
       
       if (ownerError || !ownerData?.user?.email) {
         throw new Error("Failed to get owner email");

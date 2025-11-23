@@ -152,8 +152,20 @@ export function AddMemberDialog({
       // Determine invite type based on permissions
       const needsApproval = !isOwner && invitePermission === 'owner_only';
 
-      // Use placeholder email for selected users (real invite is via notification)
-      const inviteEmail = selectedUser ? `${selectedUser.username}@app.internal` : email;
+      // Get the actual email - either from selected user or from input
+      let inviteEmail = email;
+      if (selectedUser) {
+        // Fetch the user's actual email from auth.users via the function
+        const { data: userEmail, error: emailError } = await supabase.rpc('get_user_email_by_id', { 
+          user_uuid: selectedUser.id 
+        });
+        if (emailError || !userEmail) {
+          toast.error('Could not find user\'s email');
+          setSending(false);
+          return;
+        }
+        inviteEmail = userEmail;
+      }
 
       // Check if invite already exists for this email
       const { data: existingInvite } = await supabase

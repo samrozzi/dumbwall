@@ -47,7 +47,7 @@ const Navigation = ({ circleId }: NavigationProps) => {
   }
 
   return (
-    <nav className="fixed left-4 top-1/2 -translate-y-1/2 z-[100] bg-card/80 backdrop-blur-md border border-border rounded-full p-2 shadow-lg">
+    <nav className="fixed left-4 top-1/2 -translate-y-1/2 z-[10000] bg-card/80 backdrop-blur-md border border-border rounded-full p-2 shadow-lg">
       <div className="flex flex-col gap-2">
         {navItems.map((item) => {
           const isCurrentPage = location.pathname === item.path;
@@ -69,7 +69,7 @@ const Navigation = ({ circleId }: NavigationProps) => {
               </NavLink>
               <div 
                 className={cn(
-                  "absolute left-full ml-2 px-3 py-1.5 rounded-md text-sm whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-[9999]",
+                  "absolute left-full ml-2 top-1/2 -translate-y-1/2 px-3 py-1.5 rounded-md text-sm whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-[9999]",
                   isCurrentPage 
                     ? "bg-primary text-primary-foreground border border-primary shadow-md" 
                     : "bg-card text-foreground border border-border shadow-md"

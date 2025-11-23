@@ -68,6 +68,7 @@ const Chat = () => {
   const [currentThread, setCurrentThread] = useState<ChatThread | null>(null);
   const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [newMessage, setNewMessage] = useState("");
+  const [threadPhoto, setThreadPhoto] = useState<{ url: string; caption?: string } | null>(null);
   const [filter, setFilter] = useState<"all" | "wall" | "convos">("all");
   const [newThreadTitle, setNewThreadTitle] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -128,11 +129,20 @@ const Chat = () => {
   const loadThreads = async () => {
     if (!user) return;
     
-    const { data: threadsData, error } = await supabase
+    let threadsQuery = supabase
       .from("chat_threads")
       .select("*")
       .eq("circle_id", circleId!)
       .order("updated_at", { ascending: false });
+
+    // Apply filter
+    if (filter === 'wall') {
+      threadsQuery = threadsQuery.not('linked_wall_item_id', 'is', null);
+    } else if (filter === 'convos') {
+      threadsQuery = threadsQuery.is('linked_wall_item_id', null);
+    }
+
+    const { data: threadsData, error } = await threadsQuery;
 
     if (error) {
       toast.error("Error loading threads");
@@ -222,7 +232,23 @@ const Chat = () => {
       toast.error("Error loading thread");
       return;
     }
+    
     setCurrentThread(data);
+
+    // If this is a photo thread, load the photo
+    if (data?.linked_wall_item_id) {
+      const { data: wallItem } = await supabase
+        .from('wall_items')
+        .select('content')
+        .eq('id', data.linked_wall_item_id)
+        .single();
+      
+      if (wallItem) {
+        setThreadPhoto(wallItem.content as { url: string; caption?: string });
+      }
+    } else {
+      setThreadPhoto(null);
+    }
   };
 
   const loadMessages = async () => {
@@ -790,11 +816,7 @@ const Chat = () => {
                   />
                   <div className="flex-1 min-w-0">
                     <div className={`flex items-center gap-2 ${thread.unreadCount > 0 ? 'font-bold' : 'font-medium'}`}>
-                      {thread.linked_wall_item_id && (
-                        <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
-                          Wall
-                        </span>
-                      )}
+                      {thread.linked_wall_item_id && <span>📷</span>}
                       <span className="truncate">{thread.title}</span>
                     </div>
                     <div className={`text-xs mt-1 ${thread.unreadCount > 0 ? 'text-white font-medium' : 'text-muted-foreground'}`}>
@@ -845,6 +867,20 @@ const Chat = () => {
 
               {/* Messages */}
               <ScrollArea className="flex-1 p-4">
+                {threadPhoto && (
+                  <div className="mb-4 rounded-lg overflow-hidden border-2 border-primary bg-black">
+                    <img 
+                      src={threadPhoto.url} 
+                      alt={threadPhoto.caption || 'Photo'} 
+                      className="w-full max-h-64 object-contain"
+                    />
+                    {threadPhoto.caption && (
+                      <div className="p-3 bg-muted border-t-2 border-amber-500">
+                        <p className="text-sm font-semibold">{threadPhoto.caption}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {messages.map((message) => (
                   <ChatMessage
                     key={message.id}

@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, LogOut, Sparkles, Check, X } from "lucide-react";
+import { Plus, LogOut, Sparkles, Check, X, Mail } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -16,6 +16,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { InviteAcceptDialog } from "@/components/InviteAcceptDialog";
 
 interface Circle {
   id: string;
@@ -25,13 +26,12 @@ interface Circle {
 
 interface PendingInvite {
   id: string;
-  circle: {
-    id: string;
+  circle_id: string;
+  circles: {
     name: string;
   };
-  invited_by_profile: {
+  profiles: {
     display_name: string | null;
-    username: string | null;
   };
 }
 
@@ -42,6 +42,8 @@ const Circles = () => {
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
   const [open, setOpen] = useState(false);
+  const [selectedInvite, setSelectedInvite] = useState<PendingInvite | null>(null);
+  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
 
@@ -94,21 +96,15 @@ const Circles = () => {
         .from("circle_invites")
         .select(`
           id,
-          circles!circle_invites_circle_id_fkey(id, name),
-          profiles!circle_invites_invited_by_fkey(display_name, username)
+          circle_id,
+          circles!circle_invites_circle_id_fkey(name),
+          profiles!circle_invites_invited_by_fkey(display_name)
         `)
-        .eq("invited_email", user.email)
         .eq("status", "pending");
 
       if (error) throw error;
 
-      const formatted = data?.map(invite => ({
-        id: invite.id,
-        circle: invite.circles as any,
-        invited_by_profile: invite.profiles as any,
-      })) || [];
-
-      setPendingInvites(formatted as PendingInvite[]);
+      setPendingInvites(data as any || []);
     } catch (error: any) {
       console.error("Error loading pending invites:", error);
     }
@@ -228,66 +224,25 @@ const Circles = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-          {/* Pending Invite Circles - Envelope Style */}
+          {/* Pending Invite Circles */}
           {pendingInvites.map((invite) => (
             <div
               key={invite.id}
-              className="flex flex-col items-center group"
+              className="flex flex-col items-center group cursor-pointer"
+              onClick={() => {
+                setSelectedInvite(invite);
+                setIsInviteDialogOpen(true);
+              }}
             >
-              <div className="relative w-48 h-48 rounded-full border-dashed border-4 border-amber-400/60 bg-amber-50/10 shadow-lg hover:scale-105 transition-all flex flex-col items-center justify-center mb-3 opacity-80">
-                {/* Envelope Icon */}
-                <div className="absolute top-8">
-                  <svg 
-                    xmlns="http://www.w3.org/2000/svg" 
-                    width="40" 
-                    height="40" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                    className="text-amber-400"
-                  >
-                    <rect width="20" height="16" x="2" y="4" rx="2"/>
-                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
-                  </svg>
-                </div>
-                
-                {/* Circle Name */}
-                <div className="text-center px-4 mt-8 mb-2">
-                  <h3 className="text-lg font-semibold mb-1">{invite.circle.name}</h3>
+              <div className="relative w-48 h-48 rounded-full border-dashed border-4 border-primary/40 bg-primary/5 shadow-lg hover:scale-105 transition-all flex flex-col items-center justify-center mb-3 opacity-80 animate-pulse">
+                <Mail className="w-10 h-10 text-primary mb-2" />
+                <div className="text-center px-4">
+                  <h3 className="text-lg font-semibold mb-1">{invite.circles.name}</h3>
                   <p className="text-xs text-muted-foreground">
-                    from @{invite.invited_by_profile.username || 'member'}
+                    Tap to view
                   </p>
                 </div>
-                
-                {/* Accept/Decline Buttons */}
-                <div className="absolute bottom-4 flex gap-2">
-                  <Button
-                    size="sm"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleAcceptInvite(invite.id, invite.circle.id);
-                    }}
-                    className="bg-green-600 hover:bg-green-700 text-white h-7 px-3"
-                  >
-                    <Check className="w-3 h-3 mr-1" />
-                    Accept
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeclineInvite(invite.id);
-                    }}
-                    className="h-7 px-3 border-red-400 text-red-600 hover:bg-red-50"
-                  >
-                    <X className="w-3 h-3 mr-1" />
-                    Decline
-                  </Button>
-                </div>
+                <div className="absolute top-2 right-2 h-3 w-3 rounded-full bg-primary animate-ping" />
               </div>
             </div>
           ))}
@@ -348,6 +303,14 @@ const Circles = () => {
             </DialogContent>
           </Dialog>
         </div>
+
+        <InviteAcceptDialog
+          invite={selectedInvite}
+          open={isInviteDialogOpen}
+          onOpenChange={setIsInviteDialogOpen}
+          onAccept={handleAcceptInvite}
+          onDecline={handleDeclineInvite}
+        />
       </div>
     </div>
   );

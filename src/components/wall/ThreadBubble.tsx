@@ -1,7 +1,12 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
-import { MessageCircle, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { X, MessageSquare, Send } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface ThreadBubbleProps {
   content: {
@@ -21,14 +26,14 @@ interface Message {
 
 const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
   const [isHovered, setIsHovered] = useState(false);
-  const [recentMessages, setRecentMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newCount, setNewCount] = useState(0);
+  const [showInput, setShowInput] = useState(false);
+  const [newMessage, setNewMessage] = useState("");
+  const { user } = useAuth();
 
   useEffect(() => {
-    if (!content.threadId) {
-      console.error("ThreadBubble: Missing threadId");
-      return;
-    }
+    if (!content.threadId) return;
 
     const loadMessages = async () => {
       const { data, error } = await supabase
@@ -39,15 +44,14 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
         .limit(3);
 
       if (!error && data) {
-        setRecentMessages(data.reverse());
+        setMessages(data.reverse());
       }
     };
 
     loadMessages();
 
-    // Subscribe to real-time updates
     const channel = supabase
-      .channel(`thread-${content.threadId}`)
+      .channel(`thread-bubble-${content.threadId}`)
       .on(
         "postgres_changes",
         {
@@ -57,7 +61,7 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
           filter: `thread_id=eq.${content.threadId}`,
         },
         (payload) => {
-          setRecentMessages((prev) => {
+          setMessages((prev) => {
             const newMessages = [...prev, payload.new as Message];
             return newMessages.slice(-3);
           });
@@ -73,13 +77,35 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
 
   const handleClick = () => {
     setNewCount(0);
-    onClick?.();
+    setShowInput(!showInput);
+  };
+
+  const handleSendMessage = async () => {
+    if (!newMessage.trim() || !user) return;
+
+    const { error } = await supabase.from("chat_messages").insert({
+      thread_id: content.threadId,
+      body: newMessage.trim(),
+      sender_id: user.id,
+    });
+
+    if (!error) {
+      setNewMessage("");
+      await supabase
+        .from("chat_threads")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", content.threadId);
+    }
+  };
+
+  const handleNavigate = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onClick) onClick();
   };
 
   return (
     <Card
-      className="p-4 w-64 bg-accent text-accent-foreground shadow-lg transition-all duration-300 cursor-pointer hover:shadow-2xl hover:scale-105 transform rotate-2 hover:rotate-0 relative"
-      onClick={handleClick}
+      className="p-4 hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-200 relative max-h-[280px] flex flex-col"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -89,33 +115,64 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
             e.stopPropagation();
             onDelete();
           }}
-          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 shadow-md hover:scale-110 transition-transform z-10"
+          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors z-10"
         >
           <X className="w-4 h-4" />
         </button>
       )}
+      
       {newCount > 0 && (
-        <div className="absolute -top-2 -left-2 bg-primary text-primary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow-md animate-in zoom-in">
+        <Badge 
+          className="absolute -top-2 -left-2 bg-red-500 hover:bg-red-600"
+        >
           {newCount}
-        </div>
+        </Badge>
       )}
-      <div className="flex items-start gap-3">
-        <MessageCircle className="w-5 h-5 mt-1 flex-shrink-0" />
-        <div className="flex-1 min-w-0">
-          <h3 className="text-lg font-semibold mb-2">{content.title}</h3>
-          {recentMessages.length > 0 ? (
-            <div className="space-y-1 text-xs opacity-80 max-h-16 overflow-hidden">
-              {recentMessages.map((msg) => (
-                <p key={msg.id} className="truncate">
-                  • {msg.body.slice(0, 50)}{msg.body.length > 50 ? "..." : ""}
-                </p>
-              ))}
+
+      <div 
+        className="flex items-start gap-2 cursor-pointer flex-1 min-h-0"
+        onClick={handleClick}
+      >
+        <MessageSquare className="w-5 h-5 text-purple-600 flex-shrink-0 mt-1" />
+        <div className="flex-1 min-w-0 flex flex-col min-h-0">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-semibold text-purple-900">{content.title}</h3>
+            <button
+              onClick={handleNavigate}
+              className="text-xs text-purple-600 hover:text-purple-800 underline"
+            >
+              Open
+            </button>
+          </div>
+          <ScrollArea className="flex-1 min-h-0">
+            <div className="space-y-1 text-sm text-purple-700 max-h-[80px]">
+              {messages.length > 0 ? (
+                messages.map((msg) => (
+                  <p key={msg.id} className="line-clamp-1">• {msg.body}</p>
+                ))
+              ) : (
+                <p className="text-purple-500 italic">No messages yet</p>
+              )}
             </div>
-          ) : (
-            <p className="text-sm opacity-80">No messages yet</p>
-          )}
+          </ScrollArea>
         </div>
       </div>
+
+      {showInput && (
+        <div className="mt-3 pt-3 border-t border-purple-200 flex gap-2">
+          <Input
+            placeholder="Reply..."
+            value={newMessage}
+            onChange={(e) => setNewMessage(e.target.value)}
+            onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+            onClick={(e) => e.stopPropagation()}
+            className="h-8 text-sm"
+          />
+          <Button onClick={handleSendMessage} size="sm" className="h-8 w-8 p-0">
+            <Send className="w-3 h-3" />
+          </Button>
+        </div>
+      )}
     </Card>
   );
 };

@@ -13,6 +13,7 @@ const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
@@ -30,13 +31,28 @@ const Auth = () => {
         toast.success("Welcome back!");
         navigate("/");
       } else {
+        // Check if username is taken
+        const { data: existingUser } = await supabase
+          .from("profiles")
+          .select("username")
+          .eq("username", username)
+          .single();
+
+        if (existingUser) {
+          toast.error("Username already taken");
+          setLoading(false);
+          return;
+        }
+
         const { error } = await supabase.auth.signUp({
           email,
           password,
           options: {
             data: {
               display_name: displayName,
+              username: username,
             },
+            emailRedirectTo: `${window.location.origin}/`,
           },
         });
         if (error) throw error;
@@ -62,18 +78,33 @@ const Auth = () => {
 
         <form onSubmit={handleAuth} className="space-y-4">
           {!isLogin && (
-            <div>
-              <Label htmlFor="displayName">Display Name</Label>
-              <Input
-                id="displayName"
-                type="text"
-                value={displayName}
-                onChange={(e) => setDisplayName(e.target.value)}
-                required
-                className="mt-1"
-                placeholder="Your name"
-              />
-            </div>
+            <>
+              <div>
+                <Label htmlFor="displayName">Display Name</Label>
+                <Input
+                  id="displayName"
+                  type="text"
+                  value={displayName}
+                  onChange={(e) => setDisplayName(e.target.value)}
+                  required
+                  className="mt-1"
+                  placeholder="Your name"
+                />
+              </div>
+              <div>
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                  required
+                  className="mt-1"
+                  placeholder="username (3-20 chars, alphanumeric + _)"
+                  pattern="[a-zA-Z0-9_]{3,20}"
+                />
+              </div>
+            </>
           )}
 
           <div>

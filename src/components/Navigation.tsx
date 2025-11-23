@@ -2,12 +2,6 @@ import { NavLink, useLocation } from "react-router-dom";
 import { StickyNote, MessageCircle, Users, Settings, Gamepad2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface NavigationProps {
   circleId?: string;
@@ -53,45 +47,41 @@ const Navigation = ({ circleId }: NavigationProps) => {
   }
 
   return (
-    <TooltipProvider>
-      <nav className="fixed left-4 top-1/2 -translate-y-1/2 z-[100] bg-card/80 backdrop-blur-md border border-border rounded-full p-2 shadow-lg">
-        <div className="flex flex-col gap-2">
-          {navItems.map((item) => {
-            const isCurrentPage = location.pathname === item.path;
-            
-            return (
-              <Tooltip key={item.path}>
-                <TooltipTrigger asChild>
-                  <NavLink
-                    to={item.path}
-                    className={({ isActive }) =>
-                      cn(
-                        "p-3 rounded-full transition-all duration-300",
-                        isActive
-                          ? "bg-primary text-primary-foreground shadow-lg"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                      )
-                    }
-                  >
-                    <item.icon className="w-5 h-5" />
-                  </NavLink>
-                </TooltipTrigger>
-                <TooltipContent 
-                  side="right" 
-                  className={cn(
-                    isCurrentPage 
-                      ? "bg-primary text-primary-foreground border-primary" 
-                      : "bg-card text-foreground border-border"
-                  )}
-                >
-                  {item.label}
-                </TooltipContent>
-              </Tooltip>
-            );
-          })}
-        </div>
-      </nav>
-    </TooltipProvider>
+    <nav className="fixed left-4 top-1/2 -translate-y-1/2 z-[100] bg-card/80 backdrop-blur-md border border-border rounded-full p-2 shadow-lg">
+      <div className="flex flex-col gap-2">
+        {navItems.map((item) => {
+          const isCurrentPage = location.pathname === item.path;
+          
+          return (
+            <div key={item.path} className="relative group">
+              <NavLink
+                to={item.path}
+                className={({ isActive }) =>
+                  cn(
+                    "p-3 rounded-full transition-all duration-300 block",
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-lg"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )
+                }
+              >
+                <item.icon className="w-5 h-5" />
+              </NavLink>
+              <div 
+                className={cn(
+                  "absolute left-full ml-2 px-3 py-1.5 rounded-md text-sm whitespace-nowrap opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none z-[9999]",
+                  isCurrentPage 
+                    ? "bg-primary text-primary-foreground border border-primary shadow-md" 
+                    : "bg-card text-foreground border border-border shadow-md"
+                )}
+              >
+                {item.label}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </nav>
   );
 };
 

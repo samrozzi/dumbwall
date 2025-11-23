@@ -169,15 +169,15 @@ export function AddMemberDialog({
 
       if (inviteError) throw inviteError;
 
-      // If user was selected from search, send them a notification
+      // If user was selected from search, send them a notification using secure function
       if (selectedUser) {
-        await supabase.from('notifications').insert({
-          user_id: selectedUser.id,
-          type: 'circle_invite',
-          title: 'Circle Invitation',
-          message: `${inviterName} invited you to join ${circleName}`,
-          link: `/circles`,
-          metadata: { circle_id: circleId, invite_id: invite.id }
+        await supabase.rpc('create_notification', {
+          target_user_id: selectedUser.id,
+          notif_type: 'circle_invite',
+          notif_title: 'Circle Invitation',
+          notif_message: `${inviterName} invited you to join ${circleName}`,
+          notif_link: `/circles`,
+          notif_metadata: { circle_id: circleId, invite_id: invite.id }
         });
       }
 

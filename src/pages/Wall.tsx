@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Database } from "@/integrations/supabase/types";
+import { z } from "zod";
 import Navigation from "@/components/Navigation";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
@@ -194,6 +195,38 @@ const Wall = () => {
 
   const createItem = async (type: WallItemType, content: any, x?: number, y?: number) => {
     try {
+      // Validate content based on type
+      const StickyNoteSchema = z.object({
+        title: z.string().max(100, 'Title too long'),
+        body: z.string().max(500, 'Note too long'),
+        color: z.string().regex(/^[a-z]+$/)
+      });
+
+      const ImageContentSchema = z.object({
+        url: z.string().url('Invalid image URL'),
+        caption: z.string().max(200, 'Caption too long').optional()
+      });
+
+      const ThreadContentSchema = z.object({
+        title: z.string().max(100, 'Title too long'),
+        threadId: z.string().uuid('Invalid thread ID')
+      });
+
+      const AnnouncementSchema = z.object({
+        text: z.string().max(500, 'Announcement too long')
+      });
+
+      // Validate based on type
+      if (type === 'note') {
+        StickyNoteSchema.parse(content);
+      } else if (type === 'image') {
+        ImageContentSchema.parse(content);
+      } else if (type === 'thread') {
+        ThreadContentSchema.parse(content);
+      } else if (type === 'announcement') {
+        AnnouncementSchema.parse(content);
+      }
+
       const position = (x !== undefined && y !== undefined) ? { x, y } : getSmartPosition();
       
       const { error } = await supabase.from("wall_items").insert({
@@ -210,7 +243,11 @@ const Wall = () => {
       setMaxZIndex(prev => prev + 1);
       notify("Item added!", "success");
     } catch (error: any) {
-      notify(error.message, "error");
+      if (error instanceof z.ZodError) {
+        notify(error.issues[0].message, "error");
+      } else {
+        notify(error.message, "error");
+      }
     }
   };
 

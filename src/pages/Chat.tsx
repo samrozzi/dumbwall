@@ -8,9 +8,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Navigation from "@/components/Navigation";
 import { toast } from "sonner";
-import { MessageSquare, Plus, Send } from "lucide-react";
+import { MessageSquare, Plus, Send, UserPlus } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import MemberPicker from "@/components/chat/MemberPicker";
 
 interface ChatThread {
   id: string;
@@ -46,6 +47,8 @@ const Chat = () => {
   const [filter, setFilter] = useState<"all" | "wall" | "convos">("all");
   const [newThreadTitle, setNewThreadTitle] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [addMembersDialogOpen, setAddMembersDialogOpen] = useState(false);
+  const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -201,6 +204,10 @@ const Chat = () => {
 
   const handleCreateThread = async () => {
     if (!newThreadTitle.trim() || !user || !circleId) return;
+    if (selectedMembers.length === 0) {
+      toast.error("Please select at least one member");
+      return;
+    }
 
     const { data, error } = await supabase
       .from("chat_threads")
@@ -217,10 +224,58 @@ const Chat = () => {
       return;
     }
 
+    // Add creator and selected members to thread_members
+    const membersToAdd = [...new Set([user.id, ...selectedMembers])];
+    const { error: membersError } = await supabase
+      .from("thread_members")
+      .insert(
+        membersToAdd.map((userId) => ({
+          thread_id: data.id,
+          user_id: userId,
+        }))
+      );
+
+    if (membersError) {
+      toast.error("Failed to add members to thread");
+      return;
+    }
+
     setCreateDialogOpen(false);
     setNewThreadTitle("");
+    setSelectedMembers([]);
     loadThreads();
+    toast.success(`Thread created with ${membersToAdd.length} member${membersToAdd.length > 1 ? 's' : ''}`);
     navigate(`/circle/${circleId}/chat?threadId=${data.id}`);
+  };
+
+  const handleMemberToggle = (userId: string) => {
+    setSelectedMembers((prev) =>
+      prev.includes(userId)
+        ? prev.filter((id) => id !== userId)
+        : [...prev, userId]
+    );
+  };
+
+  const handleAddMembers = async () => {
+    if (!threadId || selectedMembers.length === 0) return;
+
+    const { error } = await supabase
+      .from("thread_members")
+      .insert(
+        selectedMembers.map((userId) => ({
+          thread_id: threadId,
+          user_id: userId,
+        }))
+      );
+
+    if (error) {
+      toast.error("Failed to add members");
+      return;
+    }
+
+    setAddMembersDialogOpen(false);
+    setSelectedMembers([]);
+    toast.success(`Added ${selectedMembers.length} member${selectedMembers.length > 1 ? 's' : ''} to thread`);
   };
 
   const filteredThreads = threads.filter((thread) => {
@@ -244,7 +299,7 @@ const Chat = () => {
                   New
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-w-md">
                 <DialogHeader>
                   <DialogTitle>Create New Thread</DialogTitle>
                 </DialogHeader>
@@ -253,10 +308,24 @@ const Chat = () => {
                     placeholder="Thread title..."
                     value={newThreadTitle}
                     onChange={(e) => setNewThreadTitle(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleCreateThread()}
                   />
-                  <Button onClick={handleCreateThread} className="w-full">
-                    Create Thread
+                  <div>
+                    <label className="text-sm font-medium mb-2 block">
+                      Add Members ({selectedMembers.length} selected)
+                    </label>
+                    <MemberPicker
+                      circleId={circleId!}
+                      selectedMembers={selectedMembers}
+                      onMemberToggle={handleMemberToggle}
+                      excludeUserIds={[user?.id || ""]}
+                    />
+                  </div>
+                  <Button 
+                    onClick={handleCreateThread} 
+                    className="w-full"
+                    disabled={!newThreadTitle.trim() || selectedMembers.length === 0}
+                  >
+                    Create Thread with {selectedMembers.length + 1} member{selectedMembers.length + 1 > 1 ? 's' : ''}
                   </Button>
                 </div>
               </DialogContent>
@@ -303,8 +372,35 @@ const Chat = () => {
           {threadId && currentThread ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b bg-card">
+              <div className="p-4 border-b bg-card flex items-center justify-between">
                 <h3 className="text-xl font-bold">{currentThread.title}</h3>
+                <Dialog open={addMembersDialogOpen} onOpenChange={setAddMembersDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button size="sm" variant="outline" onClick={() => setSelectedMembers([])}>
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Add Members
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Add Members to Thread</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <MemberPicker
+                        circleId={circleId!}
+                        selectedMembers={selectedMembers}
+                        onMemberToggle={handleMemberToggle}
+                      />
+                      <Button 
+                        onClick={handleAddMembers} 
+                        className="w-full"
+                        disabled={selectedMembers.length === 0}
+                      >
+                        Add {selectedMembers.length} member{selectedMembers.length > 1 ? 's' : ''}
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
 
               {/* Messages */}

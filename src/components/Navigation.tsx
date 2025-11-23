@@ -67,7 +67,7 @@ const Navigation = ({ circleId }: NavigationProps) => {
             >
               <item.icon className="w-5 h-5" />
               <span className={cn(
-                "absolute left-full ml-3 px-2 py-1 border rounded-md text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[9999]",
+                "absolute left-full ml-3 px-2 py-1 border rounded-md text-sm whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-[99999] top-1/2 -translate-y-1/2",
                 isCurrentPage 
                   ? "bg-primary text-primary-foreground border-primary" 
                   : "bg-card text-foreground border-border"

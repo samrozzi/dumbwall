@@ -8,10 +8,11 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Navigation from "@/components/Navigation";
 import { toast } from "sonner";
-import { MessageSquare, Plus, Send, UserPlus } from "lucide-react";
+import { MessageSquare, Plus, Send, UserPlus, ArrowLeft } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MemberPicker from "@/components/chat/MemberPicker";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ChatThread {
   id: string;
@@ -39,6 +40,7 @@ const Chat = () => {
   const navigate = useNavigate();
   const threadId = searchParams.get("threadId");
   const { user } = useAuth();
+  const isMobile = useIsMobile();
 
   const [threads, setThreads] = useState<ChatThread[]>([]);
   const [currentThread, setCurrentThread] = useState<ChatThread | null>(null);
@@ -287,9 +289,184 @@ const Chat = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
-      <div className="pl-24 pr-8 pt-8 flex gap-4 h-[calc(100vh-80px)]">
-        {/* Threads Sidebar */}
-        <div className="w-[30%] flex flex-col gap-4">
+      <div className={`${isMobile ? 'px-4 pt-4 pb-20' : 'pl-24 pr-8 pt-8'} ${isMobile ? 'h-[calc(100vh-80px)]' : 'flex gap-4 h-[calc(100vh-80px)]'}`}>
+        {isMobile ? (
+          /* Mobile: Show either thread list OR chat view */
+          <>
+            {!threadId ? (
+              /* Thread List View */
+              <div className="flex flex-col gap-4 h-full">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold">Threads</h2>
+                  <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="default">
+                        <Plus className="w-4 h-4 mr-2" />
+                        New
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Create New Thread</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <Input
+                          placeholder="Thread title..."
+                          value={newThreadTitle}
+                          onChange={(e) => setNewThreadTitle(e.target.value)}
+                        />
+                        <div>
+                          <label className="text-sm font-medium mb-2 block">
+                            Add Members ({selectedMembers.length} selected)
+                          </label>
+                          <MemberPicker
+                            circleId={circleId!}
+                            selectedMembers={selectedMembers}
+                            onMemberToggle={handleMemberToggle}
+                            excludeUserIds={[user?.id || ""]}
+                          />
+                        </div>
+                        <Button 
+                          onClick={handleCreateThread} 
+                          className="w-full"
+                          disabled={!newThreadTitle.trim() || selectedMembers.length === 0}
+                        >
+                          Create Thread with {selectedMembers.length + 1} member{selectedMembers.length + 1 > 1 ? 's' : ''}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                
+                <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
+                  <TabsList className="w-full">
+                    <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
+                    <TabsTrigger value="wall" className="flex-1">Wall</TabsTrigger>
+                    <TabsTrigger value="convos" className="flex-1">Convos</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                
+                <ScrollArea className="flex-1 border rounded-lg bg-card/50 backdrop-blur">
+                  <div className="p-2 space-y-2">
+                    {filteredThreads.map((thread) => (
+                      <button
+                        key={thread.id}
+                        onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
+                        className="w-full text-left p-3 rounded-lg transition-all hover:bg-card bg-card/40"
+                      >
+                        <div className="font-medium flex items-center gap-2">
+                          {thread.linked_wall_item_id && (
+                            <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
+                              Wall
+                            </span>
+                          )}
+                          {thread.title}
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {new Date(thread.updated_at).toLocaleDateString()}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            ) : (
+              /* Chat View with Back Button */
+              <div className="flex flex-col h-full border rounded-lg bg-card overflow-hidden">
+                <div className="p-4 border-b bg-card flex items-center gap-3">
+                  <Button 
+                    size="icon" 
+                    variant="ghost"
+                    onClick={() => navigate(`/circle/${circleId}/chat`)}
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </Button>
+                  <h3 className="text-xl font-bold flex-1">{currentThread?.title}</h3>
+                  <Dialog open={addMembersDialogOpen} onOpenChange={setAddMembersDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="sm" variant="outline" onClick={() => setSelectedMembers([])}>
+                        <UserPlus className="w-4 h-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-md">
+                      <DialogHeader>
+                        <DialogTitle>Add Members to Thread</DialogTitle>
+                      </DialogHeader>
+                      <div className="space-y-4">
+                        <MemberPicker
+                          circleId={circleId!}
+                          selectedMembers={selectedMembers}
+                          onMemberToggle={handleMemberToggle}
+                        />
+                        <Button 
+                          onClick={handleAddMembers} 
+                          className="w-full"
+                          disabled={selectedMembers.length === 0}
+                        >
+                          Add {selectedMembers.length} member{selectedMembers.length > 1 ? 's' : ''}
+                        </Button>
+                      </div>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+
+                <ScrollArea className="flex-1 p-4">
+                  <div className="space-y-4">
+                    {messages.map((message) => (
+                      <div
+                        key={message.id}
+                        className={`flex gap-3 ${
+                          message.sender_id === user?.id ? "flex-row-reverse" : "flex-row"
+                        }`}
+                      >
+                        <Avatar className="w-8 h-8 flex-shrink-0">
+                          <AvatarImage src={message.profiles?.avatar_url || undefined} />
+                          <AvatarFallback>
+                            {message.profiles?.username?.slice(0, 2).toUpperCase() || "??"}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div
+                          className={`max-w-[70%] rounded-lg p-3 ${
+                            message.sender_id === user?.id
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-foreground"
+                          }`}
+                        >
+                          <div className="text-xs opacity-70 mb-1">
+                            @{message.profiles?.username || message.profiles?.display_name || "Unknown"}
+                          </div>
+                          <div>{message.body}</div>
+                          <div className="text-xs opacity-50 mt-1">
+                            {new Date(message.created_at).toLocaleTimeString()}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    <div ref={messagesEndRef} />
+                  </div>
+                </ScrollArea>
+
+                <div className="p-4 border-t bg-card">
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Type a message..."
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                    />
+                    <Button onClick={handleSendMessage} size="icon">
+                      <Send className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          /* Desktop: Two-column layout */
+          <>
+            {/* Threads Sidebar */}
+            <div className="w-[30%] flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h2 className="text-2xl font-bold">Threads</h2>
             <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
@@ -463,7 +640,9 @@ const Chat = () => {
               </div>
             </div>
           )}
-        </div>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Plus, StickyNote, ImageIcon, MessageSquare, Gamepad2, Grid3x3, Megaphone, ArrowLeft } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AddItemMenuProps {
   onAddNote: () => void;
@@ -13,6 +14,7 @@ interface AddItemMenuProps {
 const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnouncement }: AddItemMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showSubmenu, setShowSubmenu] = useState(false);
+  const isMobile = useIsMobile();
 
   const menuItems = [
     { icon: StickyNote, label: "Note", color: "bg-yellow-400 hover:bg-yellow-500", action: () => { onAddNote(); setIsOpen(false); } },
@@ -32,7 +34,7 @@ const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnou
 
   return (
     <TooltipProvider>
-      <div className="fixed bottom-8 right-8 z-[9999]">
+      <div className={`fixed z-[9999] ${isMobile ? 'bottom-24 left-1/2 -translate-x-1/2' : 'bottom-8 right-8'}`}>
         {/* Menu Items */}
         {isOpen && !showSubmenu && (
           <div className="absolute bottom-20 right-1/2 translate-x-1/2 flex flex-col-reverse gap-3 items-center">

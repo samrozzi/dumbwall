@@ -499,6 +499,51 @@ export type Database = {
           },
         ]
       }
+      thread_read_status: {
+        Row: {
+          created_at: string | null
+          id: string
+          last_read_at: string | null
+          last_read_message_id: string | null
+          thread_id: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          last_read_at?: string | null
+          last_read_message_id?: string | null
+          thread_id: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          last_read_at?: string | null
+          last_read_message_id?: string | null
+          thread_id?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "thread_read_status_last_read_message_id_fkey"
+            columns: ["last_read_message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "thread_read_status_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wall_items: {
         Row: {
           circle_id: string

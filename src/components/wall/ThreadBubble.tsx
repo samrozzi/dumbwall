@@ -142,7 +142,7 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
             <div className="space-y-1 text-sm text-purple-700 pb-1">
               {messages.length > 0 ? (
                 messages.map((msg) => (
-                  <p key={msg.id} className="break-words">• {msg.body}</p>
+                  <p key={msg.id} className="break-words line-clamp-2">• {msg.body}</p>
                 ))
               ) : (
                 <p className="text-purple-500 italic">No messages yet</p>

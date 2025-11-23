@@ -73,6 +73,39 @@ const Games = () => {
       
       // Set default metadata based on game type
       switch (gameType) {
+        case "tic_tac_toe":
+          metadata = {
+            board: [[null, null, null], [null, null, null], [null, null, null]],
+            nextTurnUserId: user?.id,
+          };
+          break;
+        case "checkers":
+          const checkersBoard = Array(8).fill(null).map(() => Array(8).fill(null));
+          for (let row = 0; row < 3; row++) {
+            for (let col = 0; col < 8; col++) {
+              if ((row + col) % 2 === 1) checkersBoard[row][col] = 'B';
+            }
+          }
+          for (let row = 5; row < 8; row++) {
+            for (let col = 0; col < 8; col++) {
+              if ((row + col) % 2 === 1) checkersBoard[row][col] = 'R';
+            }
+          }
+          metadata = {
+            board: checkersBoard,
+            currentTurn: 'red',
+            redPlayer: user?.id,
+            blackPlayer: '',
+          };
+          break;
+        case "connect_four":
+          metadata = {
+            board: Array(6).fill(null).map(() => Array(7).fill(null)),
+            currentTurn: 'red',
+            redPlayer: user?.id,
+            yellowPlayer: '',
+          };
+          break;
         case "poll":
           metadata = {
             options: [
@@ -164,6 +197,11 @@ const Games = () => {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
+                        <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">Classic Games</div>
+                        <SelectItem value="tic_tac_toe">Tic Tac Toe</SelectItem>
+                        <SelectItem value="checkers">Checkers</SelectItem>
+                        <SelectItem value="connect_four">Connect Four</SelectItem>
+                        <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground border-t mt-2 pt-2">Social Games</div>
                         <SelectItem value="poll">Poll</SelectItem>
                         <SelectItem value="would_you_rather">Would You Rather</SelectItem>
                         <SelectItem value="question_of_the_day">Question of the Day</SelectItem>

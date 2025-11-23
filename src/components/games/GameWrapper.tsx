@@ -6,6 +6,9 @@ import { WouldYouRatherGame } from "./WouldYouRatherGame";
 import { QuestionOfTheDayGame } from "./QuestionOfTheDayGame";
 import { StoryChainGame } from "./StoryChainGame";
 import { RateThisGame } from "./RateThisGame";
+import { TicTacToeGame } from "./TicTacToeGame";
+import { CheckersGame } from "./CheckersGame";
+import { ConnectFourGame } from "./ConnectFourGame";
 import { notify } from "@/components/ui/custom-notification";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -114,6 +117,106 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
   }
 
   switch (game.type) {
+    case 'tic_tac_toe':
+      return (
+        <TicTacToeGame
+          gameId={gameId}
+          title={game.title}
+          metadata={game.metadata}
+          userId={userId}
+          onMove={(row, col) => {
+            const newBoard = game.metadata.board.map((r: any[]) => [...r]);
+            const currentPlayer = game.metadata.nextTurnUserId === userId ? 
+              (game.metadata.board.flat().filter((c: any) => c === 'X').length <= game.metadata.board.flat().filter((c: any) => c === 'O').length ? 'X' : 'O') :
+              (game.metadata.board.flat().filter((c: any) => c === 'X').length > game.metadata.board.flat().filter((c: any) => c === 'O').length ? 'X' : 'O');
+            
+            newBoard[row][col] = currentPlayer;
+            
+            const checkWinner = () => {
+              for (let i = 0; i < 3; i++) {
+                if (newBoard[i][0] && newBoard[i][0] === newBoard[i][1] && newBoard[i][1] === newBoard[i][2]) return true;
+                if (newBoard[0][i] && newBoard[0][i] === newBoard[1][i] && newBoard[1][i] === newBoard[2][i]) return true;
+              }
+              if (newBoard[0][0] && newBoard[0][0] === newBoard[1][1] && newBoard[1][1] === newBoard[2][2]) return true;
+              if (newBoard[0][2] && newBoard[0][2] === newBoard[1][1] && newBoard[1][1] === newBoard[2][0]) return true;
+              return false;
+            };
+
+            const winner = checkWinner();
+            const allParticipants = participants.filter(p => p.user_id !== userId);
+            const otherPlayer = allParticipants.length > 0 ? allParticipants[0].user_id : userId;
+
+            handleAction('move', { row, col }, winner ? 'finished' : undefined, {
+              board: newBoard,
+              nextTurnUserId: otherPlayer,
+              winnerUserId: winner ? userId : null,
+            });
+          }}
+          isFinished={game.status === 'finished'}
+        />
+      );
+
+    case 'checkers':
+      return (
+        <CheckersGame
+          gameId={gameId}
+          title={game.title}
+          metadata={game.metadata}
+          userId={userId}
+          onMove={(fromRow, fromCol, toRow, toCol) => {
+            handleAction('move', { fromRow, fromCol, toRow, toCol });
+          }}
+          isFinished={game.status === 'finished'}
+        />
+      );
+
+    case 'connect_four':
+      return (
+        <ConnectFourGame
+          gameId={gameId}
+          title={game.title}
+          metadata={game.metadata}
+          userId={userId}
+          onDrop={(col) => {
+            const newBoard = game.metadata.board.map((r: any[]) => [...r]);
+            for (let row = 5; row >= 0; row--) {
+              if (!newBoard[row][col]) {
+                newBoard[row][col] = game.metadata.currentTurn === 'red' ? 'R' : 'Y';
+                
+                const checkWin = (r: number, c: number, player: 'R' | 'Y') => {
+                  const directions = [[0,1], [1,0], [1,1], [1,-1]];
+                  for (const [dr, dc] of directions) {
+                    let count = 1;
+                    for (let i = 1; i < 4; i++) {
+                      if (newBoard[r + dr*i]?.[c + dc*i] === player) count++;
+                      else break;
+                    }
+                    for (let i = 1; i < 4; i++) {
+                      if (newBoard[r - dr*i]?.[c - dc*i] === player) count++;
+                      else break;
+                    }
+                    if (count >= 4) return true;
+                  }
+                  return false;
+                };
+
+                const winner = checkWin(row, col, newBoard[row][col]);
+
+                handleAction('drop', { col }, winner ? 'finished' : undefined, {
+                  board: newBoard,
+                  currentTurn: game.metadata.currentTurn === 'red' ? 'yellow' : 'red',
+                  redPlayer: game.metadata.redPlayer,
+                  yellowPlayer: game.metadata.yellowPlayer,
+                  winnerUserId: winner ? userId : null,
+                });
+                break;
+              }
+            }
+          }}
+          isFinished={game.status === 'finished'}
+        />
+      );
+
     case 'poll':
       return (
         <PollGame
@@ -208,6 +311,6 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
       );
 
     default:
-      return <div>Unknown game type</div>;
+      return <div>Unknown game type: {game.type}</div>;
   }
 };

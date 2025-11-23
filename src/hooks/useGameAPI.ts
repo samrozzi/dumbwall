@@ -25,8 +25,30 @@ export const useGameAPI = () => {
   };
 
   const listGames = async (circleId?: string): Promise<{ games: Game[] }> => {
-    const params = circleId ? `?circle_id=${circleId}` : '';
-    return callGameFunction(`/${params}`, "GET");
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      throw new Error("Not authenticated");
+    }
+
+    const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/games`);
+    if (circleId) {
+      url.searchParams.append('circle_id', circleId);
+    }
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch games');
+    }
+
+    return response.json();
   };
 
   const createGame = async (gameData: {

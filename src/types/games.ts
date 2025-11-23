@@ -1,5 +1,7 @@
 export type GameType =
   | 'tic_tac_toe'
+  | 'checkers'
+  | 'connect_four'
   | 'poll'
   | 'would_you_rather'
   | 'question_of_the_day'
@@ -81,4 +83,20 @@ export interface RateThisMetadata {
   imageUrl?: string;
   ratings: { userId: string; rating: number; timestamp: string }[];
   maxRating: number;
+}
+
+export interface CheckersMetadata {
+  board: ('R' | 'r' | 'B' | 'b' | null)[][];
+  currentTurn: 'red' | 'black';
+  redPlayer: string;
+  blackPlayer: string;
+  winnerUserId?: string | null;
+}
+
+export interface ConnectFourMetadata {
+  board: ('R' | 'Y' | null)[][];
+  currentTurn: 'red' | 'yellow';
+  redPlayer: string;
+  yellowPlayer: string;
+  winnerUserId?: string | null;
 }

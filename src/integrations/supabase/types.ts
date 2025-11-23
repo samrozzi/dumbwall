@@ -19,6 +19,7 @@ export type Database = {
           body: string
           created_at: string
           id: string
+          reply_to_id: string | null
           sender_id: string
           thread_id: string
         }
@@ -26,6 +27,7 @@ export type Database = {
           body: string
           created_at?: string
           id?: string
+          reply_to_id?: string | null
           sender_id: string
           thread_id: string
         }
@@ -33,10 +35,18 @@ export type Database = {
           body?: string
           created_at?: string
           id?: string
+          reply_to_id?: string | null
           sender_id?: string
           thread_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "chat_messages_reply_to_id_fkey"
+            columns: ["reply_to_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "chat_messages_thread_id_fkey"
             columns: ["thread_id"]
@@ -400,6 +410,38 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_reactions: {
+        Row: {
+          created_at: string | null
+          emoji: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          emoji: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          emoji?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_reactions_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
             referencedColumns: ["id"]
           },
         ]

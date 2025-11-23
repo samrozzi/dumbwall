@@ -6,7 +6,6 @@ import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Navigation from "@/components/Navigation";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { toast } from "sonner";
@@ -16,6 +15,9 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MemberPicker from "@/components/chat/MemberPicker";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ThreadAvatarStack } from "@/components/chat/ThreadAvatarStack";
+import { ChatMessage } from "@/components/chat/ChatMessage";
+import { EmojiPicker } from "@/components/chat/EmojiPicker";
+import { ReplyPreview } from "@/components/chat/ReplyPreview";
 
 interface ChatThread {
   id: string;
@@ -37,16 +39,21 @@ interface ThreadWithMembers extends ChatThread {
   unreadCount: number;
 }
 
-interface ChatMessage {
+interface ChatMessageType {
   id: string;
   body: string;
   created_at: string;
   sender_id: string;
+  reply_to_id?: string | null;
   profiles?: {
     display_name: string | null;
     username: string | null;
     avatar_url: string | null;
   };
+  replied_message?: {
+    body: string;
+    sender_name: string;
+  } | null;
 }
 
 const Chat = () => {
@@ -59,13 +66,14 @@ const Chat = () => {
 
   const [threads, setThreads] = useState<ThreadWithMembers[]>([]);
   const [currentThread, setCurrentThread] = useState<ChatThread | null>(null);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessageType[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const [filter, setFilter] = useState<"all" | "wall" | "convos">("all");
   const [newThreadTitle, setNewThreadTitle] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [addMembersDialogOpen, setAddMembersDialogOpen] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
+  const [replyingTo, setReplyingTo] = useState<ChatMessageType | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -238,12 +246,40 @@ const Chat = () => {
       .select("id, display_name, username, avatar_url")
       .in("id", senderIds);
 
-    const messagesWithProfiles = (data || []).map((msg) => ({
-      ...msg,
-      profiles: profiles?.find((p) => p.id === msg.sender_id) || { display_name: null, username: null, avatar_url: null },
-    }));
+    // Fetch replied messages
+    const replyToIds = data?.filter(m => m.reply_to_id).map(m => m.reply_to_id).filter(Boolean) || [];
+    let repliedMessages: any[] = [];
+    if (replyToIds.length > 0) {
+      const { data: repliedData } = await supabase
+        .from("chat_messages")
+        .select("id, body, sender_id")
+        .in("id", replyToIds);
+      repliedMessages = repliedData || [];
+    }
 
-    setMessages(messagesWithProfiles as ChatMessage[]);
+    const messagesWithProfiles = (data || []).map((msg) => {
+      const profile = profiles?.find((p) => p.id === msg.sender_id);
+      let replied_message = null;
+      
+      if (msg.reply_to_id) {
+        const repliedMsg = repliedMessages.find(rm => rm.id === msg.reply_to_id);
+        if (repliedMsg) {
+          const repliedProfile = profiles?.find(p => p.id === repliedMsg.sender_id);
+          replied_message = {
+            body: repliedMsg.body,
+            sender_name: repliedProfile?.display_name || repliedProfile?.username || "Unknown"
+          };
+        }
+      }
+
+      return {
+        ...msg,
+        profiles: profile || { display_name: null, username: null, avatar_url: null },
+        replied_message
+      };
+    });
+
+    setMessages(messagesWithProfiles as ChatMessageType[]);
     
     // Mark thread as read
     await supabase
@@ -282,10 +318,37 @@ const Chat = () => {
             .eq("id", payload.new.sender_id)
             .single();
 
+          // Fetch replied message if exists
+          let replied_message = null;
+          if (payload.new.reply_to_id) {
+            const { data: repliedMsg } = await supabase
+              .from("chat_messages")
+              .select("body, sender_id")
+              .eq("id", payload.new.reply_to_id)
+              .single();
+            
+            if (repliedMsg) {
+              const { data: repliedProfile } = await supabase
+                .from("profiles")
+                .select("display_name, username")
+                .eq("id", repliedMsg.sender_id)
+                .single();
+              
+              replied_message = {
+                body: repliedMsg.body,
+                sender_name: repliedProfile?.display_name || repliedProfile?.username || "Unknown"
+              };
+            }
+          }
+
           setMessages((prev) => {
             // Remove any temp/optimistic messages when real message arrives
             const withoutTemp = prev.filter(m => !m.id.startsWith('temp-'));
-            return [...withoutTemp, { ...payload.new, profiles: profile } as ChatMessage];
+            return [...withoutTemp, { 
+              ...payload.new, 
+              profiles: profile,
+              replied_message 
+            } as ChatMessageType];
           });
           
           // Auto-mark as read when viewing thread
@@ -329,27 +392,39 @@ const Chat = () => {
         .single();
       
       // Optimistic UI update
-      const optimisticMessage: ChatMessage = {
+      const optimisticMessage: ChatMessageType = {
         id: tempId,
         body: validated.body,
         created_at: new Date().toISOString(),
         sender_id: user.id,
+        reply_to_id: replyingTo?.id || null,
         profiles: userProfile || { display_name: null, username: null, avatar_url: null },
+        replied_message: replyingTo ? {
+          body: replyingTo.body,
+          sender_name: replyingTo.profiles?.display_name || replyingTo.profiles?.username || "Unknown"
+        } : null
       };
       
       setMessages((prev) => [...prev, optimisticMessage]);
       setNewMessage("");
+      const replyToId = replyingTo?.id;
+      setReplyingTo(null);
 
       const { error } = await supabase.from("chat_messages").insert({
         thread_id: currentThread.id,
         body: validated.body,
         sender_id: user.id,
+        reply_to_id: replyToId || null,
       });
 
       if (error) {
         setMessages((prev) => prev.filter((m) => m.id !== tempId));
         toast.error("Failed to send message");
         setNewMessage(validated.body);
+        if (replyToId) {
+          const originalMsg = messages.find(m => m.id === replyToId);
+          if (originalMsg) setReplyingTo(originalMsg);
+        }
         return;
       }
 
@@ -589,49 +664,41 @@ const Chat = () => {
                 </div>
 
                 <ScrollArea className="flex-1 p-4">
-                  <div className="space-y-4">
-                    {messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className={`flex gap-3 ${
-                          message.sender_id === user?.id ? "flex-row-reverse" : "flex-row"
-                        }`}
-                      >
-                        <Avatar className="w-8 h-8 flex-shrink-0">
-                          <AvatarImage src={message.profiles?.avatar_url || undefined} />
-                          <AvatarFallback>
-                            {message.profiles?.username?.slice(0, 2).toUpperCase() || "??"}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div
-                          className={`max-w-[70%] rounded-lg p-3 ${
-                            message.sender_id === user?.id
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-foreground"
-                          }`}
-                        >
-                          <div className="text-xs opacity-70 mb-1">
-                            @{message.profiles?.username || message.profiles?.display_name || "Unknown"}
-                          </div>
-                          <div>{message.body}</div>
-                          <div className="text-xs opacity-50 mt-1">
-                            {new Date(message.created_at).toLocaleTimeString()}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    <div ref={messagesEndRef} />
-                  </div>
+                  {messages.map((message) => (
+                    <ChatMessage
+                      key={message.id}
+                      id={message.id}
+                      body={message.body}
+                      created_at={message.created_at}
+                      sender_id={message.sender_id}
+                      sender_name={message.profiles?.display_name || message.profiles?.username || "Unknown"}
+                      sender_avatar={message.profiles?.avatar_url || undefined}
+                      reply_to_id={message.reply_to_id}
+                      replied_message={message.replied_message}
+                      currentUserId={user?.id}
+                      isOwn={message.sender_id === user?.id}
+                      onReply={() => setReplyingTo(message)}
+                    />
+                  ))}
+                  <div ref={messagesEndRef} />
                 </ScrollArea>
 
                 <div className="p-4 border-t bg-card">
+                  {replyingTo && (
+                    <ReplyPreview
+                      username={replyingTo.profiles?.display_name || replyingTo.profiles?.username || "Unknown"}
+                      message={replyingTo.body}
+                      onCancel={() => setReplyingTo(null)}
+                    />
+                  )}
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Type a message..."
+                      placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
                       value={newMessage}
                       onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                      onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
                     />
+                    <EmojiPicker onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)} />
                     <Button onClick={handleSendMessage} size="icon">
                       <Send className="w-4 h-4" />
                     </Button>
@@ -778,50 +845,42 @@ const Chat = () => {
 
               {/* Messages */}
               <ScrollArea className="flex-1 p-4">
-                <div className="space-y-4">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex gap-3 ${
-                        message.sender_id === user?.id ? "flex-row-reverse" : "flex-row"
-                      }`}
-                    >
-                      <Avatar className="w-8 h-8 flex-shrink-0">
-                        <AvatarImage src={message.profiles?.avatar_url || undefined} />
-                        <AvatarFallback>
-                          {message.profiles?.username?.slice(0, 2).toUpperCase() || "??"}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div
-                        className={`max-w-[70%] rounded-lg p-3 ${
-                          message.sender_id === user?.id
-                            ? "bg-primary text-primary-foreground"
-                            : "bg-muted text-foreground"
-                        }`}
-                      >
-                        <div className="text-xs opacity-70 mb-1">
-                          @{message.profiles?.username || message.profiles?.display_name || "Unknown"}
-                        </div>
-                        <div>{message.body}</div>
-                        <div className="text-xs opacity-50 mt-1">
-                          {new Date(message.created_at).toLocaleTimeString()}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  <div ref={messagesEndRef} />
-                </div>
+                {messages.map((message) => (
+                  <ChatMessage
+                    key={message.id}
+                    id={message.id}
+                    body={message.body}
+                    created_at={message.created_at}
+                    sender_id={message.sender_id}
+                    sender_name={message.profiles?.display_name || message.profiles?.username || "Unknown"}
+                    sender_avatar={message.profiles?.avatar_url || undefined}
+                    reply_to_id={message.reply_to_id}
+                    replied_message={message.replied_message}
+                    currentUserId={user?.id}
+                    isOwn={message.sender_id === user?.id}
+                    onReply={() => setReplyingTo(message)}
+                  />
+                ))}
+                <div ref={messagesEndRef} />
               </ScrollArea>
 
               {/* Input */}
               <div className="p-4 border-t bg-card">
+                {replyingTo && (
+                  <ReplyPreview
+                    username={replyingTo.profiles?.display_name || replyingTo.profiles?.username || "Unknown"}
+                    message={replyingTo.body}
+                    onCancel={() => setReplyingTo(null)}
+                  />
+                )}
                 <div className="flex gap-2">
                   <Input
-                    placeholder="Type a message..."
+                    placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+                    onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
                   />
+                  <EmojiPicker onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)} />
                   <Button onClick={handleSendMessage} size="icon">
                     <Send className="w-4 h-4" />
                   </Button>

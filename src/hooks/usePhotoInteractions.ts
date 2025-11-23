@@ -160,16 +160,101 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
   const addComment = async (commentText: string) => {
     if (!currentUserId || !commentText.trim()) return;
 
-    const { error } = await supabase
-      .from('wall_item_comments')
-      .insert({
-        wall_item_id: wallItemId,
-        user_id: currentUserId,
-        comment_text: commentText.trim(),
-      });
+    try {
+      // Check if thread already exists for this photo
+      const { data: existingThread } = await supabase
+        .from('chat_threads')
+        .select('id, circle_id')
+        .eq('linked_wall_item_id', wallItemId)
+        .single();
 
-    if (error) {
-      console.error('Error adding comment:', error);
+      let threadId = existingThread?.id;
+
+      // If no thread exists, create one
+      if (!threadId) {
+        // Get photo details
+        const { data: wallItem } = await supabase
+          .from('wall_items')
+          .select('circle_id, content, created_by')
+          .eq('id', wallItemId)
+          .single();
+
+        if (!wallItem) {
+          toast.error('Failed to find photo');
+          return;
+        }
+
+        // Create thread
+        const { data: newThread, error: threadError } = await supabase
+          .from('chat_threads')
+          .insert({
+            circle_id: wallItem.circle_id,
+            title: `📷 ${(wallItem.content as any)?.caption || 'Photo conversation'}`,
+            created_by: currentUserId,
+            linked_wall_item_id: wallItemId,
+          })
+          .select()
+          .single();
+
+        if (threadError) {
+          console.error('Error creating thread:', threadError);
+          toast.error('Failed to create conversation');
+          return;
+        }
+
+        threadId = newThread?.id;
+
+        // Add photo creator as thread member
+        if (threadId && wallItem.created_by !== currentUserId) {
+          await supabase
+            .from('thread_members')
+            .insert({ thread_id: threadId, user_id: wallItem.created_by });
+        }
+      }
+
+      // Add commenter as thread member if not already
+      if (threadId) {
+        const { data: existingMember } = await supabase
+          .from('thread_members')
+          .select('id')
+          .eq('thread_id', threadId)
+          .eq('user_id', currentUserId)
+          .single();
+
+        if (!existingMember) {
+          await supabase
+            .from('thread_members')
+            .insert({ thread_id: threadId, user_id: currentUserId });
+        }
+      }
+
+      // Insert the comment
+      const { error: commentError } = await supabase
+        .from('wall_item_comments')
+        .insert({
+          wall_item_id: wallItemId,
+          user_id: currentUserId,
+          comment_text: commentText.trim(),
+        });
+
+      if (commentError) {
+        console.error('Error adding comment:', commentError);
+        toast.error('Failed to add comment');
+        return;
+      }
+
+      // Create corresponding chat message in the thread
+      if (threadId) {
+        await supabase
+          .from('chat_messages')
+          .insert({
+            thread_id: threadId,
+            sender_id: currentUserId,
+            body: commentText.trim(),
+          });
+      }
+    } catch (error) {
+      console.error('Error in addComment:', error);
       toast.error('Failed to add comment');
     }
   };

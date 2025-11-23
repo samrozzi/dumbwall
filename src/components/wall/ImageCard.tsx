@@ -98,154 +98,150 @@ const ImageCard = ({
             <X className="h-7 w-7" />
           </button>
 
-          {/* Enhanced 90s sticker border effect */}
-          <div className="relative border-[10px] border-amber-500 rounded-lg overflow-hidden h-full flex flex-col max-h-[90vh]">
-            <div className="relative border-[6px] border-white rounded-md overflow-hidden flex flex-col h-full">
-              <div className="relative border-[4px] border-primary rounded-sm shadow-[0_0_40px_rgba(245,158,11,0.5)] overflow-hidden flex flex-col h-full">
-                
-                {/* Image & Caption Section - Scrollable */}
-                <div className="bg-black overflow-y-auto max-h-[35vh] sm:max-h-[45vh] flex-shrink-0">
-                  <img
-                    src={content.url}
-                    alt={content.caption || "Wall image"}
-                    className="w-full h-auto object-contain"
-                  />
-                  {content.caption && (
-                    <div className="bg-muted p-4 border-t-4 border-primary">
-                      <p className="text-foreground font-semibold">{content.caption}</p>
-                    </div>
-                  )}
+          {/* Cleaner single border */}
+          <div className="relative border-4 border-amber-500/80 rounded-lg overflow-hidden h-full flex flex-col max-h-[90vh] shadow-xl">
+            
+            {/* Image & Caption Section - Scrollable */}
+            <div className="bg-black overflow-y-auto max-h-[35vh] sm:max-h-[45vh] flex-shrink-0">
+              <img
+                src={content.url}
+                alt={content.caption || "Wall image"}
+                className="w-full h-auto object-contain"
+              />
+              {content.caption && (
+                <div className="bg-muted p-4 border-t-2 border-amber-500">
+                  <p className="text-foreground font-semibold">{content.caption}</p>
                 </div>
+              )}
+            </div>
 
-                {/* Interactions Section - Flex column with sticky input */}
-                <div className="bg-background border-t flex flex-col flex-1 overflow-hidden">
-                  {/* Reactions & Votes - Fixed height */}
-                  <div className="p-4 space-y-3 flex-shrink-0">
-                    {/* Reactions Row */}
-                    <div className="flex items-center gap-2 flex-wrap">
-                      {reactions.map((reaction) => (
-                        <button
-                          key={reaction.emoji}
-                          onClick={() => toggleReaction(reaction.emoji)}
-                          className={cn(
-                            "inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm border transition-colors",
-                            reaction.reacted_by_me
-                              ? "bg-primary/10 border-primary"
-                              : "bg-muted border-border hover:bg-accent"
-                          )}
-                        >
-                          <span>{reaction.emoji}</span>
-                          {reaction.count > 0 && (
-                            <span className="text-xs font-medium">{reaction.count}</span>
-                          )}
-                        </button>
-                      ))}
-                      <QuickReactions
-                        onReactionClick={toggleReaction}
-                        onMoreClick={() => {}}
-                        className="scale-90"
-                      />
-                    </div>
-
-                    {/* Vote Section */}
-                    <div className="flex items-center gap-4 pb-3 border-b">
-                      <button
-                        onClick={() => toggleVote('up')}
-                        className={cn(
-                          "flex items-center gap-2 px-3 py-1 rounded-lg transition-colors",
-                          votes.user_vote === 'up'
-                            ? "bg-green-500/20 text-green-600 dark:text-green-400"
-                            : "hover:bg-accent"
-                        )}
-                      >
-                        <ArrowUp className="h-4 w-4" />
-                        <span className="font-semibold">{votes.upvotes}</span>
-                      </button>
-                      <button
-                        onClick={() => toggleVote('down')}
-                        className={cn(
-                          "flex items-center gap-2 px-3 py-1 rounded-lg transition-colors",
-                          votes.user_vote === 'down'
-                            ? "bg-red-500/20 text-red-600 dark:text-red-400"
-                            : "hover:bg-accent"
-                        )}
-                      >
-                        <ArrowDown className="h-4 w-4" />
-                        <span className="font-semibold">{votes.downvotes}</span>
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Comments - Scrollable */}
-                  <div className="flex-1 overflow-y-auto px-4">
-                    <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
-                      💬 Comments ({comments.length})
-                    </h4>
-                    <ScrollArea className="h-[120px] sm:h-[150px] pr-4">
-                      <div className="space-y-3">
-                        {comments.length === 0 ? (
-                          <p className="text-sm text-muted-foreground text-center py-4">
-                            No comments yet. Be the first to comment!
-                          </p>
-                        ) : (
-                          comments.map((comment) => (
-                            <div key={comment.id} className="flex gap-2">
-                              <Avatar className="h-6 w-6 shrink-0">
-                                <AvatarImage src={comment.profiles?.avatar_url || undefined} />
-                                <AvatarFallback className="bg-primary text-primary-foreground text-xs">
-                                  {comment.profiles?.username?.[0]?.toUpperCase() || 'U'}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-baseline gap-2">
-                                  <span className="text-xs font-medium">
-                                    {comment.profiles?.username || 'Unknown'}
-                                  </span>
-                                  <span className="text-xs text-muted-foreground">
-                                    {new Date(comment.created_at).toLocaleTimeString([], {
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                    })}
-                                  </span>
-                                </div>
-                                <p className="text-sm text-foreground break-words">
-                                  {comment.comment_text}
-                                </p>
-                              </div>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                    </ScrollArea>
-                  </div>
-
-                  {/* Comment Input - Sticky at bottom */}
-                  <div className="sticky bottom-0 bg-background border-t p-4 flex gap-2">
-                    <Input
-                      value={commentText}
-                      onChange={(e) => setCommentText(e.target.value)}
-                      placeholder="Add a comment..."
-                      className="flex-1"
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendComment();
-                        }
-                      }}
-                    />
-                    <Button
-                      onClick={handleSendComment}
-                      size="icon"
-                      disabled={!commentText.trim()}
-                      className="flex-shrink-0"
+            {/* Interactions Section - Flex column with sticky input */}
+            <div className="bg-background border-t flex flex-col flex-1 overflow-hidden">
+              {/* Reactions & Votes - Fixed height */}
+              <div className="p-4 space-y-3 flex-shrink-0">
+                {/* Reactions Row */}
+                <div className="flex items-center gap-2 flex-wrap">
+                  {reactions.map((reaction) => (
+                    <button
+                      key={reaction.emoji}
+                      onClick={() => toggleReaction(reaction.emoji)}
+                      className={cn(
+                        "inline-flex items-center gap-1 px-3 py-1 rounded-full text-sm border transition-colors",
+                        reaction.reacted_by_me
+                          ? "bg-primary/10 border-primary"
+                          : "bg-muted border-border hover:bg-accent"
+                      )}
                     >
-                      <Send className="h-4 w-4" />
-                    </Button>
-                  </div>
+                      <span>{reaction.emoji}</span>
+                      {reaction.count > 0 && (
+                        <span className="text-xs font-medium">{reaction.count}</span>
+                      )}
+                    </button>
+                  ))}
+                  <QuickReactions
+                    onReactionClick={toggleReaction}
+                    onMoreClick={() => {}}
+                    className="scale-90"
+                  />
                 </div>
 
+                {/* Vote Section */}
+                <div className="flex items-center gap-4 pb-3 border-b">
+                  <button
+                    onClick={() => toggleVote('up')}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-1 rounded-lg transition-colors",
+                      votes.user_vote === 'up'
+                        ? "bg-green-500/20 text-green-600 dark:text-green-400"
+                        : "hover:bg-accent"
+                    )}
+                  >
+                    <ArrowUp className="h-4 w-4" />
+                    <span className="font-semibold">{votes.upvotes}</span>
+                  </button>
+                  <button
+                    onClick={() => toggleVote('down')}
+                    className={cn(
+                      "flex items-center gap-2 px-3 py-1 rounded-lg transition-colors",
+                      votes.user_vote === 'down'
+                        ? "bg-red-500/20 text-red-600 dark:text-red-400"
+                        : "hover:bg-accent"
+                    )}
+                  >
+                    <ArrowDown className="h-4 w-4" />
+                    <span className="font-semibold">{votes.downvotes}</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Comments - Scrollable */}
+              <div className="flex-1 overflow-y-auto px-4">
+                <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
+                  💬 Comments ({comments.length})
+                </h4>
+                <ScrollArea className="h-[120px] sm:h-[150px] pr-4">
+                  <div className="space-y-3">
+                    {comments.length === 0 ? (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No comments yet. Be the first to comment!
+                      </p>
+                    ) : (
+                      comments.map((comment) => (
+                        <div key={comment.id} className="flex gap-2">
+                          <Avatar className="h-6 w-6 shrink-0">
+                            <AvatarImage src={comment.profiles?.avatar_url || undefined} />
+                            <AvatarFallback className="bg-primary text-primary-foreground text-xs">
+                              {comment.profiles?.username?.[0]?.toUpperCase() || 'U'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-xs font-medium">
+                                {comment.profiles?.username || 'Unknown'}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(comment.created_at).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })}
+                              </span>
+                            </div>
+                            <p className="text-sm text-foreground break-words">
+                              {comment.comment_text}
+                            </p>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </ScrollArea>
+              </div>
+
+              {/* Comment Input - Sticky at bottom */}
+              <div className="sticky bottom-0 bg-background border-t p-4 flex gap-2">
+                <Input
+                  value={commentText}
+                  onChange={(e) => setCommentText(e.target.value)}
+                  placeholder="Add a comment..."
+                  className="flex-1"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendComment();
+                    }
+                  }}
+                />
+                <Button
+                  onClick={handleSendComment}
+                  size="icon"
+                  disabled={!commentText.trim()}
+                  className="flex-shrink-0"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
               </div>
             </div>
+
           </div>
         </DialogContent>
       </Dialog>

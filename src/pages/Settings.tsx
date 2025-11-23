@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import Navigation from "@/components/Navigation";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -443,7 +444,13 @@ const Settings = () => {
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
 
-      <div className={`${isMobile ? 'pb-24' : 'pl-24 pr-8'} pt-8 ${isMobile ? 'max-w-full px-4' : 'max-w-5xl'} mx-auto pb-16`}>
+      <div className={`${isMobile ? 'pb-24' : 'pl-24 pr-8'} pt-8 ${isMobile ? 'max-w-full px-4' : 'max-w-5xl'} mx-auto pb-16 relative`}>
+        {!isMobile && (
+          <div className="absolute top-8 right-8 z-50">
+            <NotificationCenter />
+          </div>
+        )}
+        
         <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
           <Settings2 className="w-8 h-8" />
           Settings

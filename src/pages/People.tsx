@@ -5,8 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { MessageCircle } from "lucide-react";
+import { MessageCircle, UserPlus } from "lucide-react";
 import { toast } from "sonner";
+import { AddMemberDialog } from "@/components/AddMemberDialog";
 
 interface Member {
   user_id: string;
@@ -23,12 +24,17 @@ const People = () => {
   const { user } = useAuth();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addMemberOpen, setAddMemberOpen] = useState(false);
+  const [isOwner, setIsOwner] = useState(false);
+  const [circleName, setCircleName] = useState("");
+  const [invitePermission, setInvitePermission] = useState<'anyone' | 'owner_only'>('owner_only');
 
   useEffect(() => {
-    if (circleId) {
+    if (circleId && user) {
       loadMembers();
+      loadCircleInfo();
     }
-  }, [circleId]);
+  }, [circleId, user]);
 
   const loadMembers = async () => {
     try {
@@ -53,6 +59,35 @@ const People = () => {
       toast.error(error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCircleInfo = async () => {
+    if (!circleId || !user) return;
+
+    try {
+      // Get circle info
+      const { data: circle } = await supabase
+        .from("circles")
+        .select("name, created_by")
+        .eq("id", circleId)
+        .single();
+
+      if (circle) {
+        setCircleName(circle.name);
+        setIsOwner(circle.created_by === user.id);
+      }
+
+      // Get circle settings
+      const { data: settings } = await supabase
+        .from("circle_settings")
+        .select("invite_permission")
+        .eq("circle_id", circleId)
+        .maybeSingle();
+
+      setInvitePermission(settings?.invite_permission || 'owner_only');
+    } catch (error: any) {
+      console.error("Error loading circle info:", error);
     }
   };
 
@@ -131,6 +166,8 @@ const People = () => {
       .slice(0, 2);
   };
 
+  const canAddMembers = isOwner || invitePermission === 'anyone';
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -146,7 +183,15 @@ const People = () => {
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
       <div className="pl-24 pr-8 pt-8">
-        <h1 className="text-3xl font-bold mb-6">People</h1>
+        <div className="flex items-center justify-between mb-6">
+          <h1 className="text-3xl font-bold">People</h1>
+          {canAddMembers && (
+            <Button onClick={() => setAddMemberOpen(true)} className="gap-2">
+              <UserPlus className="w-4 h-4" />
+              Add Member
+            </Button>
+          )}
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {members.map((member) => (
             <div
@@ -181,6 +226,18 @@ const People = () => {
             </div>
           ))}
         </div>
+
+        {circleId && (
+          <AddMemberDialog
+            open={addMemberOpen}
+            onOpenChange={setAddMemberOpen}
+            circleId={circleId}
+            circleName={circleName}
+            isOwner={isOwner}
+            invitePermission={invitePermission}
+            onSuccess={loadMembers}
+          />
+        )}
       </div>
     </div>
   );

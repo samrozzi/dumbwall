@@ -190,7 +190,17 @@ const Chat = () => {
       };
     });
 
-    setThreads(threadsWithMembers);
+    // Sort threads: unread first, then by updated_at
+    const sortedThreads = threadsWithMembers.sort((a, b) => {
+      // First, sort by unread status (unread threads first)
+      if (a.unreadCount > 0 && b.unreadCount === 0) return -1;
+      if (a.unreadCount === 0 && b.unreadCount > 0) return 1;
+      
+      // Then sort by most recent update
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
+
+    setThreads(sortedThreads);
   };
 
   const loadThread = async () => {
@@ -442,11 +452,10 @@ const Chat = () => {
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
       <div className={`${isMobile ? 'px-4 pt-4 pb-20' : 'pl-24 pr-8 pt-8'} ${isMobile ? 'h-screen pb-20' : 'flex gap-4 h-[calc(100vh-80px)]'}`}>
-        {!isMobile && (
-          <div className="absolute top-8 right-8 z-50">
-            <NotificationCenter />
-          </div>
-        )}
+        {/* Notification Bell - Different positioning for mobile/desktop */}
+        <div className={`absolute z-50 ${isMobile ? 'top-4 right-4' : 'top-8 right-8'}`}>
+          <NotificationCenter />
+        </div>
         {isMobile ? (
           /* Mobile: Show either thread list OR chat view */
           <>
@@ -526,7 +535,7 @@ const Chat = () => {
                           <div className={`truncate ${thread.unreadCount > 0 ? 'font-bold' : 'font-medium'}`}>
                             {thread.title}
                           </div>
-                          <div className={`text-xs mt-1 ${thread.unreadCount > 0 ? 'text-orange-500 font-medium' : 'text-muted-foreground'}`}>
+                          <div className={`text-xs mt-1 ${thread.unreadCount > 0 ? 'text-white font-medium' : 'text-muted-foreground'}`}>
                             {new Date(thread.updated_at).toLocaleDateString()}
                           </div>
                         </div>
@@ -719,7 +728,7 @@ const Chat = () => {
                       )}
                       <span className="truncate">{thread.title}</span>
                     </div>
-                    <div className={`text-xs mt-1 ${thread.unreadCount > 0 ? 'text-orange-500 font-medium' : 'text-muted-foreground'}`}>
+                    <div className={`text-xs mt-1 ${thread.unreadCount > 0 ? 'text-white font-medium' : 'text-muted-foreground'}`}>
                       {new Date(thread.updated_at).toLocaleDateString()}
                     </div>
                   </div>

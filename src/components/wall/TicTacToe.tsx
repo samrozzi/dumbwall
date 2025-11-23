@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { supabase } from "@/integrations/supabase/client";
 
 interface TicTacToeProps {
   content: {
@@ -9,13 +11,50 @@ interface TicTacToeProps {
     turn: string;
     winner?: string | null;
     winningLine?: number[] | null;
+    playerX?: string | null;
+    playerO?: string | null;
   };
+  createdBy?: string;
+  currentUserId?: string;
   onUpdate?: (newState: string[], newTurn: string, winner?: string | null, winningLine?: number[] | null) => void;
   onDelete?: () => void;
 }
 
 const TicTacToe = ({ content, onUpdate, onDelete }: TicTacToeProps) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [winnerProfile, setWinnerProfile] = useState<{
+    username: string | null;
+    display_name: string | null;
+    avatar_url: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    const fetchWinnerProfile = async () => {
+      if (!content.winner || content.winner === 'draw') {
+        setWinnerProfile(null);
+        return;
+      }
+      
+      const winnerUserId = content.winner === 'X' ? content.playerX : content.playerO;
+      
+      if (!winnerUserId) {
+        setWinnerProfile(null);
+        return;
+      }
+      
+      const { data } = await supabase
+        .from('profiles')
+        .select('username, display_name, avatar_url')
+        .eq('id', winnerUserId)
+        .single();
+      
+      if (data) {
+        setWinnerProfile(data);
+      }
+    };
+    
+    fetchWinnerProfile();
+  }, [content.winner, content.playerX, content.playerO]);
 
   const checkWinner = (state: string[]): { winner: string | null; line: number[] | null } => {
     const lines = [
@@ -151,10 +190,27 @@ const TicTacToe = ({ content, onUpdate, onDelete }: TicTacToeProps) => {
       </div>
 
       {content.winner && content.winner !== "draw" && (
-        <div className="text-center space-y-2">
-          <p className="text-lg font-bold text-primary animate-in zoom-in duration-300">
-            {content.winner} Wins! 🎉
-          </p>
+        <div className="text-center space-y-3">
+          {winnerProfile ? (
+            <>
+              <Avatar className="h-16 w-16 mx-auto">
+                <AvatarImage src={winnerProfile.avatar_url || ""} />
+                <AvatarFallback>
+                  {winnerProfile.display_name?.[0] || winnerProfile.username?.[0] || "?"}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-semibold text-lg">
+                  {winnerProfile.display_name || `@${winnerProfile.username}`}
+                </p>
+                <p className="text-primary text-xl font-bold">Wins! 🎉</p>
+              </div>
+            </>
+          ) : (
+            <p className="text-lg font-bold text-primary">
+              {content.winner} Wins! 🎉
+            </p>
+          )}
           <Button onClick={handleRematch} size="sm" className="w-full">
             Rematch? 🔄
           </Button>

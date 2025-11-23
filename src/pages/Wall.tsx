@@ -453,11 +453,27 @@ const Wall = () => {
         return (
           <TicTacToe
             content={content}
-            onUpdate={(state, turn, winner, winningLine) =>
-              updateItem(item.id, {
-                content: { state, turn, winner, winningLine } as any,
-              })
-            }
+            createdBy={item.created_by}
+            currentUserId={user?.id}
+            onUpdate={(state, turn, winner, winningLine) => {
+              const currentContent = content as any;
+              let updatedContent = { ...currentContent };
+              
+              // Assign playerO on first O move
+              if (!currentContent.playerO && state.includes('O')) {
+                updatedContent.playerO = user?.id;
+              }
+              
+              updatedContent = {
+                ...updatedContent,
+                state,
+                turn,
+                winner,
+                winningLine,
+              };
+              
+              updateItem(item.id, { content: updatedContent as any });
+            }}
             onDelete={() => deleteItem(item.id)}
           />
         );
@@ -616,6 +632,8 @@ const Wall = () => {
         turn: "X",
         winner: null,
         winningLine: null,
+        playerX: user?.id,
+        playerO: null,
       });
     }
   };
@@ -695,11 +713,27 @@ const Wall = () => {
                   {item.type === "game_tictactoe" && (
                     <TicTacToe 
                       content={item.content as any}
-                      onUpdate={(state, turn, winner, winningLine) =>
-                        updateItem(item.id, {
-                          content: { state, turn, winner, winningLine } as any,
-                        })
-                      }
+                      createdBy={item.created_by}
+                      currentUserId={user?.id}
+                      onUpdate={(state, turn, winner, winningLine) => {
+                        const currentContent = item.content as any;
+                        let updatedContent = { ...currentContent };
+                        
+                        // Assign playerO on first O move
+                        if (!currentContent.playerO && state.includes('O')) {
+                          updatedContent.playerO = user?.id;
+                        }
+                        
+                        updatedContent = {
+                          ...updatedContent,
+                          state,
+                          turn,
+                          winner,
+                          winningLine,
+                        };
+                        
+                        updateItem(item.id, { content: updatedContent as any });
+                      }}
                       onDelete={() => deleteItem(item.id)} 
                     />
                   )}

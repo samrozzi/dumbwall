@@ -306,13 +306,13 @@ export function AddMemberDialog({
                   align="start"
                   onOpenAutoFocus={(e) => e.preventDefault()}
                 >
-                  <Command>
-                    <CommandList>
-                      <CommandEmpty>
-                        {searching ? 'Searching...' : 
-                         searchError ? `Error: ${searchError}` : 
-                         'No users found.'}
-                      </CommandEmpty>
+                <Command shouldFilter={false}>
+                  <CommandList>
+                    <CommandEmpty>
+                      {searching ? 'Searching...' : 
+                       searchError ? `Error: ${searchError}` : 
+                       'No users found.'}
+                    </CommandEmpty>
                       <CommandGroup>
                         {searchResults.map((result) => (
                           <CommandItem

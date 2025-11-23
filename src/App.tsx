@@ -8,6 +8,7 @@ import { AuthProvider } from "./lib/auth";
 import Auth from "./pages/Auth";
 import Circles from "./pages/Circles";
 import Wall from "./pages/Wall";
+import Games from "./pages/Games";
 import Chat from "./pages/Chat";
 import People from "./pages/People";
 import Settings from "./pages/Settings";
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/circles" element={<Circles />} />
             <Route path="/circle/:circleId/wall" element={<Wall />} />
+            <Route path="/circle/:circleId/games" element={<Games />} />
             <Route path="/circle/:circleId/chat" element={<Chat />} />
             <Route path="/circle/:circleId/people" element={<People />} />
             <Route path="/circle/:circleId/settings" element={<Settings />} />

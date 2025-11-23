@@ -36,7 +36,7 @@ const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
         stream.getTracks().forEach((track) => track.stop());
       }
     };
-  }, []);
+  }, [stream]);
 
   const capturePhoto = () => {
     if (!videoRef.current) return;

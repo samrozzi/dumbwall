@@ -32,7 +32,7 @@ const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnou
 
   return (
     <TooltipProvider>
-      <div className="fixed bottom-8 right-8 z-40">
+      <div className="fixed bottom-8 right-8 z-[9999]">
         {/* Menu Items */}
         {isOpen && !showSubmenu && (
           <div className="absolute bottom-20 right-0 flex flex-col-reverse gap-3">

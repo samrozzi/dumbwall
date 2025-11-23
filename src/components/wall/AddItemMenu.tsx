@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Plus, StickyNote, Image, MessageCircle, Gamepad2, Megaphone } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface AddItemMenuProps {
   onAddNote: () => void;
@@ -11,7 +12,7 @@ interface AddItemMenuProps {
 
 const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnouncement }: AddItemMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [isGamesOpen, setIsGamesOpen] = useState(false);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
   const menuItems = [
     { icon: StickyNote, label: "Note", onClick: onAddNote, color: "bg-yellow-500 hover:bg-yellow-600" },
@@ -21,7 +22,7 @@ const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnou
     { 
       icon: Gamepad2, 
       label: "Games", 
-      onClick: () => setIsGamesOpen(!isGamesOpen), 
+      onClick: () => setActiveCategory(activeCategory === "Games" ? null : "Games"), 
       color: "bg-green-500 hover:bg-green-600",
       isSubmenu: true
     },
@@ -31,66 +32,96 @@ const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnou
     { label: "Tic-Tac-Toe", onClick: () => onAddGame("tictactoe") },
   ];
 
+  const activeCategoryItem = activeCategory ? menuItems.find(item => item.label === activeCategory) : null;
+  const otherItems = activeCategory ? menuItems.filter(item => item.label !== activeCategory) : menuItems;
+
   return (
-    <div className="fixed bottom-8 right-8 z-40">
-      {/* Games Submenu */}
-      {isGamesOpen && (
-        <div className="absolute bottom-20 right-0 mb-2 flex flex-col gap-2">
-          {gameItems.map((game, index) => (
-            <button
-              key={game.label}
-              onClick={() => {
-                game.onClick();
-                setIsGamesOpen(false);
-                setIsOpen(false);
-              }}
-              className="bg-green-600 hover:bg-green-700 text-white p-3 rounded-full shadow-lg transition-all duration-300 hover:scale-110 whitespace-nowrap px-6 animate-in slide-in-from-right"
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              {game.label}
-            </button>
-          ))}
-        </div>
-      )}
+    <TooltipProvider>
+      <div className="fixed bottom-8 right-8 z-40">
+        {/* Menu Items */}
+        {isOpen && (
+          <div className="absolute bottom-20 right-0 flex flex-col gap-2 mb-2">
+            {/* Active Category at Top (if any) */}
+            {activeCategoryItem && (
+              <div className="flex flex-col gap-2 animate-in slide-in-from-bottom duration-300">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={() => activeCategoryItem.onClick()}
+                      className={`${activeCategoryItem.color} text-white w-12 h-12 rounded-full shadow-lg transition-all duration-300 hover:scale-110 flex items-center justify-center`}
+                    >
+                      <activeCategoryItem.icon className="w-5 h-5" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left">
+                    <p>{activeCategoryItem.label}</p>
+                  </TooltipContent>
+                </Tooltip>
+                
+                {/* Submenu Items */}
+                {activeCategory === "Games" && (
+                  <div className="flex flex-col gap-2 ml-2">
+                    {gameItems.map((game, index) => (
+                      <button
+                        key={game.label}
+                        onClick={() => {
+                          game.onClick();
+                          setActiveCategory(null);
+                          setIsOpen(false);
+                        }}
+                        className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-full shadow-lg transition-all duration-300 hover:scale-105 text-sm whitespace-nowrap animate-in slide-in-from-right"
+                        style={{ animationDelay: `${index * 50}ms` }}
+                      >
+                        {game.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
-      {/* Main Menu Items */}
-      {isOpen && (
-        <div className="absolute bottom-20 right-0 flex flex-col gap-3 mb-2">
-          {menuItems.map((item, index) => (
-            <button
-              key={item.label}
-              onClick={() => {
-                if (!item.isSubmenu) {
-                  item.onClick();
-                  setIsOpen(false);
-                  setIsGamesOpen(false);
-                } else {
-                  item.onClick();
-                }
-              }}
-              className={`${item.color} text-white p-4 rounded-full shadow-lg transition-all duration-300 hover:scale-110 flex items-center gap-2 animate-in slide-in-from-right`}
-              style={{ animationDelay: `${index * 50}ms` }}
-            >
-              <item.icon className="w-6 h-6" />
-              <span className="font-medium pr-2">{item.label}</span>
-            </button>
-          ))}
-        </div>
-      )}
+            {/* Other Menu Items */}
+            {otherItems.map((item, index) => (
+              <Tooltip key={item.label}>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={() => {
+                      if (item.isSubmenu) {
+                        item.onClick();
+                      } else {
+                        item.onClick();
+                        setIsOpen(false);
+                        setActiveCategory(null);
+                      }
+                    }}
+                    className={`${item.color} text-white w-12 h-12 rounded-full shadow-lg transition-all duration-300 hover:scale-110 flex items-center justify-center animate-in slide-in-from-bottom`}
+                    style={{ animationDelay: `${(activeCategoryItem ? index + 1 : index) * 50}ms` }}
+                  >
+                    <item.icon className="w-5 h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left">
+                  <p>{item.label}</p>
+                </TooltipContent>
+              </Tooltip>
+            ))}
+          </div>
+        )}
 
-      {/* Main Toggle Button */}
-      <button
-        onClick={() => {
-          setIsOpen(!isOpen);
-          setIsGamesOpen(false);
-        }}
-        className={`bg-primary hover:bg-primary/90 text-primary-foreground p-6 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 ${
-          isOpen ? "rotate-45" : "rotate-0"
-        }`}
-      >
-        <Plus className="w-8 h-8" />
-      </button>
-    </div>
+        {/* Main Toggle Button */}
+        <button
+          onClick={() => {
+            setIsOpen(!isOpen);
+            setActiveCategory(null);
+          }}
+          className={`bg-primary hover:bg-primary/90 text-primary-foreground p-5 rounded-full shadow-2xl transition-all duration-300 hover:scale-110 ${
+            isOpen ? "rotate-45" : "rotate-0"
+          }`}
+        >
+          <Plus className="w-7 h-7" />
+        </button>
+      </div>
+    </TooltipProvider>
   );
 };
 

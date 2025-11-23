@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 interface ThreadBubbleProps {
   content: {
     title: string;
-    threadId?: string;
+    threadId: string;
   };
   onDelete?: () => void;
   onClick?: () => void;
@@ -25,7 +25,10 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
   const [newCount, setNewCount] = useState(0);
 
   useEffect(() => {
-    if (!content.threadId) return;
+    if (!content.threadId) {
+      console.error("ThreadBubble: Missing threadId");
+      return;
+    }
 
     const loadMessages = async () => {
       const { data, error } = await supabase

@@ -10,9 +10,10 @@ import ThreadBubble from "@/components/wall/ThreadBubble";
 import TicTacToe from "@/components/wall/TicTacToe";
 import AnnouncementBubble from "@/components/wall/AnnouncementBubble";
 import AddItemMenu from "@/components/wall/AddItemMenu";
+import CameraCapture from "@/components/wall/CameraCapture";
 import { notify } from "@/components/ui/custom-notification";
 import { Button } from "@/components/ui/button";
-import { LayoutGrid, List } from "lucide-react";
+import { LayoutGrid, List, Camera } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 type WallItemType = Database["public"]["Enums"]["wall_item_type"] | "announcement";
 type WallItemRow = Database["public"]["Tables"]["wall_items"]["Row"];
@@ -51,6 +53,7 @@ const Wall = () => {
   const [announcementDialog, setAnnouncementDialog] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   
   const [noteTitle, setNoteTitle] = useState("");
   const [noteBody, setNoteBody] = useState("");
@@ -106,19 +109,44 @@ const Wall = () => {
     }
   };
 
-  const createItem = async (type: WallItemType, content: any, x: number = 300, y: number = 300) => {
+  const getSmartPosition = () => {
+    let x = 300;
+    let y = 300;
+    let attempts = 0;
+    
+    while (attempts < 10) {
+      const hasOverlap = items.some(item => {
+        const distX = Math.abs(item.x - x);
+        const distY = Math.abs(item.y - y);
+        return distX < 200 && distY < 200;
+      });
+      
+      if (!hasOverlap) break;
+      
+      x += 80;
+      y += 80;
+      attempts++;
+    }
+    
+    return { x, y };
+  };
+
+  const createItem = async (type: WallItemType, content: any, x?: number, y?: number) => {
     try {
+      const position = (x !== undefined && y !== undefined) ? { x, y } : getSmartPosition();
+      
       const { error } = await supabase.from("wall_items").insert({
         circle_id: circleId!,
         created_by: user?.id!,
         type: type as any,
         content,
-        x,
-        y,
+        x: position.x,
+        y: position.y,
         z_index: maxZIndex + 1,
       });
 
       if (error) throw error;
+      setMaxZIndex(prev => prev + 1);
       notify("Item added!", "success");
     } catch (error: any) {
       notify(error.message, "error");
@@ -206,11 +234,21 @@ const Wall = () => {
           />
         );
       case "thread":
+        const threadContent = content as { title: string; threadId?: string };
+        if (!threadContent.threadId) {
+          return (
+            <ThreadBubble
+              content={{ title: threadContent.title, threadId: "" }}
+              onDelete={() => deleteItem(item.id)}
+              onClick={() => notify("Thread data is missing", "error")}
+            />
+          );
+        }
         return (
           <ThreadBubble
-            content={content}
+            content={{ title: threadContent.title, threadId: threadContent.threadId }}
             onDelete={() => deleteItem(item.id)}
-            onClick={() => navigate(`/circle/${circleId}/chat?threadId=${content.threadId}`)}
+            onClick={() => navigate(`/circle/${circleId}/chat?threadId=${threadContent.threadId}`)}
           />
         );
       case "game_tictactoe":
@@ -298,6 +336,7 @@ const Wall = () => {
     setImageCaption("");
     setImageFile(null);
     setImageDialog(false);
+    setShowCamera(false);
   };
 
   const handleAddThread = async () => {
@@ -499,50 +538,106 @@ const Wall = () => {
       </Dialog>
 
       {/* Image Dialog */}
-      <Dialog open={imageDialog} onOpenChange={setImageDialog}>
-        <DialogContent className="bg-card border-border">
+      <Dialog open={imageDialog} onOpenChange={(open) => {
+        setImageDialog(open);
+        if (!open) setShowCamera(false);
+      }}>
+        <DialogContent className="bg-card border-border max-w-2xl">
           <DialogHeader>
             <DialogTitle>Add Image</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label>Image URL</Label>
-              <Input
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://..."
-                disabled={!!imageFile}
-              />
-            </div>
-            <div className="text-center text-sm text-muted-foreground">
-              - or -
-            </div>
-            <div>
-              <Label>Upload Image</Label>
-              <Input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    setImageFile(file);
-                    setImageUrl("");
-                  }
-                }}
-              />
-            </div>
-            <div>
-              <Label>Caption (optional)</Label>
-              <Input
-                value={imageCaption}
-                onChange={(e) => setImageCaption(e.target.value)}
-                placeholder="Add a caption"
-              />
-            </div>
-            <Button onClick={handleAddImage} className="w-full" disabled={uploading}>
-              {uploading ? "Uploading..." : "Add Image"}
-            </Button>
-          </div>
+          {showCamera ? (
+            <CameraCapture
+              onCapture={(file) => {
+                setImageFile(file);
+                setShowCamera(false);
+              }}
+              onClose={() => setShowCamera(false)}
+            />
+          ) : (
+            <Tabs defaultValue="url" className="w-full">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="url">URL</TabsTrigger>
+                <TabsTrigger value="upload">Upload</TabsTrigger>
+                <TabsTrigger value="camera">
+                  <Camera className="w-4 h-4 mr-2" />
+                  Camera
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="url" className="space-y-4">
+                <div>
+                  <Label htmlFor="imageUrl">Image URL</Label>
+                  <Input
+                    id="imageUrl"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="https://example.com/image.jpg"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="imageCaption">Caption (optional)</Label>
+                  <Input
+                    id="imageCaption"
+                    value={imageCaption}
+                    onChange={(e) => setImageCaption(e.target.value)}
+                    placeholder="Add a caption..."
+                  />
+                </div>
+                <Button onClick={handleAddImage} className="w-full" disabled={!imageUrl}>
+                  Add Image
+                </Button>
+              </TabsContent>
+              
+              <TabsContent value="upload" className="space-y-4">
+                <div>
+                  <Label htmlFor="imageFile">Select Image</Label>
+                  <Input
+                    id="imageFile"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        setImageFile(file);
+                        setImageUrl("");
+                      }
+                    }}
+                  />
+                  {imageFile && (
+                    <p className="text-sm text-muted-foreground mt-2">
+                      Selected: {imageFile.name}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="uploadCaption">Caption (optional)</Label>
+                  <Input
+                    id="uploadCaption"
+                    value={imageCaption}
+                    onChange={(e) => setImageCaption(e.target.value)}
+                    placeholder="Add a caption..."
+                  />
+                </div>
+                <Button onClick={handleAddImage} className="w-full" disabled={!imageFile || uploading}>
+                  {uploading ? "Uploading..." : "Upload Image"}
+                </Button>
+              </TabsContent>
+              
+              <TabsContent value="camera" className="space-y-4">
+                <div className="text-center py-8">
+                  <Button
+                    onClick={() => setShowCamera(true)}
+                    size="lg"
+                    className="w-full"
+                  >
+                    <Camera className="w-5 h-5 mr-2" />
+                    Open Camera
+                  </Button>
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
         </DialogContent>
       </Dialog>
 

@@ -81,7 +81,9 @@ export function AddMemberDialog({
         }
         
         console.log('Search results:', data?.length || 0, data);
+        console.log('popoverOpen state:', popoverOpen);
         setSearchResults(data || []);
+        console.log('searchResults state after update:', data);
       } catch (error: any) {
         console.error('Search error:', error);
         setSearchError(error.message || 'Failed to search users');
@@ -300,12 +302,11 @@ export function AddMemberDialog({
                   />
                 </div>
               </PopoverTrigger>
-              {popoverOpen && (
-                <PopoverContent 
-                  className="w-[400px] p-0" 
-                  align="start"
-                  onOpenAutoFocus={(e) => e.preventDefault()}
-                >
+              <PopoverContent 
+                className="w-[400px] p-0" 
+                align="start"
+                onOpenAutoFocus={(e) => e.preventDefault()}
+              >
                 <Command shouldFilter={false}>
                   <CommandList>
                     <CommandEmpty>
@@ -313,30 +314,29 @@ export function AddMemberDialog({
                        searchError ? `Error: ${searchError}` : 
                        'No users found.'}
                     </CommandEmpty>
-                      <CommandGroup>
-                        {searchResults.map((result) => (
-                          <CommandItem
-                            key={result.id}
-                            onSelect={() => handleUserSelect(result)}
-                            className="flex items-center gap-3 p-3 cursor-pointer"
-                          >
-                            <Avatar className="h-10 w-10">
-                              <AvatarImage src={result.avatar_url || undefined} />
-                              <AvatarFallback>
-                                {result.display_name?.[0] || result.username?.[0] || '?'}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex flex-col">
-                              <span className="font-medium">{result.display_name || 'No name'}</span>
-                              <span className="text-sm text-muted-foreground">@{result.username}</span>
-                            </div>
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              )}
+                    <CommandGroup>
+                      {searchResults.map((result) => (
+                        <CommandItem
+                          key={result.id}
+                          onSelect={() => handleUserSelect(result)}
+                          className="flex items-center gap-3 p-3 cursor-pointer"
+                        >
+                          <Avatar className="h-10 w-10">
+                            <AvatarImage src={result.avatar_url || undefined} />
+                            <AvatarFallback>
+                              {result.display_name?.[0] || result.username?.[0] || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{result.display_name || 'No name'}</span>
+                            <span className="text-sm text-muted-foreground">@{result.username}</span>
+                          </div>
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
             </Popover>
             
             {selectedUser && (

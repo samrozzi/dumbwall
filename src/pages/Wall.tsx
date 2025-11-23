@@ -8,8 +8,9 @@ import StickyNote from "@/components/wall/StickyNote";
 import ImageCard from "@/components/wall/ImageCard";
 import ThreadBubble from "@/components/wall/ThreadBubble";
 import TicTacToe from "@/components/wall/TicTacToe";
+import AnnouncementBubble from "@/components/wall/AnnouncementBubble";
 import AddItemMenu from "@/components/wall/AddItemMenu";
-import { toast } from "sonner";
+import { notify } from "@/components/ui/custom-notification";
 import { Button } from "@/components/ui/button";
 import { LayoutGrid, List } from "lucide-react";
 import {
@@ -22,7 +23,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-type WallItemType = Database["public"]["Enums"]["wall_item_type"];
+type WallItemType = Database["public"]["Enums"]["wall_item_type"] | "announcement";
 type WallItemRow = Database["public"]["Tables"]["wall_items"]["Row"];
 
 interface WallItem extends Omit<WallItemRow, "type"> {
@@ -47,6 +48,9 @@ const Wall = () => {
   const [noteDialog, setNoteDialog] = useState(false);
   const [imageDialog, setImageDialog] = useState(false);
   const [threadDialog, setThreadDialog] = useState(false);
+  const [announcementDialog, setAnnouncementDialog] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
   
   const [noteTitle, setNoteTitle] = useState("");
   const [noteBody, setNoteBody] = useState("");
@@ -54,6 +58,7 @@ const Wall = () => {
   const [imageUrl, setImageUrl] = useState("");
   const [imageCaption, setImageCaption] = useState("");
   const [threadTitle, setThreadTitle] = useState("");
+  const [announcementText, setAnnouncementText] = useState("");
 
   useEffect(() => {
     if (!user) {
@@ -97,7 +102,7 @@ const Wall = () => {
       const maxZ = Math.max(...(data || []).map((item) => item.z_index), 0);
       setMaxZIndex(maxZ);
     } catch (error: any) {
-      toast.error(error.message);
+      notify(error.message, "error");
     }
   };
 
@@ -106,7 +111,7 @@ const Wall = () => {
       const { error } = await supabase.from("wall_items").insert({
         circle_id: circleId!,
         created_by: user?.id!,
-        type,
+        type: type as any,
         content,
         x,
         y,
@@ -114,9 +119,9 @@ const Wall = () => {
       });
 
       if (error) throw error;
-      toast.success("Item added!");
+      notify("Item added!", "success");
     } catch (error: any) {
-      toast.error(error.message);
+      notify(error.message, "error");
     }
   };
 
@@ -124,12 +129,12 @@ const Wall = () => {
     try {
       const { error } = await supabase
         .from("wall_items")
-        .update(updates)
+        .update(updates as any)
         .eq("id", id);
 
       if (error) throw error;
     } catch (error: any) {
-      toast.error(error.message);
+      notify(error.message, "error");
     }
   };
 
@@ -137,9 +142,9 @@ const Wall = () => {
     try {
       const { error } = await supabase.from("wall_items").delete().eq("id", id);
       if (error) throw error;
-      toast.success("Item deleted");
+      notify("Item deleted", "info");
     } catch (error: any) {
-      toast.error(error.message);
+      notify(error.message, "error");
     }
   };
 
@@ -205,18 +210,29 @@ const Wall = () => {
           <ThreadBubble
             content={content}
             onDelete={() => deleteItem(item.id)}
+            onClick={() => navigate(`/circle/${circleId}/chat?threadId=${content.threadId}`)}
           />
         );
       case "game_tictactoe":
         return (
           <TicTacToe
             content={content}
-            onUpdate={(state, turn) =>
+            onUpdate={(state, turn, winner, winningLine) =>
               updateItem(item.id, {
-                content: { state, turn } as any,
+                content: { state, turn, winner, winningLine } as any,
               })
             }
             onDelete={() => deleteItem(item.id)}
+          />
+        );
+      case "announcement":
+        return (
+          <AnnouncementBubble
+            content={content}
+            onDelete={() => deleteItem(item.id)}
+            onUpdate={(newContent) =>
+              updateItem(item.id, { content: newContent as any })
+            }
           />
         );
       default:
@@ -226,7 +242,7 @@ const Wall = () => {
 
   const handleAddNote = () => {
     if (!noteTitle.trim()) {
-      toast.error("Please enter a title");
+      notify("Please enter a title", "error");
       return;
     }
     createItem("note", { title: noteTitle, body: noteBody, color: noteColor });
@@ -236,32 +252,104 @@ const Wall = () => {
     setNoteDialog(false);
   };
 
-  const handleAddImage = () => {
-    if (!imageUrl.trim()) {
-      toast.error("Please enter an image URL");
+  const handleImageUpload = async () => {
+    if (!imageFile) return "";
+
+    try {
+      setUploading(true);
+      const fileExt = imageFile.name.split(".").pop();
+      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+      const filePath = `${circleId}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("wall-images")
+        .upload(filePath, imageFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("wall-images")
+        .getPublicUrl(filePath);
+
+      return publicUrl;
+    } catch (error: any) {
+      notify(error.message, "error");
+      return "";
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleAddImage = async () => {
+    let finalUrl = imageUrl;
+
+    if (imageFile) {
+      finalUrl = await handleImageUpload();
+      if (!finalUrl) return;
+    }
+
+    if (!finalUrl.trim()) {
+      notify("Please enter an image URL or upload a file", "error");
       return;
     }
-    createItem("image", { url: imageUrl, caption: imageCaption });
+    
+    createItem("image", { url: finalUrl, caption: imageCaption });
     setImageUrl("");
     setImageCaption("");
+    setImageFile(null);
     setImageDialog(false);
   };
 
-  const handleAddThread = () => {
+  const handleAddThread = async () => {
     if (!threadTitle.trim()) {
-      toast.error("Please enter a thread title");
+      notify("Please enter a thread title", "error");
       return;
     }
-    createItem("thread", { title: threadTitle });
-    setThreadTitle("");
-    setThreadDialog(false);
+
+    try {
+      // Create the chat thread first
+      const { data: threadData, error: threadError } = await supabase
+        .from("chat_threads")
+        .insert({
+          circle_id: circleId!,
+          created_by: user!.id,
+          title: threadTitle,
+        })
+        .select()
+        .single();
+
+      if (threadError) throw threadError;
+
+      // Create the wall item with the thread ID
+      createItem("thread", { title: threadTitle, threadId: threadData.id });
+      
+      // Link the thread to the wall item (will be updated after wall item is created)
+      setThreadTitle("");
+      setThreadDialog(false);
+    } catch (error: any) {
+      notify(error.message, "error");
+    }
   };
 
-  const handleAddGame = () => {
-    createItem("game_tictactoe", {
-      state: Array(9).fill(""),
-      turn: "X",
-    });
+  const handleAddAnnouncement = () => {
+    if (!announcementText.trim()) {
+      notify("Please enter announcement text", "error");
+      return;
+    }
+    createItem("announcement", { text: announcementText });
+    setAnnouncementText("");
+    setAnnouncementDialog(false);
+  };
+
+  const handleAddGame = (gameType: string) => {
+    if (gameType === "tictactoe") {
+      createItem("game_tictactoe", {
+        state: Array(9).fill(""),
+        turn: "X",
+        winner: null,
+        winningLine: null,
+      });
+    }
   };
 
   return (
@@ -362,6 +450,7 @@ const Wall = () => {
         onAddImage={() => setImageDialog(true)}
         onAddThread={() => setThreadDialog(true)}
         onAddGame={handleAddGame}
+        onAddAnnouncement={() => setAnnouncementDialog(true)}
       />
 
       {/* Note Dialog */}
@@ -422,6 +511,24 @@ const Wall = () => {
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
                 placeholder="https://..."
+                disabled={!!imageFile}
+              />
+            </div>
+            <div className="text-center text-sm text-muted-foreground">
+              - or -
+            </div>
+            <div>
+              <Label>Upload Image</Label>
+              <Input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) {
+                    setImageFile(file);
+                    setImageUrl("");
+                  }
+                }}
               />
             </div>
             <div>
@@ -432,8 +539,8 @@ const Wall = () => {
                 placeholder="Add a caption"
               />
             </div>
-            <Button onClick={handleAddImage} className="w-full">
-              Add Image
+            <Button onClick={handleAddImage} className="w-full" disabled={uploading}>
+              {uploading ? "Uploading..." : "Add Image"}
             </Button>
           </div>
         </DialogContent>
@@ -456,6 +563,33 @@ const Wall = () => {
             </div>
             <Button onClick={handleAddThread} className="w-full">
               Create Thread
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Announcement Dialog */}
+      <Dialog open={announcementDialog} onOpenChange={setAnnouncementDialog}>
+        <DialogContent className="bg-card border-border">
+          <DialogHeader>
+            <DialogTitle>Create Announcement</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Announcement Text</Label>
+              <Textarea
+                value={announcementText}
+                onChange={(e) => setAnnouncementText(e.target.value)}
+                placeholder="What do you want to announce?"
+                rows={4}
+                maxLength={280}
+              />
+              <p className="text-sm text-muted-foreground text-right mt-1">
+                {announcementText.length}/280 characters
+              </p>
+            </div>
+            <Button onClick={handleAddAnnouncement} className="w-full">
+              Create Announcement
             </Button>
           </div>
         </DialogContent>

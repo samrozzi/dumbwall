@@ -33,7 +33,8 @@ const ImageCard = ({ content, onDelete }: ImageCardProps) => {
       <img
         src={content.url}
         alt={content.caption || "Wall image"}
-        className="w-full h-48 object-cover rounded-md mb-2"
+        className="w-full h-48 object-cover rounded-md mb-2 pointer-events-none select-none"
+        draggable={false}
       />
       {content.caption && (
         <p className="text-sm text-foreground px-2 pb-2">{content.caption}</p>

@@ -124,18 +124,26 @@ export function AddMemberDialog({
           .single();
 
         if (circle) {
-          const { data: ownerData } = await supabase.auth.admin.getUserById(circle.created_by);
+          // Get owner's profile to access their email via auth.users
+          const { data: ownerProfile } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('id', circle.created_by)
+            .single();
           
-          await supabase.functions.invoke('send-invite-email', {
-            body: {
-              inviteId: invite.id,
-              invitedEmail: email,
-              circleName,
-              inviterName,
-              type: 'approval_request',
-              ownerEmail: ownerData?.user?.email,
-            },
-          });
+          if (ownerProfile) {
+            // Call the edge function - it will get the owner's email server-side
+            await supabase.functions.invoke('send-invite-email', {
+              body: {
+                inviteId: invite.id,
+                invitedEmail: email,
+                circleName,
+                inviterName,
+                type: 'approval_request',
+                ownerId: circle.created_by,
+              },
+            });
+          }
         }
 
         toast.success('Approval request sent to circle owner');

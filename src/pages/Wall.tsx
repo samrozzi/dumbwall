@@ -219,8 +219,15 @@ const Wall = () => {
     if (!threadToDelete) return;
     
     try {
-      // Just remove from wall by deleting the wall item
-      // Thread will remain in chat
+      // Remove the link from the thread to the wall item
+      const { error: unlinkError } = await supabase
+        .from("chat_threads")
+        .update({ linked_wall_item_id: null })
+        .eq("id", threadToDelete.threadId);
+
+      if (unlinkError) throw unlinkError;
+
+      // Delete the wall item
       const { error } = await supabase
         .from("wall_items")
         .delete()

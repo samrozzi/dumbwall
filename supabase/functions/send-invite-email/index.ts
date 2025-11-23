@@ -14,7 +14,7 @@ interface InviteEmailRequest {
   circleName: string;
   inviterName: string;
   type: 'new_user' | 'existing_user' | 'approval_request';
-  ownerEmail?: string;
+  ownerId?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -39,7 +39,7 @@ const handler = async (req: Request): Promise<Response> => {
       throw new Error("Unauthorized");
     }
 
-    const { inviteId, invitedEmail, circleName, inviterName, type, ownerEmail }: InviteEmailRequest = await req.json();
+    const { inviteId, invitedEmail, circleName, inviterName, type, ownerId }: InviteEmailRequest = await req.json();
 
     let emailResponse;
     const siteUrl = Deno.env.get("SUPABASE_URL")?.replace('.supabase.co', '') || "https://yourdomain.com";
@@ -101,7 +101,14 @@ const handler = async (req: Request): Promise<Response> => {
         `,
         }),
       });
-    } else if (type === 'approval_request' && ownerEmail) {
+    } else if (type === 'approval_request' && ownerId) {
+      // Get owner's email from auth.users (server-side only)
+      const { data: ownerData, error: ownerError } = await supabase.auth.admin.getUserById(ownerId);
+      
+      if (ownerError || !ownerData?.user?.email) {
+        throw new Error("Failed to get owner email");
+      }
+
       // Owner approval request
       emailResponse = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -111,7 +118,7 @@ const handler = async (req: Request): Promise<Response> => {
         },
         body: JSON.stringify({
         from: "The Wall <onboarding@resend.dev>",
-        to: [ownerEmail],
+        to: [ownerData.user.email],
         subject: `Approval needed: Member wants to invite someone to "${circleName}"`,
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">

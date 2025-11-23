@@ -848,7 +848,7 @@ const Wall = () => {
 
       {/* Thread Deletion Dialog */}
       <AlertDialog open={deleteThreadDialog} onOpenChange={setDeleteThreadDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="z-[10000]">
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Thread?</AlertDialogTitle>
             <AlertDialogDescription>
@@ -871,7 +871,7 @@ const Wall = () => {
 
       {/* Confirm Complete Deletion Dialog */}
       <AlertDialog open={confirmDeleteDialog} onOpenChange={setConfirmDeleteDialog}>
-        <AlertDialogContent>
+        <AlertDialogContent className="z-[10000]">
           <AlertDialogHeader>
             <AlertDialogTitle>Are you sure?</AlertDialogTitle>
             <AlertDialogDescription>

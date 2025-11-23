@@ -130,6 +130,19 @@ const Settings = () => {
     const filePath = `${user.id}/avatar.${fileExt}`;
 
     try {
+      // Delete any existing avatar files first
+      const { data: existingFiles } = await supabase.storage
+        .from("avatars")
+        .list(user.id);
+
+      if (existingFiles && existingFiles.length > 0) {
+        const filesToDelete = existingFiles.map(file => `${user.id}/${file.name}`);
+        await supabase.storage
+          .from("avatars")
+          .remove(filesToDelete);
+      }
+
+      // Upload new avatar
       const { error: uploadError } = await supabase.storage
         .from("avatars")
         .upload(filePath, file, { upsert: true });
@@ -140,14 +153,17 @@ const Settings = () => {
         .from("avatars")
         .getPublicUrl(filePath);
 
+      // Add cache-busting parameter
+      const urlWithTimestamp = `${publicUrl}?t=${Date.now()}`;
+
       const { error: updateError } = await supabase
         .from("profiles")
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: urlWithTimestamp })
         .eq("id", user.id);
 
       if (updateError) throw updateError;
 
-      setAvatarUrl(publicUrl);
+      setAvatarUrl(urlWithTimestamp);
       toast.success("Avatar updated!");
       loadProfile();
     } catch (error: any) {
@@ -160,6 +176,19 @@ const Settings = () => {
     if (!user) return;
 
     try {
+      // Delete files from storage
+      const { data: existingFiles } = await supabase.storage
+        .from("avatars")
+        .list(user.id);
+
+      if (existingFiles && existingFiles.length > 0) {
+        const filesToDelete = existingFiles.map(file => `${user.id}/${file.name}`);
+        await supabase.storage
+          .from("avatars")
+          .remove(filesToDelete);
+      }
+
+      // Update database
       const { error } = await supabase
         .from("profiles")
         .update({ avatar_url: null })

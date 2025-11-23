@@ -103,12 +103,7 @@ const Wall = () => {
   }, [user, circleId, navigate]);
 
   // Calculate dynamic canvas height based on items
-  const canvasHeight = useMemo(() => {
-    if (items.length === 0) return 'calc(100vh - 120px)';
-    const maxY = Math.max(...items.map(item => item.y));
-    const minHeight = window.innerHeight - 120;
-    return Math.max(minHeight, maxY + 600) + 'px'; // 600px padding below lowest item
-  }, [items]);
+  const canvasHeight = 'calc(100vh - 120px)'; // Fixed height, no dynamic growth
 
   const loadItems = async () => {
     try {
@@ -716,7 +711,7 @@ const Wall = () => {
           // Desktop canvas view
           <div
             ref={canvasRef}
-            className="relative w-full max-w-full bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border overflow-auto"
+            className="relative w-full max-w-full bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border overflow-hidden"
             style={{
               height: canvasHeight,
               backgroundImage: `

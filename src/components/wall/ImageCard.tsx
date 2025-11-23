@@ -44,7 +44,7 @@ const ImageCard = ({ content, onDelete, creatorAvatar, creatorUsername, hideAvat
       <img
         src={content.url}
         alt={content.caption || "Wall image"}
-        className="w-full h-48 object-cover rounded-md mb-2 pointer-events-none select-none"
+        className="w-full h-64 sm:h-48 object-cover rounded-md mb-2 pointer-events-none select-none"
         draggable={false}
       />
       {content.caption && (

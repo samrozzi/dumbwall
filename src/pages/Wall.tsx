@@ -323,19 +323,22 @@ const Wall = () => {
 
     const canvas = canvasRef.current;
     const canvasWidth = canvas.offsetWidth;
+    const canvasHeight = canvas.offsetHeight;
     
     const itemWidth = 280;
+    const itemHeight = 280;
     const padding = 20;
 
     const newX = e.clientX - dragOffset.x;
     const newY = e.clientY - dragOffset.y;
 
-    // Only clamp horizontally to prevent off-screen
+    // Clamp horizontally
     const maxX = canvasWidth - itemWidth - padding;
     const clampedX = Math.max(0, Math.min(maxX, newX));
     
-    // Allow vertical movement anywhere (no clamping on Y)
-    const clampedY = Math.max(0, newY);
+    // Clamp vertically with bottom boundary
+    const maxY = canvasHeight - itemHeight - padding;
+    const clampedY = Math.max(0, Math.min(maxY, newY));
 
     // Snap to grid
     const snappedX = Math.round(clampedX / GRID_SIZE) * GRID_SIZE;
@@ -605,11 +608,53 @@ const Wall = () => {
         </div>
 
         {viewMode === "wall" && isMobile ? (
-          // Mobile stack view
-          <div className="space-y-4 pb-20">
+          <div className="px-4 space-y-4 pb-24">
             {items.map((item) => (
               <div key={item.id} className="w-full">
-                {renderItem(item)}
+                {item.type === "note" && (
+                  <StickyNote
+                    content={item.content as any}
+                    onDelete={() => deleteItem(item.id)}
+                    onUpdate={(newContent) => {
+                      const updated: Partial<Omit<WallItem, "circle_id" | "created_at" | "created_by" | "id">> = {
+                        content: newContent,
+                      };
+                      updateItem(item.id, updated);
+                    }}
+                    isCreator={item.created_by === user?.id}
+                    creatorAvatar={null}
+                    creatorUsername={null}
+                  />
+                )}
+                {item.type === "image" && (
+                  <ImageCard
+                    content={item.content as any}
+                    onDelete={() => deleteItem(item.id)}
+                    creatorAvatar={null}
+                    creatorUsername={null}
+                  />
+                )}
+                {item.type === "thread" && (
+                  <ThreadBubble
+                    content={item.content as any}
+                    onDelete={() => handleThreadDelete(item.id, (item.content as any).threadId)}
+                    onClick={() => navigate(`/circle/${circleId}/chat?threadId=${(item.content as any).threadId}`)}
+                  />
+                )}
+                {item.type === "game_tictactoe" && (
+                  <TicTacToe 
+                    content={item.content as any}
+                    onDelete={() => deleteItem(item.id)} 
+                  />
+                )}
+                {item.type === "announcement" && (
+                  <AnnouncementBubble
+                    content={item.content as any}
+                    onDelete={() => deleteItem(item.id)}
+                    creatorAvatar={null}
+                    creatorUsername={null}
+                  />
+                )}
               </div>
             ))}
           </div>

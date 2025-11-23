@@ -105,14 +105,14 @@ export const InviteMemberDialog = ({
         .eq("id", gameId)
         .single();
 
-      // Create notification
-      await supabase.from("notifications").insert({
-        user_id: userId,
-        type: "game_invite",
-        title: "Game Invitation",
-        message: `You've been invited to play ${game?.title || game?.type}`,
-        link: `/circle/${circleId}/games`,
-        metadata: { game_id: gameId },
+      // Create notification using secure function
+      await supabase.rpc('create_notification', {
+        target_user_id: userId,
+        notif_type: "game_invite",
+        notif_title: "Game Invitation",
+        notif_message: `You've been invited to play ${game?.title || game?.type}`,
+        notif_link: `/circle/${circleId}/games`,
+        notif_metadata: { game_id: gameId }
       });
 
       notify("Invitation sent!");

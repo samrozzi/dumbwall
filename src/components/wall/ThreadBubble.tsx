@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { z } from "zod";
 
 interface ThreadBubbleProps {
   content: {
@@ -80,19 +81,33 @@ const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubblePro
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !user) return;
 
-    const { error } = await supabase.from("chat_messages").insert({
-      thread_id: content.threadId,
-      body: newMessage.trim(),
-      sender_id: user.id,
+    // Validate message
+    const MessageSchema = z.object({
+      body: z.string()
+        .min(1, 'Message cannot be empty')
+        .max(5000, 'Message too long')
+        .trim()
     });
 
-    if (!error) {
+    try {
+      const validated = MessageSchema.parse({ body: newMessage });
+      
+      const { error } = await supabase.from("chat_messages").insert({
+        thread_id: content.threadId,
+        body: validated.body,
+        sender_id: user.id,
+      });
+
+      if (error) throw error;
+      
       setNewMessage("");
       setNewCount(0);
       await supabase
         .from("chat_threads")
         .update({ updated_at: new Date().toISOString() })
         .eq("id", content.threadId);
+    } catch (error: any) {
+      console.error("Failed to send message:", error);
     }
   };
 

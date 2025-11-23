@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.48.0";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -245,7 +246,27 @@ async function gameAction(
   gameId: string,
   body: any
 ): Promise<Response> {
-  const { event_type, payload, status, metadataPatch } = body;
+  // Validate input
+  const GameActionSchema = z.object({
+    event_type: z.enum(['move', 'vote', 'answer', 'submit', 'forfeit', 'start', 'join', 'leave']),
+    payload: z.record(z.any()).refine(
+      (val) => JSON.stringify(val).length < 10000,
+      { message: 'Payload too large (max 10000 characters)' }
+    ),
+    status: z.enum(['waiting', 'in_progress', 'finished', 'cancelled']).optional(),
+    metadataPatch: z.record(z.any()).optional()
+  });
+
+  let event_type, payload, status, metadataPatch;
+  try {
+    const validated = GameActionSchema.parse(body);
+    event_type = validated.event_type;
+    payload = validated.payload;
+    status = validated.status;
+    metadataPatch = validated.metadataPatch;
+  } catch (error) {
+    return json({ error: 'Invalid input: ' + (error as Error).message }, 400);
+  }
 
   if (!event_type) {
     return json({ error: "event_type is required" }, 400);

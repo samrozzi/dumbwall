@@ -600,6 +600,17 @@ export type Database = {
         Args: { circle_uuid: string; user_uuid: string }
         Returns: boolean
       }
+      create_notification: {
+        Args: {
+          notif_link?: string
+          notif_message: string
+          notif_metadata?: Json
+          notif_title: string
+          notif_type: string
+          target_user_id: string
+        }
+        Returns: string
+      }
       get_user_id_by_email: { Args: { user_email: string }; Returns: string }
       is_circle_member: {
         Args: { circle_uuid: string; user_uuid: string }

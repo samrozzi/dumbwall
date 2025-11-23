@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
+import { z } from "zod";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -295,47 +296,62 @@ const Chat = () => {
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !user || !threadId) return;
+    if (!newMessage.trim() || !currentThread || !user) return;
 
-    const messageText = newMessage.trim();
-    const tempId = `temp-${Date.now()}`;
-    
-    // Fetch current user profile for optimistic update
-    const { data: userProfile } = await supabase
-      .from("profiles")
-      .select("display_name, username, avatar_url")
-      .eq("id", user.id)
-      .single();
-    
-    // Optimistic UI update
-    const optimisticMessage: ChatMessage = {
-      id: tempId,
-      body: messageText,
-      created_at: new Date().toISOString(),
-      sender_id: user.id,
-      profiles: userProfile || { display_name: null, username: null, avatar_url: null },
-    };
-    
-    setMessages((prev) => [...prev, optimisticMessage]);
-    setNewMessage("");
-
-    const { error } = await supabase.from("chat_messages").insert({
-      thread_id: threadId,
-      body: messageText,
-      sender_id: user.id,
+    // Validate message
+    const MessageSchema = z.object({
+      body: z.string()
+        .min(1, 'Message cannot be empty')
+        .max(5000, 'Message too long (max 5000 characters)')
+        .trim()
     });
 
-    if (error) {
-      setMessages((prev) => prev.filter((m) => m.id !== tempId));
-      toast.error("Failed to send message");
-      setNewMessage(messageText);
-      return;
-    }
+    try {
+      const validated = MessageSchema.parse({ body: newMessage });
+      
+      const tempId = `temp-${Date.now()}`;
+      const { data: userProfile } = await supabase
+        .from("profiles")
+        .select("display_name, username, avatar_url")
+        .eq("id", user.id)
+        .single();
+      
+      // Optimistic UI update
+      const optimisticMessage: ChatMessage = {
+        id: tempId,
+        body: validated.body,
+        created_at: new Date().toISOString(),
+        sender_id: user.id,
+        profiles: userProfile || { display_name: null, username: null, avatar_url: null },
+      };
+      
+      setMessages((prev) => [...prev, optimisticMessage]);
+      setNewMessage("");
 
-    await supabase
-      .from("chat_threads")
-      .update({ updated_at: new Date().toISOString() })
-      .eq("id", threadId);
+      const { error } = await supabase.from("chat_messages").insert({
+        thread_id: currentThread.id,
+        body: validated.body,
+        sender_id: user.id,
+      });
+
+      if (error) {
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        toast.error("Failed to send message");
+        setNewMessage(validated.body);
+        return;
+      }
+
+      await supabase
+        .from("chat_threads")
+        .update({ updated_at: new Date().toISOString() })
+        .eq("id", currentThread.id);
+    } catch (error: any) {
+      if (error instanceof z.ZodError) {
+        toast.error(error.issues[0].message);
+      } else {
+        toast.error("Failed to send message");
+      }
+    }
   };
 
   const handleCreateThread = async () => {

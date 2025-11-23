@@ -151,9 +151,14 @@ const TicTacToe = ({ content, onUpdate, onDelete }: TicTacToeProps) => {
       </div>
 
       {content.winner && content.winner !== "draw" && (
-        <p className="text-center text-lg font-bold text-primary animate-in zoom-in duration-300">
-          {content.winner} Wins! 🎉
-        </p>
+        <div className="text-center space-y-2">
+          <p className="text-lg font-bold text-primary animate-in zoom-in duration-300">
+            {content.winner} Wins! 🎉
+          </p>
+          <Button onClick={handleRematch} size="sm" className="w-full">
+            Rematch? 🔄
+          </Button>
+        </div>
       )}
 
       {content.winner === "draw" && (

@@ -526,7 +526,7 @@ const Chat = () => {
                           <div className={`truncate ${thread.unreadCount > 0 ? 'font-bold' : 'font-medium'}`}>
                             {thread.title}
                           </div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className={`text-xs mt-1 ${thread.unreadCount > 0 ? 'text-orange-500 font-medium' : 'text-muted-foreground'}`}>
                             {new Date(thread.updated_at).toLocaleDateString()}
                           </div>
                         </div>
@@ -719,7 +719,7 @@ const Chat = () => {
                       )}
                       <span className="truncate">{thread.title}</span>
                     </div>
-                    <div className="text-xs text-muted-foreground mt-1">
+                    <div className={`text-xs mt-1 ${thread.unreadCount > 0 ? 'text-orange-500 font-medium' : 'text-muted-foreground'}`}>
                       {new Date(thread.updated_at).toLocaleDateString()}
                     </div>
                   </div>

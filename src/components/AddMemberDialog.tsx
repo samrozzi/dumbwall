@@ -303,7 +303,7 @@ export function AddMemberDialog({
                 </div>
               </PopoverTrigger>
               <PopoverContent 
-                className="w-[400px] p-0" 
+                className="w-[400px] p-0 z-[10000]" 
                 align="start"
                 onOpenAutoFocus={(e) => e.preventDefault()}
               >

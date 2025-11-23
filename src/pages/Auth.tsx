@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { notify } from "@/components/ui/custom-notification";
-import { Sparkles } from "lucide-react";
+import wallLogo from "@/assets/wall-logo.png";
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -134,8 +134,8 @@ const Auth = () => {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md p-8 bg-card border-border">
-        <div className="flex items-center justify-center gap-2 mb-8">
-          <Sparkles className="w-8 h-8 text-primary" />
+        <div className="flex flex-col items-center justify-center mb-8">
+          <img src={wallLogo} alt="The Wall" className="w-24 h-24 mb-4 object-contain" />
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
             The Wall
           </h1>

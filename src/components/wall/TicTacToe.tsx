@@ -59,6 +59,7 @@ const TicTacToe = ({ content, onUpdate, onDelete }: TicTacToeProps) => {
 
   // Mobile touch handler
   const handleTouch = (e: React.TouchEvent, index: number) => {
+    e.preventDefault();
     handleClick(index);
   };
 
@@ -131,9 +132,9 @@ const TicTacToe = ({ content, onUpdate, onDelete }: TicTacToeProps) => {
             <button
               key={index}
               onClick={() => handleClick(index)}
-              onTouchEnd={(e) => handleTouch(e, index)}
+              onTouchStart={(e) => handleTouch(e, index)}
               className="aspect-square min-h-[60px] bg-accent/20 hover:bg-accent/30 active:bg-accent/40 rounded-md flex items-center justify-center text-2xl font-bold transition-colors disabled:cursor-not-allowed touch-manipulation"
-              disabled={!!content.winner}
+              disabled={!onUpdate || !!cell || !!content.winner}
               style={{ touchAction: 'manipulation' }}
             >
               {cell}

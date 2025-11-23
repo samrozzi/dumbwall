@@ -691,6 +691,11 @@ const Wall = () => {
                   {item.type === "game_tictactoe" && (
                     <TicTacToe 
                       content={item.content as any}
+                      onUpdate={(state, turn, winner, winningLine) =>
+                        updateItem(item.id, {
+                          content: { state, turn, winner, winningLine } as any,
+                        })
+                      }
                       onDelete={() => deleteItem(item.id)} 
                     />
                   )}

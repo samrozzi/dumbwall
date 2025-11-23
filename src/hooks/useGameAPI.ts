@@ -9,19 +9,24 @@ export const useGameAPI = () => {
       throw new Error("Not authenticated");
     }
 
-    const response = await supabase.functions.invoke('games', {
-      body: method !== "GET" ? body : undefined,
-      method: method as any,
+    const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/games${path}`);
+
+    const response = await fetch(url.toString(), {
+      method,
       headers: {
         Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
       },
+      body: method !== "GET" ? JSON.stringify(body) : undefined,
     });
 
-    if (response.error) {
-      throw response.error;
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Game function error:', error);
+      throw new Error('Game function failed');
     }
 
-    return response.data;
+    return response.json();
   };
 
   const listGames = async (circleId?: string): Promise<{ games: Game[] }> => {

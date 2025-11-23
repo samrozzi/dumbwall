@@ -354,6 +354,10 @@ export type Database = {
         Args: { circle_uuid: string; user_uuid: string }
         Returns: boolean
       }
+      is_thread_creator: {
+        Args: { _thread_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
       invite_permission: "anyone" | "owner_only"

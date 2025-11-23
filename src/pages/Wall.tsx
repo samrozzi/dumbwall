@@ -364,8 +364,11 @@ const Wall = () => {
     const actualCanvasHeight = canvasRect.height;
     const actualCanvasWidth = canvasRect.width;
     
-    const itemWidth = 280;
-    const itemHeight = 280;
+    // Get the actual dragged element to measure its real dimensions
+    const draggedElement = document.querySelector(`[data-item-id="${draggedItem}"]`);
+    const itemWidth = draggedElement?.getBoundingClientRect().width || 280;
+    const itemHeight = draggedElement?.getBoundingClientRect().height || 280;
+    
     const padding = 20;
 
     const newX = e.clientX - dragOffset.x;
@@ -734,6 +737,7 @@ const Wall = () => {
             {items.map((item) => (
               <div
                 key={item.id}
+                data-item-id={item.id}
                 className="absolute cursor-move select-none"
                 style={{
                   left: item.x,

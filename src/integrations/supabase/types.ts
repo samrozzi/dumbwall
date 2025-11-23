@@ -19,6 +19,8 @@ export type Database = {
           body: string
           created_at: string
           id: string
+          image_caption: string | null
+          image_url: string | null
           reply_to_id: string | null
           sender_id: string
           thread_id: string
@@ -27,6 +29,8 @@ export type Database = {
           body: string
           created_at?: string
           id?: string
+          image_caption?: string | null
+          image_url?: string | null
           reply_to_id?: string | null
           sender_id: string
           thread_id: string
@@ -35,6 +39,8 @@ export type Database = {
           body?: string
           created_at?: string
           id?: string
+          image_caption?: string | null
+          image_url?: string | null
           reply_to_id?: string | null
           sender_id?: string
           thread_id?: string

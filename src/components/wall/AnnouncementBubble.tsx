@@ -61,13 +61,6 @@ const AnnouncementBubble = ({ content, onDelete, creatorAvatar, creatorUsername 
               </p>
             </div>
           </div>
-          
-          {/* OK Button */}
-          <div className="mt-4 flex justify-center">
-            <button className="px-8 py-1 bg-[#C0C0C0] border-2 border-[#FFFFFF] shadow-[inset_1px_1px_0px_white,inset_-1px_-1px_0px_#808080,2px_2px_0px_#000000] hover:shadow-[inset_-1px_-1px_0px_white,inset_1px_1px_0px_#808080] active:shadow-[inset_1px_1px_0px_#808080,inset_-1px_-1px_0px_white] text-black text-sm font-sans min-w-[75px]">
-              <span className="underline">O</span>K
-            </button>
-          </div>
         </div>
       </Card>
     </div>

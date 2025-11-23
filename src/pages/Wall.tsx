@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Database } from "@/integrations/supabase/types";
 import Navigation from "@/components/Navigation";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import StickyNote from "@/components/wall/StickyNote";
 import ImageCard from "@/components/wall/ImageCard";
 import ThreadBubble from "@/components/wall/ThreadBubble";
@@ -54,6 +55,11 @@ const Wall = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+  
+  // Thread deletion states
+  const [deleteThreadDialog, setDeleteThreadDialog] = useState(false);
+  const [confirmDeleteDialog, setConfirmDeleteDialog] = useState(false);
+  const [threadToDelete, setThreadToDelete] = useState<{ itemId: string; threadId: string } | null>(null);
   
   const [noteTitle, setNoteTitle] = useState("");
   const [noteBody, setNoteBody] = useState("");
@@ -204,6 +210,68 @@ const Wall = () => {
     }
   };
 
+  const handleThreadDelete = (itemId: string, threadId: string) => {
+    setThreadToDelete({ itemId, threadId });
+    setDeleteThreadDialog(true);
+  };
+
+  const handleMoveToChat = async () => {
+    if (!threadToDelete) return;
+    
+    try {
+      // Just remove from wall by deleting the wall item
+      // Thread will remain in chat
+      const { error } = await supabase
+        .from("wall_items")
+        .delete()
+        .eq("id", threadToDelete.itemId);
+
+      if (error) throw error;
+      notify("Thread moved to chat only", "success");
+      setDeleteThreadDialog(false);
+      setThreadToDelete(null);
+    } catch (error: any) {
+      notify(error.message, "error");
+    }
+  };
+
+  const handleDeleteCompletely = async () => {
+    if (!threadToDelete) return;
+    
+    try {
+      // Delete all messages first
+      const { error: messagesError } = await supabase
+        .from("chat_messages")
+        .delete()
+        .eq("thread_id", threadToDelete.threadId);
+
+      if (messagesError) throw messagesError;
+
+      // Delete the thread
+      const { error: threadError } = await supabase
+        .from("chat_threads")
+        .delete()
+        .eq("id", threadToDelete.threadId);
+
+      if (threadError) throw threadError;
+
+      // Delete the wall item
+      const { error: wallError } = await supabase
+        .from("wall_items")
+        .delete()
+        .eq("id", threadToDelete.itemId);
+
+      if (wallError) throw wallError;
+
+      notify("Thread deleted completely", "info");
+      setConfirmDeleteDialog(false);
+      setDeleteThreadDialog(false);
+      setThreadToDelete(null);
+    } catch (error: any) {
+      notify(error.message, "error");
+    }
+  };
+
   const handleMouseDown = (e: React.MouseEvent, itemId: string) => {
     const item = items.find((i) => i.id === itemId);
     if (!item) return;
@@ -283,7 +351,7 @@ const Wall = () => {
         return (
           <ThreadBubble
             content={{ title: threadContent.title, threadId: threadContent.threadId }}
-            onDelete={() => deleteItem(item.id)}
+            onDelete={() => handleThreadDelete(item.id, threadContent.threadId)}
             onClick={() => navigate(`/circle/${circleId}/chat?threadId=${threadContent.threadId}`)}
           />
         );
@@ -605,9 +673,36 @@ const Wall = () => {
           </DialogHeader>
           {showCamera ? (
             <CameraCapture
-              onCapture={(file) => {
+              onCapture={async (file) => {
                 setImageFile(file);
                 setShowCamera(false);
+                setUploading(true);
+                
+                // Automatically upload the captured photo
+                const fileExt = file.name.split(".").pop();
+                const fileName = `${user!.id}-${Date.now()}.${fileExt}`;
+                const filePath = `${circleId}/${fileName}`;
+
+                const { error: uploadError } = await supabase.storage
+                  .from("avatars")
+                  .upload(filePath, file);
+
+                if (uploadError) {
+                  notify(uploadError.message, "error");
+                  setUploading(false);
+                  return;
+                }
+
+                const { data: { publicUrl } } = supabase.storage
+                  .from("avatars")
+                  .getPublicUrl(filePath);
+
+                createItem("image", { url: publicUrl, caption: imageCaption });
+                setImageUrl("");
+                setImageCaption("");
+                setImageFile(null);
+                setImageDialog(false);
+                setUploading(false);
               }}
               onClose={() => setShowCamera(false)}
             />
@@ -746,6 +841,52 @@ const Wall = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Thread Deletion Dialog */}
+      <AlertDialog open={deleteThreadDialog} onOpenChange={setDeleteThreadDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Thread?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Would you like to delete this thread from the wall only and keep it in chat conversations?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setDeleteThreadDialog(false);
+              setConfirmDeleteDialog(true);
+            }}>
+              No
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleMoveToChat}>
+              Yes, Move to Chat
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Confirm Complete Deletion Dialog */}
+      <AlertDialog open={confirmDeleteDialog} onOpenChange={setConfirmDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Removing this will delete all history of this chat. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setConfirmDeleteDialog(false);
+              setThreadToDelete(null);
+            }}>
+              Never mind
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteCompletely} className="bg-destructive hover:bg-destructive/90">
+              Delete Completely
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

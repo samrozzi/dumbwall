@@ -129,17 +129,14 @@ export function AddMemberDialog({
     setSelectedUser(selectedUser);
     setSearchTerm(`@${selectedUser.username}`);
     setPopoverOpen(false);
-
-    // For selected users, we'll use their user_id to send notification directly
-    // But we still need an email for the invite record
-    const userEmail = await getEmailFromUserId(selectedUser.id);
-    if (userEmail) {
-      setEmail(userEmail);
-    }
   };
 
   const handleSendInvite = async () => {
-    if ((!email && !selectedUser) || !user) return;
+    if (!selectedUser && !email) {
+      toast.error('Please enter an email or select a user');
+      return;
+    }
+    if (!user) return;
 
     setSending(true);
     try {
@@ -155,12 +152,8 @@ export function AddMemberDialog({
       // Determine invite type based on permissions
       const needsApproval = !isOwner && invitePermission === 'owner_only';
 
-      const inviteEmail = selectedUser ? email : email;
-      if (!inviteEmail) {
-        toast.error('Please enter an email or select a user');
-        setSending(false);
-        return;
-      }
+      // Use placeholder email for selected users (real invite is via notification)
+      const inviteEmail = selectedUser ? `${selectedUser.username}@app.internal` : email;
 
       // Check if invite already exists for this email
       const { data: existingInvite } = await supabase

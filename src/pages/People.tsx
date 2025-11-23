@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { MessageCircle, UserPlus } from "lucide-react";
 import { toast } from "sonner";
 import { AddMemberDialog } from "@/components/AddMemberDialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Member {
   user_id: string;
@@ -22,6 +23,7 @@ const People = () => {
   const { circleId } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const isMobile = useIsMobile();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
@@ -172,7 +174,7 @@ const People = () => {
     return (
       <div className="min-h-screen bg-background">
         <Navigation circleId={circleId} />
-        <div className="pl-24 pr-8 pt-8">
+        <div className={`${isMobile ? 'px-4 pb-24' : 'pl-24 pr-8'} pt-8`}>
           <p className="text-muted-foreground">Loading members...</p>
         </div>
       </div>
@@ -182,7 +184,7 @@ const People = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
-      <div className="pl-24 pr-8 pt-8">
+      <div className={`${isMobile ? 'px-4 pb-24' : 'pl-24 pr-8'} pt-8`}>
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">People</h1>
           {canAddMembers && (

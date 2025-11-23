@@ -443,7 +443,7 @@ const Settings = () => {
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
 
-      <div className={`${isMobile ? 'px-4 pb-24' : 'pl-24 pr-8'} pt-8 ${isMobile ? 'max-w-full' : 'max-w-5xl'} mx-auto pb-16`}>
+      <div className={`${isMobile ? 'pb-24' : 'pl-24 pr-8'} pt-8 ${isMobile ? 'max-w-full px-4' : 'max-w-5xl'} mx-auto pb-16`}>
         <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
           <Settings2 className="w-8 h-8" />
           Settings

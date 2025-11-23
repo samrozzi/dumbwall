@@ -89,7 +89,10 @@ const Circles = () => {
   };
 
   const loadPendingInvites = async () => {
-    if (!user?.email) return;
+    if (!user?.email) {
+      console.log("No user email available yet");
+      return;
+    }
 
     try {
       const { data, error } = await supabase
@@ -103,12 +106,17 @@ const Circles = () => {
         .eq("status", "pending")
         .eq("invited_email", user.email);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Invite query error:", error);
+        throw error;
+      }
 
-      setPendingInvites(data as any || []);
+      console.log("Loaded invites:", data);
+      setPendingInvites(data || []);
     } catch (error: any) {
       console.error("Error loading pending invites:", error);
       toast.error("Failed to load invites: " + error.message);
+      setPendingInvites([]); // Set to empty array on error
     }
   };
 
@@ -226,6 +234,15 @@ const Circles = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+          {/* Empty State Message */}
+          {circles.length === 0 && pendingInvites.length === 0 && (
+            <div className="col-span-full text-center py-12">
+              <p className="text-muted-foreground mb-4">
+                You don't have any circles yet. Create one or accept an invite!
+              </p>
+            </div>
+          )}
+
           {/* Pending Invite Circles */}
           {pendingInvites.map((invite) => (
             <div
@@ -239,7 +256,7 @@ const Circles = () => {
               <div className="relative w-48 h-48 rounded-full border-dashed border-4 border-primary/40 bg-primary/5 shadow-lg hover:scale-105 transition-all flex flex-col items-center justify-center mb-3 opacity-80 animate-pulse">
                 <Mail className="w-10 h-10 text-primary mb-2" />
                 <div className="text-center px-4">
-                  <h3 className="text-lg font-semibold mb-1">{invite.circles.name}</h3>
+                  <h3 className="text-lg font-semibold mb-1">{invite.circles?.name || "Unknown Circle"}</h3>
                   <p className="text-xs text-muted-foreground">
                     Tap to view
                   </p>

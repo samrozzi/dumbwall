@@ -304,10 +304,6 @@ const Wall = () => {
           <AnnouncementBubble
             content={content}
             onDelete={() => deleteItem(item.id)}
-            onUpdate={(newContent) =>
-              updateItem(item.id, { content: newContent as any })
-            }
-            isCreator={isCreator}
             creatorAvatar={itemWithCreator.creator_avatar_url}
             creatorUsername={itemWithCreator.creator_username}
           />

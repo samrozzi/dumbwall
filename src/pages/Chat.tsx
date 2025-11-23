@@ -229,7 +229,7 @@ const Chat = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
-      <div className="container mx-auto px-4 py-8 flex gap-4 h-[calc(100vh-80px)]">
+      <div className="pl-24 pr-8 pt-8 flex gap-4 h-[calc(100vh-80px)]">
         {/* Threads Sidebar */}
         <div className="w-[30%] flex flex-col gap-4">
           <div className="flex items-center justify-between">

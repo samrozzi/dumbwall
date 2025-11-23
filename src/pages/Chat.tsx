@@ -1,10 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Navigation from "@/components/Navigation";
 import { toast } from "sonner";
 import { MessageSquare, Plus, Send } from "lucide-react";
@@ -27,6 +28,7 @@ interface ChatMessage {
   profiles?: {
     display_name: string | null;
     username: string | null;
+    avatar_url: string | null;
   };
 }
 
@@ -44,6 +46,7 @@ const Chat = () => {
   const [filter, setFilter] = useState<"all" | "wall" | "convos">("all");
   const [newThreadTitle, setNewThreadTitle] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (circleId) {
@@ -58,6 +61,10 @@ const Chat = () => {
       subscribeToMessages();
     }
   }, [threadId]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const loadThreads = async () => {
     const { data, error } = await supabase
@@ -103,12 +110,12 @@ const Chat = () => {
     const senderIds = [...new Set(data?.map((m) => m.sender_id) || [])];
     const { data: profiles } = await supabase
       .from("profiles")
-      .select("id, display_name, username")
+      .select("id, display_name, username, avatar_url")
       .in("id", senderIds);
 
     const messagesWithProfiles = (data || []).map((msg) => ({
       ...msg,
-      profiles: profiles?.find((p) => p.id === msg.sender_id) || { display_name: null, username: null },
+      profiles: profiles?.find((p) => p.id === msg.sender_id) || { display_name: null, username: null, avatar_url: null },
     }));
 
     setMessages(messagesWithProfiles as ChatMessage[]);
@@ -128,7 +135,7 @@ const Chat = () => {
         async (payload) => {
           const { data: profile } = await supabase
             .from("profiles")
-            .select("display_name, username")
+            .select("display_name, username, avatar_url")
             .eq("id", payload.new.sender_id)
             .single();
 
@@ -151,16 +158,20 @@ const Chat = () => {
     const messageText = newMessage.trim();
     const tempId = `temp-${Date.now()}`;
     
+    // Fetch current user profile for optimistic update
+    const { data: userProfile } = await supabase
+      .from("profiles")
+      .select("display_name, username, avatar_url")
+      .eq("id", user.id)
+      .single();
+    
     // Optimistic UI update
     const optimisticMessage: ChatMessage = {
       id: tempId,
       body: messageText,
       created_at: new Date().toISOString(),
       sender_id: user.id,
-      profiles: {
-        display_name: user.user_metadata?.display_name || null,
-        username: user.user_metadata?.username || null,
-      },
+      profiles: userProfile || { display_name: null, username: null, avatar_url: null },
     };
     
     setMessages((prev) => [...prev, optimisticMessage]);
@@ -216,7 +227,7 @@ const Chat = () => {
   });
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50">
+    <div className="min-h-screen bg-background">
       <Navigation />
       <div className="container mx-auto px-4 py-8 flex gap-4 h-[calc(100vh-80px)]">
         {/* Threads Sidebar */}
@@ -257,19 +268,19 @@ const Chat = () => {
             </TabsList>
           </Tabs>
 
-          <ScrollArea className="flex-1 border rounded-lg bg-white/50 backdrop-blur">
+          <ScrollArea className="flex-1 border rounded-lg bg-card/50 backdrop-blur">
             <div className="p-2 space-y-2">
               {filteredThreads.map((thread) => (
                 <button
                   key={thread.id}
                   onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
-                  className={`w-full text-left p-3 rounded-lg transition-all hover:bg-white/80 ${
-                    threadId === thread.id ? "bg-white shadow-md" : "bg-white/40"
+                  className={`w-full text-left p-3 rounded-lg transition-all hover:bg-card ${
+                    threadId === thread.id ? "bg-card shadow-md" : "bg-card/40"
                   }`}
                 >
                   <div className="font-medium flex items-center gap-2">
                     {thread.linked_wall_item_id && (
-                      <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded">
+                      <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
                         Wall
                       </span>
                     )}
@@ -285,11 +296,11 @@ const Chat = () => {
         </div>
 
         {/* Chat Area */}
-        <div className="flex-1 flex flex-col border rounded-lg bg-white/50 backdrop-blur overflow-hidden">
+        <div className="flex-1 flex flex-col border rounded-lg bg-card overflow-hidden">
           {threadId && currentThread ? (
             <>
               {/* Chat Header */}
-              <div className="p-4 border-b bg-white/80">
+              <div className="p-4 border-b bg-card">
                 <h3 className="text-xl font-bold">{currentThread.title}</h3>
               </div>
 
@@ -299,15 +310,21 @@ const Chat = () => {
                   {messages.map((message) => (
                     <div
                       key={message.id}
-                      className={`flex ${
-                        message.sender_id === user?.id ? "justify-end" : "justify-start"
+                      className={`flex gap-3 ${
+                        message.sender_id === user?.id ? "flex-row-reverse" : "flex-row"
                       }`}
                     >
+                      <Avatar className="w-8 h-8 flex-shrink-0">
+                        <AvatarImage src={message.profiles?.avatar_url || undefined} />
+                        <AvatarFallback>
+                          {message.profiles?.username?.slice(0, 2).toUpperCase() || "??"}
+                        </AvatarFallback>
+                      </Avatar>
                       <div
                         className={`max-w-[70%] rounded-lg p-3 ${
                           message.sender_id === user?.id
                             ? "bg-primary text-primary-foreground"
-                            : "bg-secondary text-secondary-foreground"
+                            : "bg-muted text-foreground"
                         }`}
                       >
                         <div className="text-xs opacity-70 mb-1">
@@ -320,11 +337,12 @@ const Chat = () => {
                       </div>
                     </div>
                   ))}
+                  <div ref={messagesEndRef} />
                 </div>
               </ScrollArea>
 
               {/* Input */}
-              <div className="p-4 border-t bg-white/80">
+              <div className="p-4 border-t bg-card">
                 <div className="flex gap-2">
                   <Input
                     placeholder="Type a message..."

@@ -96,7 +96,7 @@ const Wall = () => {
     try {
       const { data, error } = await supabase
         .from("wall_items")
-        .select("*")
+        .select("*, profiles:created_by(avatar_url, username)")
         .eq("circle_id", circleId)
         .order("z_index", { ascending: true });
 
@@ -217,6 +217,8 @@ const Wall = () => {
 
   const renderItem = (item: WallItem) => {
     const content = item.content as any;
+    const profiles = (item as any).profiles;
+    const isCreator = user?.id === item.created_by;
     
     switch (item.type) {
       case "note":
@@ -224,6 +226,10 @@ const Wall = () => {
           <StickyNote
             content={content}
             onDelete={() => deleteItem(item.id)}
+            onUpdate={(newContent) => updateItem(item.id, { content: newContent as any })}
+            isCreator={isCreator}
+            creatorAvatar={profiles?.avatar_url}
+            creatorUsername={profiles?.username}
           />
         );
       case "image":
@@ -231,6 +237,8 @@ const Wall = () => {
           <ImageCard
             content={content}
             onDelete={() => deleteItem(item.id)}
+            creatorAvatar={profiles?.avatar_url}
+            creatorUsername={profiles?.username}
           />
         );
       case "thread":
@@ -271,6 +279,9 @@ const Wall = () => {
             onUpdate={(newContent) =>
               updateItem(item.id, { content: newContent as any })
             }
+            isCreator={isCreator}
+            creatorAvatar={profiles?.avatar_url}
+            creatorUsername={profiles?.username}
           />
         );
       default:

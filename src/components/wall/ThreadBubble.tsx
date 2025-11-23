@@ -28,7 +28,6 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newCount, setNewCount] = useState(0);
-  const [showInput, setShowInput] = useState(false);
   const [newMessage, setNewMessage] = useState("");
   const { user } = useAuth();
 
@@ -75,11 +74,6 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
     };
   }, [content.threadId]);
 
-  const handleClick = () => {
-    setNewCount(0);
-    setShowInput(!showInput);
-  };
-
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !user) return;
 
@@ -91,6 +85,7 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
 
     if (!error) {
       setNewMessage("");
+      setNewCount(0);
       await supabase
         .from("chat_threads")
         .update({ updated_at: new Date().toISOString() })
@@ -105,9 +100,10 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
 
   return (
     <Card
-      className="p-4 hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-200 relative max-h-[280px] flex flex-col"
+      className="p-4 hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-200 relative flex flex-col"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      style={{ minHeight: "200px", maxHeight: "280px" }}
     >
       {onDelete && isHovered && (
         <button
@@ -129,10 +125,7 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
         </Badge>
       )}
 
-      <div 
-        className="flex items-start gap-2 cursor-pointer flex-1 min-h-0"
-        onClick={handleClick}
-      >
+      <div className="flex items-start gap-2 flex-1 min-h-0">
         <MessageSquare className="w-5 h-5 text-purple-600 flex-shrink-0 mt-1" />
         <div className="flex-1 min-w-0 flex flex-col min-h-0">
           <div className="flex items-center justify-between mb-2">
@@ -144,8 +137,8 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
               Open
             </button>
           </div>
-          <ScrollArea className="flex-1 min-h-0">
-            <div className="space-y-1 text-sm text-purple-700 max-h-[80px]">
+          <ScrollArea className="flex-1 min-h-0 max-h-[60px]">
+            <div className="space-y-1 text-sm text-purple-700">
               {messages.length > 0 ? (
                 messages.map((msg) => (
                   <p key={msg.id} className="line-clamp-1">• {msg.body}</p>
@@ -158,21 +151,19 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
         </div>
       </div>
 
-      {showInput && (
-        <div className="mt-3 pt-3 border-t border-purple-200 flex gap-2">
-          <Input
-            placeholder="Reply..."
-            value={newMessage}
-            onChange={(e) => setNewMessage(e.target.value)}
-            onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
-            onClick={(e) => e.stopPropagation()}
-            className="h-8 text-sm"
-          />
-          <Button onClick={handleSendMessage} size="sm" className="h-8 w-8 p-0">
-            <Send className="w-3 h-3" />
-          </Button>
-        </div>
-      )}
+      <div className="mt-3 pt-3 border-t border-purple-200 flex gap-2">
+        <Input
+          placeholder="Reply..."
+          value={newMessage}
+          onChange={(e) => setNewMessage(e.target.value)}
+          onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
+          onClick={(e) => e.stopPropagation()}
+          className="h-8 text-sm"
+        />
+        <Button onClick={handleSendMessage} size="sm" className="h-8 w-8 p-0">
+          <Send className="w-3 h-3" />
+        </Button>
+      </div>
     </Card>
   );
 };

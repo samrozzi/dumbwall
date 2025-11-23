@@ -44,7 +44,7 @@ const Auth = () => {
           return;
         }
 
-        const { error } = await supabase.auth.signUp({
+        const { data: authData, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -56,6 +56,15 @@ const Auth = () => {
           },
         });
         if (error) throw error;
+
+        // Create profile with last_username_change_at
+        if (authData.user) {
+          await supabase
+            .from("profiles")
+            .update({ last_username_change_at: new Date().toISOString() })
+            .eq("id", authData.user.id);
+        }
+
         toast.success("Account created! Welcome to The Wall!");
         navigate("/");
       }

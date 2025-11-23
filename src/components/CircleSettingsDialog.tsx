@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -38,6 +38,13 @@ export function CircleSettingsDialog({
 }: CircleSettingsDialogProps) {
   const [invitePermission, setInvitePermission] = useState<'anyone' | 'owner_only'>(currentPermission);
   const [saving, setSaving] = useState(false);
+
+  // Sync state with prop when dialog opens or permission changes
+  useEffect(() => {
+    if (open) {
+      setInvitePermission(currentPermission);
+    }
+  }, [open, currentPermission]);
 
   const handleSave = async () => {
     setSaving(true);

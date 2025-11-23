@@ -80,7 +80,7 @@ export function AddMemberDialog({
           throw error;
         }
         
-        console.log('Search results:', data?.length || 0);
+        console.log('Search results:', data?.length || 0, data);
         setSearchResults(data || []);
       } catch (error: any) {
         console.error('Search error:', error);
@@ -308,13 +308,11 @@ export function AddMemberDialog({
                 >
                   <Command>
                     <CommandList>
-                      {searching ? (
-                        <CommandEmpty>Searching...</CommandEmpty>
-                      ) : searchError ? (
-                        <CommandEmpty className="text-destructive">Error: {searchError}</CommandEmpty>
-                      ) : searchResults.length === 0 ? (
-                        <CommandEmpty>No users found.</CommandEmpty>
-                      ) : null}
+                      <CommandEmpty>
+                        {searching ? 'Searching...' : 
+                         searchError ? `Error: ${searchError}` : 
+                         'No users found.'}
+                      </CommandEmpty>
                       <CommandGroup>
                         {searchResults.map((result) => (
                           <CommandItem

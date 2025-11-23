@@ -216,12 +216,11 @@ const Circles = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background p-8">
-      {!isMobile && (
-        <div className="absolute top-8 right-8 z-50">
-          <NotificationCenter />
-        </div>
-      )}
+    <div className="min-h-screen bg-background p-8 relative">
+      {/* Notification Bell */}
+      <div className={`absolute z-50 ${isMobile ? 'top-2 left-4' : 'top-8 right-8'}`}>
+        <NotificationCenter />
+      </div>
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">

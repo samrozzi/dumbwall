@@ -3,6 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import Navigation from "@/components/Navigation";
 import { GameWrapper } from "@/components/games/GameWrapper";
+import { GameCard } from "@/components/games/GameCard";
+import { GameInvites } from "@/components/games/GameInvites";
 import { useGameAPI } from "@/hooks/useGameAPI";
 import { Game } from "@/types/games";
 import { Button } from "@/components/ui/button";
@@ -36,7 +38,7 @@ const Games = () => {
   const { listGames, createGame } = useGameAPI();
 
   // Form state
-  const [gameType, setGameType] = useState<string>("poll");
+  const [gameType, setGameType] = useState<string>("tic_tac_toe");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
 
@@ -171,6 +173,9 @@ const Games = () => {
       
       <div className="pl-24 pr-8 py-8">
         <div className="max-w-7xl mx-auto space-y-6">
+          {/* Game Invites */}
+          <GameInvites />
+          
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -260,9 +265,7 @@ const Games = () => {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {games.map((game) => (
-                <div key={game.id}>
-                  <GameWrapper gameId={game.id} userId={user.id} />
-                </div>
+                <GameCard key={game.id} game={game} userId={user.id} />
               ))}
             </div>
           )}

@@ -3,13 +3,16 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import Navigation from "@/components/Navigation";
 import { NotificationCenter } from "@/components/NotificationCenter";
-import { GameWrapper } from "@/components/games/GameWrapper";
 import { GameCard } from "@/components/games/GameCard";
 import { GameInvites } from "@/components/games/GameInvites";
+import { QuickPollDialog } from "@/components/games/InstantPlay/QuickPollDialog";
+import { RockPaperScissorsDialog } from "@/components/games/InstantPlay/RockPaperScissorsDialog";
+import { CoinFlipDialog } from "@/components/games/InstantPlay/CoinFlipDialog";
+import { RandomQuestionDialog } from "@/components/games/InstantPlay/RandomQuestionDialog";
 import { useGameAPI } from "@/hooks/useGameAPI";
 import { Game } from "@/types/games";
 import { Button } from "@/components/ui/button";
-import { Plus, Gamepad2 } from "lucide-react";
+import { Plus, Gamepad2, Megaphone, Hand, Coins, Dices, Zap } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +41,10 @@ const Games = () => {
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [quickPollOpen, setQuickPollOpen] = useState(false);
+  const [rpsOpen, setRpsOpen] = useState(false);
+  const [coinFlipOpen, setCoinFlipOpen] = useState(false);
+  const [randomQuestionOpen, setRandomQuestionOpen] = useState(false);
   const { listGames, createGame } = useGameAPI();
 
   // Form state
@@ -176,25 +183,27 @@ const Games = () => {
       
       <div className="px-4 sm:pl-24 sm:pr-8 py-8">
         <div className="max-w-7xl mx-auto space-y-6">
-          {/* Game Invites */}
-          <GameInvites />
-          
           {/* Header */}
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Gamepad2 className="w-8 h-8 text-primary" />
-              <h1 className="text-3xl font-bold">Games</h1>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              <NotificationCenter />
-              <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                <DialogTrigger asChild>
-                  <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Game
-                  </Button>
-                </DialogTrigger>
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <Gamepad2 className="w-8 h-8 text-primary" />
+                <h1 className="text-3xl font-bold">Games</h1>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <NotificationCenter />
+                <Button variant="secondary" size="sm" onClick={() => document.getElementById('instant-play')?.scrollIntoView({ behavior: 'smooth' })}>
+                  <Zap className="w-4 h-4 mr-2" />
+                  Quick Play
+                </Button>
+                <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Game
+                    </Button>
+                  </DialogTrigger>
               <DialogContent>
                 <DialogHeader>
                   <DialogTitle>Create New Game</DialogTitle>
@@ -247,7 +256,11 @@ const Games = () => {
               </DialogContent>
             </Dialog>
             </div>
+            <p className="text-sm text-muted-foreground">Play with your circle – turns, polls, and more.</p>
           </div>
+
+          {/* Game Invites */}
+          <GameInvites />
 
           {/* Games Grid */}
           {loading ? (
@@ -257,26 +270,99 @@ const Games = () => {
               ))}
             </div>
           ) : games.length === 0 ? (
-            <div className="text-center py-20">
-              <Gamepad2 className="w-16 h-16 mx-auto text-muted-foreground mb-4" />
-              <h3 className="text-xl font-semibold mb-2">No games yet</h3>
-              <p className="text-muted-foreground mb-6">
-                Create your first game to get started!
-              </p>
-              <Button onClick={() => setCreateDialogOpen(true)}>
+            <div className="text-center py-12 space-y-6">
+              <Gamepad2 className="w-16 h-16 mx-auto text-muted-foreground" />
+              <div>
+                <h2 className="text-2xl font-semibold mb-2">No games yet</h2>
+                <p className="text-muted-foreground mb-6">Start something new for your circle.</p>
+              </div>
+              <Button onClick={() => setCreateDialogOpen(true)} size="lg">
                 <Plus className="w-4 h-4 mr-2" />
-                Create Game
+                Create your first game
               </Button>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {games.map((game) => (
-                <GameCard key={game.id} game={game} userId={user.id} />
-              ))}
+            <div className="space-y-8">
+              {/* Active Games Section */}
+              {games.filter(g => g.status !== 'finished').length > 0 && (
+                <section>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold">Active Games</h2>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {games
+                      .filter(g => g.status !== 'finished')
+                      .map((game) => (
+                        <GameCard key={game.id} game={game} userId={user.id} />
+                      ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Instant Play Section */}
+              <section id="instant-play" className="scroll-mt-20">
+                <div className="mb-4">
+                  <h2 className="text-xl font-semibold mb-1">Instant Play</h2>
+                  <p className="text-sm text-muted-foreground">Quick games with minimal setup</p>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <button
+                    onClick={() => setQuickPollOpen(true)}
+                    className="bg-purple-100 dark:bg-purple-950 border-2 border-purple-400 dark:border-purple-600 rounded-lg p-6 hover:scale-105 transition-transform cursor-pointer"
+                  >
+                    <Megaphone className="w-8 h-8 mx-auto mb-2 text-purple-600 dark:text-purple-400" />
+                    <p className="font-semibold text-sm">Quick Poll</p>
+                  </button>
+                  <button
+                    onClick={() => setRpsOpen(true)}
+                    className="bg-pink-100 dark:bg-pink-950 border-2 border-pink-400 dark:border-pink-600 rounded-lg p-6 hover:scale-105 transition-transform cursor-pointer"
+                  >
+                    <Hand className="w-8 h-8 mx-auto mb-2 text-pink-600 dark:text-pink-400" />
+                    <p className="font-semibold text-sm">Rock Paper Scissors</p>
+                  </button>
+                  <button
+                    onClick={() => setCoinFlipOpen(true)}
+                    className="bg-amber-100 dark:bg-amber-950 border-2 border-amber-400 dark:border-amber-600 rounded-lg p-6 hover:scale-105 transition-transform cursor-pointer"
+                  >
+                    <Coins className="w-8 h-8 mx-auto mb-2 text-amber-600 dark:text-amber-400" />
+                    <p className="font-semibold text-sm">Coin Flip</p>
+                  </button>
+                  <button
+                    onClick={() => setRandomQuestionOpen(true)}
+                    className="bg-cyan-100 dark:bg-cyan-950 border-2 border-cyan-400 dark:border-cyan-600 rounded-lg p-6 hover:scale-105 transition-transform cursor-pointer"
+                  >
+                    <Dices className="w-8 h-8 mx-auto mb-2 text-cyan-600 dark:text-cyan-400" />
+                    <p className="font-semibold text-sm">Random Question</p>
+                  </button>
+                </div>
+              </section>
+
+              {/* Finished Games Section */}
+              {games.filter(g => g.status === 'finished').length > 0 && (
+                <section>
+                  <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold">Recent Games</h2>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {games
+                      .filter(g => g.status === 'finished')
+                      .slice(0, 6)
+                      .map((game) => (
+                        <GameCard key={game.id} game={game} userId={user.id} />
+                      ))}
+                  </div>
+                </section>
+              )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Instant Play Dialogs */}
+      <QuickPollDialog open={quickPollOpen} onOpenChange={setQuickPollOpen} circleId={circleId} />
+      <RockPaperScissorsDialog open={rpsOpen} onOpenChange={setRpsOpen} circleId={circleId} />
+      <CoinFlipDialog open={coinFlipOpen} onOpenChange={setCoinFlipOpen} circleId={circleId} />
+      <RandomQuestionDialog open={randomQuestionOpen} onOpenChange={setRandomQuestionOpen} circleId={circleId} />
     </div>
   );
 };

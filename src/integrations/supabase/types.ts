@@ -234,6 +234,141 @@ export type Database = {
         }
         Relationships: []
       }
+      game_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          game_id: string
+          id: number
+          payload: Json
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          game_id: string
+          id?: number
+          payload: Json
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          game_id?: string
+          id?: number
+          payload?: Json
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_events_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_participants: {
+        Row: {
+          game_id: string
+          id: number
+          joined_at: string
+          role: string | null
+          user_id: string
+        }
+        Insert: {
+          game_id: string
+          id?: number
+          joined_at?: string
+          role?: string | null
+          user_id: string
+        }
+        Update: {
+          game_id?: string
+          id?: number
+          joined_at?: string
+          role?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_participants_game_id_fkey"
+            columns: ["game_id"]
+            isOneToOne: false
+            referencedRelation: "games"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "game_participants_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      games: {
+        Row: {
+          circle_id: string
+          created_at: string
+          created_by: string
+          description: string | null
+          id: string
+          metadata: Json
+          status: Database["public"]["Enums"]["game_status"]
+          title: string | null
+          type: Database["public"]["Enums"]["game_type"]
+          updated_at: string
+        }
+        Insert: {
+          circle_id: string
+          created_at?: string
+          created_by: string
+          description?: string | null
+          id?: string
+          metadata?: Json
+          status?: Database["public"]["Enums"]["game_status"]
+          title?: string | null
+          type: Database["public"]["Enums"]["game_type"]
+          updated_at?: string
+        }
+        Update: {
+          circle_id?: string
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          id?: string
+          metadata?: Json
+          status?: Database["public"]["Enums"]["game_status"]
+          title?: string | null
+          type?: Database["public"]["Enums"]["game_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "games_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "games_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -360,6 +495,14 @@ export type Database = {
       }
     }
     Enums: {
+      game_status: "waiting" | "in_progress" | "finished" | "cancelled"
+      game_type:
+        | "tic_tac_toe"
+        | "poll"
+        | "would_you_rather"
+        | "question_of_the_day"
+        | "story_chain"
+        | "rate_this"
       invite_permission: "anyone" | "owner_only"
       invite_status: "pending" | "accepted" | "rejected" | "cancelled"
       invite_type: "direct" | "pending_approval"
@@ -497,6 +640,15 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      game_status: ["waiting", "in_progress", "finished", "cancelled"],
+      game_type: [
+        "tic_tac_toe",
+        "poll",
+        "would_you_rather",
+        "question_of_the_day",
+        "story_chain",
+        "rate_this",
+      ],
       invite_permission: ["anyone", "owner_only"],
       invite_status: ["pending", "accepted", "rejected", "cancelled"],
       invite_type: ["direct", "pending_approval"],

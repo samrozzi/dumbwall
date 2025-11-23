@@ -255,6 +255,7 @@ const Games = () => {
                 </div>
               </DialogContent>
             </Dialog>
+              </div>
             </div>
             <p className="text-sm text-muted-foreground">Play with your circle – turns, polls, and more.</p>
           </div>

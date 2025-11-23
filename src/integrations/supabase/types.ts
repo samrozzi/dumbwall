@@ -589,6 +589,102 @@ export type Database = {
           },
         ]
       }
+      wall_item_comments: {
+        Row: {
+          comment_text: string
+          created_at: string | null
+          id: string
+          user_id: string
+          wall_item_id: string
+        }
+        Insert: {
+          comment_text: string
+          created_at?: string | null
+          id?: string
+          user_id: string
+          wall_item_id: string
+        }
+        Update: {
+          comment_text?: string
+          created_at?: string | null
+          id?: string
+          user_id?: string
+          wall_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wall_item_comments_wall_item_id_fkey"
+            columns: ["wall_item_id"]
+            isOneToOne: false
+            referencedRelation: "wall_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wall_item_reactions: {
+        Row: {
+          created_at: string | null
+          emoji: string
+          id: string
+          user_id: string
+          wall_item_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          emoji: string
+          id?: string
+          user_id: string
+          wall_item_id: string
+        }
+        Update: {
+          created_at?: string | null
+          emoji?: string
+          id?: string
+          user_id?: string
+          wall_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wall_item_reactions_wall_item_id_fkey"
+            columns: ["wall_item_id"]
+            isOneToOne: false
+            referencedRelation: "wall_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wall_item_votes: {
+        Row: {
+          created_at: string | null
+          id: string
+          user_id: string
+          vote_type: string
+          wall_item_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          user_id: string
+          vote_type: string
+          wall_item_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          user_id?: string
+          vote_type?: string
+          wall_item_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wall_item_votes_wall_item_id_fkey"
+            columns: ["wall_item_id"]
+            isOneToOne: false
+            referencedRelation: "wall_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       wall_items: {
         Row: {
           circle_id: string

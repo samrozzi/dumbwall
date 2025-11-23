@@ -1,12 +1,11 @@
 import { useState, useRef } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { CornerDownRight } from "lucide-react";
+import { CornerDownRight, Smile } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { QuickReactions } from "./QuickReactions";
 import { EmojiPicker } from "./EmojiPicker";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { useLongPress } from "@/hooks/useLongPress";
 import { useReactions } from "@/hooks/useReactions";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -38,29 +37,14 @@ export function ChatMessage({
   isOwn,
   onReply,
 }: ChatMessageProps) {
-  const [showActions, setShowActions] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const messageRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const { reactions, toggleReaction } = useReactions(id, currentUserId);
 
-  const longPressProps = useLongPress({
-    onLongPress: () => {
-      if (isMobile) {
-        setShowActions(true);
-      }
-    },
-    ms: 300,
-  });
-
   const handleReactionClick = (emoji: string) => {
     toggleReaction(emoji);
-    setShowActions(false);
-  };
-
-  const handleMoreEmojis = () => {
-    setShowActions(false);
-    setShowEmojiPicker(true);
+    setShowEmojiPicker(false);
   };
 
   return (
@@ -70,9 +54,6 @@ export function ChatMessage({
         "group relative flex gap-3 py-2 px-3 hover:bg-accent/30 transition-colors",
         isOwn && "flex-row-reverse"
       )}
-      onMouseEnter={() => !isMobile && setShowActions(true)}
-      onMouseLeave={() => !isMobile && setShowActions(false)}
-      {...(isMobile ? longPressProps : {})}
     >
       <Avatar className="h-8 w-8 shrink-0">
         <AvatarImage src={sender_avatar} />
@@ -104,15 +85,51 @@ export function ChatMessage({
           </div>
         )}
 
-        <div
-          className={cn(
-            "inline-block px-3 py-2 rounded-lg max-w-[80%]",
-            isOwn
-              ? "bg-primary text-primary-foreground"
-              : "bg-muted text-foreground"
-          )}
-        >
-          <p className="text-sm whitespace-pre-wrap break-words">{body}</p>
+        <div className="flex items-center gap-2">
+          <div
+            className={cn(
+              "inline-block px-3 py-2 rounded-lg max-w-[80%]",
+              isOwn
+                ? "bg-primary text-primary-foreground"
+                : "bg-muted text-foreground"
+            )}
+          >
+            <p className="text-sm whitespace-pre-wrap break-words">{body}</p>
+          </div>
+
+          {/* Always visible action icons */}
+          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-6 w-6 p-0 hover:bg-accent rounded-full"
+              onClick={onReply}
+              title="Reply"
+              type="button"
+            >
+              <CornerDownRight className="h-3 w-3" />
+            </Button>
+            
+            <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 w-6 p-0 hover:bg-accent rounded-full"
+                  title="React"
+                  type="button"
+                >
+                  <Smile className="h-3 w-3" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-2" align="end">
+                <QuickReactions
+                  onReactionClick={handleReactionClick}
+                  onMoreClick={() => {}}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
         </div>
 
         {reactions.length > 0 && (
@@ -138,42 +155,6 @@ export function ChatMessage({
         )}
       </div>
 
-      {showActions && (
-        <div className="absolute -top-3 right-4 z-10 flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="h-7 w-7 p-0 bg-popover border shadow-lg rounded-full"
-            onClick={onReply}
-            type="button"
-          >
-            <CornerDownRight className="h-3 w-3" />
-          </Button>
-          
-          <QuickReactions
-            onReactionClick={handleReactionClick}
-            onMoreClick={handleMoreEmojis}
-          />
-        </div>
-      )}
-
-      {showEmojiPicker && (
-        <div className="absolute top-0 right-0 z-20">
-          <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
-            <PopoverTrigger asChild>
-              <div />
-            </PopoverTrigger>
-            <PopoverContent>
-              <EmojiPicker
-                onEmojiSelect={(emoji) => {
-                  handleReactionClick(emoji);
-                  setShowEmojiPicker(false);
-                }}
-              />
-            </PopoverContent>
-          </Popover>
-        </div>
-      )}
     </div>
   );
 }

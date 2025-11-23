@@ -425,10 +425,12 @@ const Wall = () => {
       case "image":
         return (
           <ImageCard
+            id={item.id}
             content={content}
             onDelete={() => deleteItem(item.id)}
             creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
             creatorUsername={itemWithCreator.creator_profile?.username}
+            currentUserId={user?.id}
           />
         );
       case "thread":
@@ -693,12 +695,14 @@ const Wall = () => {
                   )}
                   {item.type === "image" && (
                     <ImageCard
+                      id={item.id}
                       content={item.content as any}
                       onDelete={() => deleteItem(item.id)}
                       creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
                       creatorUsername={itemWithCreator.creator_profile?.username}
                       hideAvatar={true}
                       fullWidth={true}
+                      currentUserId={user?.id}
                     />
                   )}
                   {item.type === "thread" && (

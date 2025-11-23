@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Megaphone, X } from "lucide-react";
 import { CreatorBadge } from "@/components/CreatorBadge";
+import { cn } from "@/lib/utils";
 
 interface AnnouncementBubbleProps {
   content: {
@@ -10,20 +11,25 @@ interface AnnouncementBubbleProps {
   onDelete?: () => void;
   creatorAvatar?: string | null;
   creatorUsername?: string | null;
+  hideAvatar?: boolean;
+  fullWidth?: boolean;
 }
 
-const AnnouncementBubble = ({ content, onDelete, creatorAvatar, creatorUsername }: AnnouncementBubbleProps) => {
+const AnnouncementBubble = ({ content, onDelete, creatorAvatar, creatorUsername, hideAvatar, fullWidth }: AnnouncementBubbleProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
     <div className="relative">
-      {creatorAvatar && creatorUsername && (
+      {!hideAvatar && creatorAvatar && creatorUsername && (
         <CreatorBadge avatarUrl={creatorAvatar} username={creatorUsername} />
       )}
       
       {/* Windows 98 Style Popup */}
       <Card 
-        className="w-full min-w-[300px] max-w-[400px] border-2 border-[#0000AA] bg-gradient-to-b from-[#0000AA] to-[#1084D0] shadow-[inset_1px_1px_0px_rgba(255,255,255,0.3),inset_-1px_-1px_0px_rgba(0,0,0,0.3)] overflow-hidden"
+        className={cn(
+          "border-2 border-[#0000AA] bg-gradient-to-b from-[#0000AA] to-[#1084D0] shadow-[inset_1px_1px_0px_rgba(255,255,255,0.3),inset_-1px_-1px_0px_rgba(0,0,0,0.3)] overflow-hidden",
+          fullWidth ? "w-full" : "w-full min-w-[300px] max-w-[400px]"
+        )}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >

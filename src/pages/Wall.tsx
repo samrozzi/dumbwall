@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Database } from "@/integrations/supabase/types";
 import Navigation from "@/components/Navigation";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import StickyNote from "@/components/wall/StickyNote";
 import ImageCard from "@/components/wall/ImageCard";
@@ -542,23 +543,26 @@ const Wall = () => {
       <div className="pl-24 pr-8 pt-8">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">The Wall</h1>
-          <div className="flex gap-2">
-            <Button
-              variant={viewMode === "wall" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setViewMode("wall")}
-            >
-              <LayoutGrid className="w-4 h-4 mr-2" />
-              Wall
-            </Button>
-            <Button
-              variant={viewMode === "list" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setViewMode("list")}
-            >
-              <List className="w-4 h-4 mr-2" />
-              List
-            </Button>
+          <div className="flex gap-3 items-center">
+            <NotificationCenter />
+            <div className="flex gap-2">
+              <Button
+                variant={viewMode === "wall" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("wall")}
+              >
+                <LayoutGrid className="w-4 h-4 mr-2" />
+                Wall
+              </Button>
+              <Button
+                variant={viewMode === "list" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setViewMode("list")}
+              >
+                <List className="w-4 h-4 mr-2" />
+                List
+              </Button>
+            </div>
           </div>
         </div>
 

@@ -68,7 +68,29 @@ export const useGameAPI = () => {
     events: GameEvent[];
     currentUserId: string;
   }> => {
-    return callGameFunction(`/${gameId}`, "GET");
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session) {
+      throw new Error("Not authenticated");
+    }
+
+    const url = new URL(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/games/${gameId}`);
+
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${session.access_token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('Failed to fetch game:', error);
+      throw new Error('Failed to fetch game');
+    }
+
+    return response.json();
   };
 
   const joinGame = async (gameId: string): Promise<{ participant: GameParticipant }> => {

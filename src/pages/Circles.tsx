@@ -17,6 +17,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { InviteAcceptDialog } from "@/components/InviteAcceptDialog";
+import { NotificationCenter } from "@/components/NotificationCenter";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Circle {
   id: string;
@@ -46,6 +48,7 @@ const Circles = () => {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     if (!user) {
@@ -214,6 +217,11 @@ const Circles = () => {
 
   return (
     <div className="min-h-screen bg-background p-8">
+      {!isMobile && (
+        <div className="absolute top-8 right-8 z-50">
+          <NotificationCenter />
+        </div>
+      )}
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-3">

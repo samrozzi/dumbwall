@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useGameAPI } from "@/hooks/useGameAPI";
 import { Game, GameEvent, GameParticipant } from "@/types/games";
+import { supabase } from "@/integrations/supabase/client";
 import { PollGame } from "./PollGame";
 import { WouldYouRatherGame } from "./WouldYouRatherGame";
 import { QuestionOfTheDayGame } from "./QuestionOfTheDayGame";
@@ -10,7 +12,6 @@ import { TicTacToeGame } from "./TicTacToeGame";
 import { CheckersGame } from "./CheckersGame";
 import { ConnectFourGame } from "./ConnectFourGame";
 import { notify } from "@/components/ui/custom-notification";
-import { supabase } from "@/integrations/supabase/client";
 
 interface GameWrapperProps {
   gameId: string;
@@ -22,7 +23,8 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
   const [participants, setParticipants] = useState<GameParticipant[]>([]);
   const [events, setEvents] = useState<GameEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const { getGame, joinGame, gameAction } = useGameAPI();
+  const { getGame, joinGame, gameAction, createGame } = useGameAPI();
+  const navigate = useNavigate();
 
   useEffect(() => {
     loadGame();
@@ -99,6 +101,28 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
     }
   };
 
+  const handleRematch = async () => {
+    if (!game) return;
+    
+    try {
+      const newGameId = await createGame(
+        game.circle_id,
+        game.type,
+        game.title || `${game.type} Rematch`,
+        game.description,
+        game.type === 'tic_tac_toe' 
+          ? { board: [[null, null, null], [null, null, null], [null, null, null]], nextTurnUserId: userId, winnerUserId: null }
+          : {}
+      );
+      
+      notify("Rematch created!");
+      navigate(`/circle/${game.circle_id}/games`);
+    } catch (error) {
+      console.error("Error creating rematch:", error);
+      notify("Error creating rematch");
+    }
+  };
+
   if (loading || !game) {
     return <div className="w-80 h-80 bg-muted animate-pulse rounded-lg" />;
   }
@@ -126,6 +150,7 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
           title={game.title}
           metadata={game.metadata}
           userId={userId}
+          participants={participants}
           onMove={(row, col) => {
             const newBoard = game.metadata.board.map((r: any[]) => [...r]);
             const currentPlayer = game.metadata.nextTurnUserId === userId ? 
@@ -154,6 +179,7 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
               winnerUserId: winner ? userId : null,
             });
           }}
+          onRematch={handleRematch}
           isFinished={game.status === 'finished'}
         />
       );

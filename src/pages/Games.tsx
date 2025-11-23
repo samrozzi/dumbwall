@@ -147,14 +147,14 @@ const Games = () => {
           break;
       }
 
-      await createGame({
-        circle_id: circleId!,
-        type: gameType as any,
+      await createGame(
+        circleId!,
+        gameType as any,
         title,
-        description: description || undefined,
+        description || undefined,
         metadata,
-        status: "waiting",
-      });
+        "waiting"
+      );
 
       notify("Game created!");
       setTitle("");

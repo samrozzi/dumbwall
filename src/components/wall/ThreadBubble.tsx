@@ -125,9 +125,9 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
         </Badge>
       )}
 
-      <div className="flex items-start gap-2 flex-1 min-h-0">
+      <div className="flex items-start gap-2 flex-1 min-h-0 max-w-full">
         <MessageSquare className="w-5 h-5 text-purple-600 flex-shrink-0 mt-1" />
-        <div className="flex-1 min-w-0 flex flex-col min-h-0">
+        <div className="flex-1 min-w-0 flex flex-col min-h-0 max-w-full overflow-hidden">
           <div className="flex items-center justify-between mb-2">
             <h3 className="font-semibold text-purple-900 truncate">{content.title}</h3>
             <button
@@ -138,7 +138,7 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
               <ExternalLink className="w-4 h-4" />
             </button>
           </div>
-          <ScrollArea className="flex-1 min-h-0">
+          <ScrollArea className="flex-1 min-h-0 w-full">
             <div className="space-y-1 text-sm text-purple-700 pb-1">
               {messages.length > 0 ? (
                 messages.map((msg) => (

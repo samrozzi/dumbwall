@@ -144,7 +144,7 @@ const Circles = () => {
               className="flex flex-col items-center cursor-pointer group"
               onClick={() => navigate(`/circle/${circle.id}/wall`)}
             >
-              <div className="relative w-48 h-48 rounded-full bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 border-4 border-border hover:border-primary transition-all hover:scale-105 flex items-center justify-center mb-3">
+              <div className="relative w-48 h-48 rounded-full bg-gradient-to-br from-primary/20 via-secondary/20 to-accent/20 border-8 border-white shadow-[0_0_0_6px_black] hover:rotate-1 transition-all hover:scale-105 flex items-center justify-center mb-3">
                 <h3 className="text-xl font-semibold text-center px-6">{circle.name}</h3>
               </div>
               <p className="text-sm text-muted-foreground">

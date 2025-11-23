@@ -15,14 +15,27 @@ const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
   const [availableCameras, setAvailableCameras] = useState<MediaDeviceInfo[]>([]);
 
   useEffect(() => {
-    // Detect available cameras
+    // Detect available cameras - need to request permission first
     const detectCameras = async () => {
       try {
+        // Request camera access first to populate device labels
+        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
         const devices = await navigator.mediaDevices.enumerateDevices();
         const videoDevices = devices.filter(device => device.kind === 'videoinput');
         setAvailableCameras(videoDevices);
+        console.log("Available cameras:", videoDevices.length);
+        // Stop temp stream
+        tempStream.getTracks().forEach(track => track.stop());
       } catch (err) {
         console.error("Error detecting cameras:", err);
+        // If permission denied, still try to get device list
+        try {
+          const devices = await navigator.mediaDevices.enumerateDevices();
+          const videoDevices = devices.filter(device => device.kind === 'videoinput');
+          setAvailableCameras(videoDevices);
+        } catch (e) {
+          console.error("Could not enumerate devices:", e);
+        }
       }
     };
 
@@ -111,15 +124,15 @@ const CameraCapture = ({ onCapture, onClose }: CameraCaptureProps) => {
         className="w-full rounded-lg"
       />
       <div className="flex gap-2 mt-4 justify-center flex-wrap">
-        <Button onClick={capturePhoto} size="lg">
-          <Camera className="w-5 h-5 mr-2" />
-          Capture Photo
-        </Button>
         {availableCameras.length > 1 && (
           <Button onClick={toggleCamera} variant="secondary" size="lg">
             🔄 Switch Camera
           </Button>
         )}
+        <Button onClick={capturePhoto} size="lg">
+          <Camera className="w-5 h-5 mr-2" />
+          Capture Photo
+        </Button>
         <Button onClick={onClose} variant="outline" size="lg">
           <X className="w-5 h-5 mr-2" />
           Cancel

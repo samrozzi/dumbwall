@@ -16,6 +16,8 @@ interface StickyNoteProps {
   creatorAvatar?: string | null;
   creatorUsername?: string | null;
   stackCount?: number;
+  hideAvatar?: boolean;
+  fullWidth?: boolean;
 }
 
 const colorMap: Record<string, string> = {
@@ -28,7 +30,7 @@ const colorMap: Record<string, string> = {
   cream: "bg-note-cream text-background",
 };
 
-const StickyNote = ({ content, onDelete, onUpdate, isCreator, creatorAvatar, creatorUsername, stackCount }: StickyNoteProps) => {
+const StickyNote = ({ content, onDelete, onUpdate, isCreator, creatorAvatar, creatorUsername, stackCount, hideAvatar, fullWidth }: StickyNoteProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(content.title);
@@ -64,7 +66,8 @@ const StickyNote = ({ content, onDelete, onUpdate, isCreator, creatorAvatar, cre
       )}
       <Card
         className={cn(
-          "p-4 w-64 shadow-lg transition-all duration-300 cursor-move relative",
+          "p-4 shadow-lg transition-all duration-300 cursor-move relative",
+          fullWidth ? "w-full" : "w-64",
           colorMap[content.color] || colorMap.yellow,
           "hover:shadow-2xl hover:scale-105",
           "transform rotate-1 hover:rotate-0"
@@ -78,7 +81,7 @@ const StickyNote = ({ content, onDelete, onUpdate, isCreator, creatorAvatar, cre
           maxHeight: "400px",
         }}
       >
-        <CreatorBadge avatarUrl={creatorAvatar} username={creatorUsername} />
+        {!hideAvatar && <CreatorBadge avatarUrl={creatorAvatar} username={creatorUsername} />}
         
         {onDelete && isHovered && (
           <button

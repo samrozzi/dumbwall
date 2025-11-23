@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { X } from "lucide-react";
 import { CreatorBadge } from "@/components/CreatorBadge";
+import { cn } from "@/lib/utils";
 
 interface ImageCardProps {
   content: {
@@ -11,18 +12,23 @@ interface ImageCardProps {
   onDelete?: () => void;
   creatorAvatar?: string | null;
   creatorUsername?: string | null;
+  hideAvatar?: boolean;
+  fullWidth?: boolean;
 }
 
-const ImageCard = ({ content, onDelete, creatorAvatar, creatorUsername }: ImageCardProps) => {
+const ImageCard = ({ content, onDelete, creatorAvatar, creatorUsername, hideAvatar, fullWidth }: ImageCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
     <Card
-      className="p-2 w-64 bg-card shadow-lg transition-all duration-300 cursor-move hover:shadow-2xl hover:scale-105 transform -rotate-1 hover:rotate-0 relative"
+      className={cn(
+        "p-2 bg-card shadow-lg transition-all duration-300 cursor-move hover:shadow-2xl hover:scale-105 transform -rotate-1 hover:rotate-0 relative",
+        fullWidth ? "w-full" : "w-64"
+      )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
-      <CreatorBadge avatarUrl={creatorAvatar} username={creatorUsername} />
+      {!hideAvatar && <CreatorBadge avatarUrl={creatorAvatar} username={creatorUsername} />}
       
       {onDelete && isHovered && (
         <button

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { X, MessageSquare, Send, ExternalLink } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,8 @@ interface ThreadBubbleProps {
   };
   onDelete?: () => void;
   onClick?: () => void;
+  hideAvatar?: boolean;
+  fullWidth?: boolean;
 }
 
 interface Message {
@@ -24,7 +27,7 @@ interface Message {
   created_at: string;
 }
 
-const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
+const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubbleProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [newCount, setNewCount] = useState(0);
@@ -100,10 +103,13 @@ const ThreadBubble = ({ content, onDelete, onClick }: ThreadBubbleProps) => {
 
   return (
     <Card
-      className="p-4 hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-200 relative flex flex-col"
+      className={cn(
+        "p-4 hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-200 relative flex flex-col",
+        fullWidth ? "w-full" : ""
+      )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      style={{ minHeight: "200px", maxHeight: "280px", maxWidth: "400px" }}
+      style={{ minHeight: "200px", maxHeight: "280px", maxWidth: fullWidth ? "100%" : "400px" }}
     >
       {onDelete && isHovered && (
         <button

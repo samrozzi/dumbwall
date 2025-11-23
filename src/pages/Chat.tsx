@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MemberPicker from "@/components/chat/MemberPicker";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ThreadAvatarStack } from "@/components/chat/ThreadAvatarStack";
 
 interface ChatThread {
   id: string;
@@ -20,6 +21,17 @@ interface ChatThread {
   created_at: string;
   updated_at: string;
   linked_wall_item_id: string | null;
+}
+
+interface ThreadMember {
+  id: string;
+  avatar_url: string | null;
+  username: string | null;
+  display_name: string | null;
+}
+
+interface ThreadWithMembers extends ChatThread {
+  members: ThreadMember[];
 }
 
 interface ChatMessage {
@@ -42,7 +54,7 @@ const Chat = () => {
   const { user } = useAuth();
   const isMobile = useIsMobile();
 
-  const [threads, setThreads] = useState<ChatThread[]>([]);
+  const [threads, setThreads] = useState<ThreadWithMembers[]>([]);
   const [currentThread, setCurrentThread] = useState<ChatThread | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -75,7 +87,7 @@ const Chat = () => {
   }, [messages]);
 
   const loadThreads = async () => {
-    const { data, error } = await supabase
+    const { data: threadsData, error } = await supabase
       .from("chat_threads")
       .select("*")
       .eq("circle_id", circleId!)
@@ -85,7 +97,39 @@ const Chat = () => {
       toast.error("Error loading threads");
       return;
     }
-    setThreads(data || []);
+
+    if (!threadsData || threadsData.length === 0) {
+      setThreads([]);
+      return;
+    }
+
+    // Fetch thread members and their profiles
+    const threadIds = threadsData.map(t => t.id);
+    const { data: membersData } = await supabase
+      .from("thread_members")
+      .select("thread_id, user_id")
+      .in("thread_id", threadIds);
+
+    const userIds = [...new Set(membersData?.map(m => m.user_id) || [])];
+    const { data: profilesData } = await supabase
+      .from("profiles")
+      .select("id, avatar_url, username, display_name")
+      .in("id", userIds);
+
+    // Combine data
+    const threadsWithMembers = threadsData.map(thread => {
+      const threadMembers = membersData?.filter(m => m.thread_id === thread.id) || [];
+      const members = threadMembers
+        .map(tm => profilesData?.find(p => p.id === tm.user_id))
+        .filter(Boolean) as ThreadMember[];
+      
+      return {
+        ...thread,
+        members
+      };
+    });
+
+    setThreads(threadsWithMembers);
   };
 
   const loadThread = async () => {
@@ -347,24 +391,28 @@ const Chat = () => {
                 </Tabs>
                 
                 <ScrollArea className="flex-1 border rounded-lg bg-card/50 backdrop-blur">
-                  <div className="p-2 space-y-2">
+                  <div className="p-1 space-y-1">
                     {filteredThreads.map((thread) => (
                       <button
                         key={thread.id}
                         onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
-                        className="w-full text-left p-3 rounded-lg transition-all hover:bg-card bg-card/40"
+                        className="w-full text-left p-3 rounded-lg transition-all hover:bg-card bg-card/40 flex items-center gap-3"
                       >
-                        <div className="font-medium flex items-center gap-2">
-                          {thread.linked_wall_item_id && (
-                            <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
-                              Wall
-                            </span>
-                          )}
-                          {thread.title}
+                        <ThreadAvatarStack 
+                          members={thread.members} 
+                          currentUserId={user?.id || ""} 
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium truncate">{thread.title}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {new Date(thread.updated_at).toLocaleDateString()}
+                          </div>
                         </div>
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {new Date(thread.updated_at).toLocaleDateString()}
-                        </div>
+                        {thread.linked_wall_item_id && (
+                          <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded flex-shrink-0">
+                            Wall
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>

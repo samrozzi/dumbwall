@@ -141,8 +141,10 @@ const Wall = () => {
         const profile = profiles?.find(p => p.id === item.created_by);
         return {
           ...item,
-          creator_avatar_url: profile?.avatar_url,
-          creator_username: profile?.username
+          creator_profile: profile ? {
+            avatar_url: profile.avatar_url,
+            username: profile.username
+          } : null
         };
       });
 
@@ -375,8 +377,8 @@ const Wall = () => {
             onDelete={() => deleteItem(item.id)}
             onUpdate={(newContent) => updateItem(item.id, { content: newContent as any })}
             isCreator={isCreator}
-            creatorAvatar={itemWithCreator.creator_avatar_url}
-            creatorUsername={itemWithCreator.creator_username}
+            creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
+            creatorUsername={itemWithCreator.creator_profile?.username}
           />
         );
       case "image":
@@ -384,8 +386,8 @@ const Wall = () => {
           <ImageCard
             content={content}
             onDelete={() => deleteItem(item.id)}
-            creatorAvatar={itemWithCreator.creator_avatar_url}
-            creatorUsername={itemWithCreator.creator_username}
+            creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
+            creatorUsername={itemWithCreator.creator_profile?.username}
           />
         );
       case "thread":
@@ -423,8 +425,8 @@ const Wall = () => {
           <AnnouncementBubble
             content={content}
             onDelete={() => deleteItem(item.id)}
-            creatorAvatar={itemWithCreator.creator_avatar_url}
-            creatorUsername={itemWithCreator.creator_username}
+            creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
+            creatorUsername={itemWithCreator.creator_profile?.username}
           />
         );
       default:
@@ -608,55 +610,66 @@ const Wall = () => {
         </div>
 
         {viewMode === "wall" && isMobile ? (
-          <div className="px-4 space-y-4 pb-24">
-            {items.map((item) => (
-              <div key={item.id} className="w-full">
-                {item.type === "note" && (
-                  <StickyNote
-                    content={item.content as any}
-                    onDelete={() => deleteItem(item.id)}
-                    onUpdate={(newContent) => {
-                      const updated: Partial<Omit<WallItem, "circle_id" | "created_at" | "created_by" | "id">> = {
-                        content: newContent,
-                      };
-                      updateItem(item.id, updated);
-                    }}
-                    isCreator={item.created_by === user?.id}
-                    creatorAvatar={null}
-                    creatorUsername={null}
-                  />
-                )}
-                {item.type === "image" && (
-                  <ImageCard
-                    content={item.content as any}
-                    onDelete={() => deleteItem(item.id)}
-                    creatorAvatar={null}
-                    creatorUsername={null}
-                  />
-                )}
-                {item.type === "thread" && (
-                  <ThreadBubble
-                    content={item.content as any}
-                    onDelete={() => handleThreadDelete(item.id, (item.content as any).threadId)}
-                    onClick={() => navigate(`/circle/${circleId}/chat?threadId=${(item.content as any).threadId}`)}
-                  />
-                )}
-                {item.type === "game_tictactoe" && (
-                  <TicTacToe 
-                    content={item.content as any}
-                    onDelete={() => deleteItem(item.id)} 
-                  />
-                )}
-                {item.type === "announcement" && (
-                  <AnnouncementBubble
-                    content={item.content as any}
-                    onDelete={() => deleteItem(item.id)}
-                    creatorAvatar={null}
-                    creatorUsername={null}
-                  />
-                )}
-              </div>
-            ))}
+          <div className="px-2 space-y-4 pb-24">
+            {items.map((item) => {
+              const itemWithCreator = item as any;
+              return (
+                <div key={item.id} className="w-full">
+                  {item.type === "note" && (
+                    <StickyNote
+                      content={item.content as any}
+                      onDelete={() => deleteItem(item.id)}
+                      onUpdate={(newContent) => {
+                        const updated: Partial<Omit<WallItem, "circle_id" | "created_at" | "created_by" | "id">> = {
+                          content: newContent,
+                        };
+                        updateItem(item.id, updated);
+                      }}
+                      isCreator={item.created_by === user?.id}
+                      creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
+                      creatorUsername={itemWithCreator.creator_profile?.username}
+                      hideAvatar={true}
+                      fullWidth={true}
+                    />
+                  )}
+                  {item.type === "image" && (
+                    <ImageCard
+                      content={item.content as any}
+                      onDelete={() => deleteItem(item.id)}
+                      creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
+                      creatorUsername={itemWithCreator.creator_profile?.username}
+                      hideAvatar={true}
+                      fullWidth={true}
+                    />
+                  )}
+                  {item.type === "thread" && (
+                    <ThreadBubble
+                      content={item.content as any}
+                      onDelete={() => handleThreadDelete(item.id, (item.content as any).threadId)}
+                      onClick={() => navigate(`/circle/${circleId}/chat?threadId=${(item.content as any).threadId}`)}
+                      hideAvatar={true}
+                      fullWidth={true}
+                    />
+                  )}
+                  {item.type === "game_tictactoe" && (
+                    <TicTacToe 
+                      content={item.content as any}
+                      onDelete={() => deleteItem(item.id)} 
+                    />
+                  )}
+                  {item.type === "announcement" && (
+                    <AnnouncementBubble
+                      content={item.content as any}
+                      onDelete={() => deleteItem(item.id)}
+                      creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
+                      creatorUsername={itemWithCreator.creator_profile?.username}
+                      hideAvatar={true}
+                      fullWidth={true}
+                    />
+                  )}
+                </div>
+              );
+            })}
           </div>
         ) : viewMode === "wall" ? (
           // Desktop canvas view

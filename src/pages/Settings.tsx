@@ -168,6 +168,7 @@ const Settings = () => {
       if (error) throw error;
 
       setAvatarUrl("");
+      await loadProfile();
       toast.success("Avatar removed!");
     } catch (error: any) {
       toast.error(error.message);

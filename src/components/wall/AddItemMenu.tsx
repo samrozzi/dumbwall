@@ -35,7 +35,7 @@ const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnou
       <div className="fixed bottom-8 right-8 z-[9999]">
         {/* Menu Items */}
         {isOpen && !showSubmenu && (
-          <div className="absolute bottom-20 right-0 flex flex-col-reverse gap-3">
+          <div className="absolute bottom-20 right-1/2 translate-x-1/2 flex flex-col-reverse gap-3 items-center">
             {menuItems.map((item, index) => (
               <TooltipProvider key={item.label}>
                 <Tooltip>
@@ -62,7 +62,7 @@ const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnou
 
         {/* Games Submenu */}
         {isOpen && showSubmenu && (
-          <div className="absolute bottom-20 right-0 flex flex-col-reverse gap-3">
+          <div className="absolute bottom-20 right-1/2 translate-x-1/2 flex flex-col-reverse gap-3 items-center">
             {/* Back Button */}
             <TooltipProvider>
               <Tooltip>

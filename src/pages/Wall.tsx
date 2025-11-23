@@ -291,9 +291,12 @@ const Wall = () => {
     const newX = e.clientX - dragOffset.x;
     const newY = e.clientY - dragOffset.y;
 
+    const snappedX = Math.round(newX / GRID_SIZE) * GRID_SIZE;
+    const snappedY = Math.round(newY / GRID_SIZE) * GRID_SIZE;
+
     setItems((prev) =>
       prev.map((item) =>
-        item.id === draggedItem ? { ...item, x: newX, y: newY } : item
+        item.id === draggedItem ? { ...item, x: snappedX, y: snappedY } : item
       )
     );
   };
@@ -304,11 +307,7 @@ const Wall = () => {
     const item = items.find((i) => i.id === draggedItem);
     if (!item) return;
 
-    const snappedX = Math.round(item.x / GRID_SIZE) * GRID_SIZE;
-    const snappedY = Math.round(item.y / GRID_SIZE) * GRID_SIZE;
-
-    // Update immediately without checking for significant movement
-    updateItem(draggedItem, { x: snappedX, y: snappedY });
+    updateItem(draggedItem, { x: item.x, y: item.y });
     
     setDraggedItem(null);
   };

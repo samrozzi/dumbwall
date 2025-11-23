@@ -374,8 +374,9 @@ const Wall = () => {
     const maxX = canvasWidth - itemWidth - padding;
     const clampedX = Math.max(0, Math.min(maxX, newX));
     
-    // Clamp vertically with bottom boundary
-    const maxY = canvasHeight - itemHeight - padding;
+    // Clamp vertically - allow items closer to bottom edge (reduce padding from 16 to 4)
+    const bottomPadding = 4;
+    const maxY = canvasHeight - itemHeight - bottomPadding;
     const clampedY = Math.max(0, Math.min(maxY, newY));
 
     // Snap to grid

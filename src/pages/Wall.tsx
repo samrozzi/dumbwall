@@ -59,6 +59,8 @@ const Wall = () => {
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
+  const [capturedPhoto, setCapturedPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string>("");
   
   // Thread deletion states
   const [deleteThreadDialog, setDeleteThreadDialog] = useState(false);
@@ -902,42 +904,83 @@ const Wall = () => {
           </DialogHeader>
           {showCamera ? (
             <CameraCapture
-              onCapture={async (file) => {
-                setImageFile(file);
+              onCapture={(file) => {
+                setCapturedPhoto(file);
+                setPhotoPreview(URL.createObjectURL(file));
                 setShowCamera(false);
-                setUploading(true);
-                
-                // Automatically upload the captured photo
-                const fileExt = file.name.split(".").pop();
-                const fileName = `${user!.id}-${Date.now()}.${fileExt}`;
-                const filePath = `${user!.id}/${circleId}_${Date.now()}.${fileExt}`;
-
-                const { error: uploadError } = await supabase.storage
-                  .from("avatars")
-                  .upload(filePath, file, {
-                    contentType: file.type,
-                    upsert: false,
-                  });
-
-                if (uploadError) {
-                  notify(uploadError.message, "error");
-                  setUploading(false);
-                  return;
-                }
-
-                const { data: { publicUrl } } = supabase.storage
-                  .from("avatars")
-                  .getPublicUrl(filePath);
-
-                createItem("image", { url: publicUrl, caption: imageCaption });
-                setImageUrl("");
-                setImageCaption("");
-                setImageFile(null);
-                setImageDialog(false);
-                setUploading(false);
               }}
-              onClose={() => setShowCamera(false)}
+              onClose={() => {
+                setShowCamera(false);
+                setImageDialog(false);
+              }}
             />
+          ) : capturedPhoto && photoPreview ? (
+            <div className="space-y-4">
+              <img
+                src={photoPreview}
+                alt="Preview"
+                className="w-full rounded-lg object-contain max-h-96"
+              />
+              
+              <div>
+                <Label htmlFor="photo-caption">Caption (optional)</Label>
+                <Input
+                  id="photo-caption"
+                  value={imageCaption}
+                  onChange={(e) => setImageCaption(e.target.value)}
+                  placeholder="Add a caption..."
+                />
+              </div>
+              
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setCapturedPhoto(null);
+                    setPhotoPreview("");
+                    setImageCaption("");
+                    setShowCamera(true);
+                  }}
+                  disabled={uploading}
+                >
+                  Retake
+                </Button>
+                <Button
+                  onClick={async () => {
+                    if (!capturedPhoto) return;
+                    
+                    setUploading(true);
+                    const fileExt = capturedPhoto.name.split(".").pop();
+                    const filePath = `${user!.id}/${circleId}_${Date.now()}.${fileExt}`;
+
+                    const { error: uploadError } = await supabase.storage
+                      .from("avatars")
+                      .upload(filePath, capturedPhoto);
+
+                    if (uploadError) {
+                      notify(uploadError.message, "error");
+                      setUploading(false);
+                      return;
+                    }
+
+                    const {
+                      data: { publicUrl },
+                    } = supabase.storage.from("avatars").getPublicUrl(filePath);
+
+                    createItem("image", { url: publicUrl, caption: imageCaption });
+                    
+                    setCapturedPhoto(null);
+                    setPhotoPreview("");
+                    setImageCaption("");
+                    setImageDialog(false);
+                    setUploading(false);
+                  }}
+                  disabled={uploading}
+                >
+                  {uploading ? "Uploading..." : "Upload Photo"}
+                </Button>
+              </div>
+            </div>
           ) : (
             <Tabs defaultValue="url" className="w-full">
               <TabsList className="grid w-full grid-cols-3">

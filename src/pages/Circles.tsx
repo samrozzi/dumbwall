@@ -227,51 +227,72 @@ const Circles = () => {
           </Button>
         </div>
 
-        {/* Pending Invites */}
-        {pendingInvites.length > 0 && (
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
-              Pending Invites
-              <Badge variant="secondary">{pendingInvites.length}</Badge>
-            </h2>
-            <div className="space-y-3">
-              {pendingInvites.map((invite) => (
-                <Card key={invite.id} className="p-4">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-lg">{invite.circle.name}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Invited by {invite.invited_by_profile.display_name || invite.invited_by_profile.username || 'A member'}
-                      </p>
-                    </div>
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="default"
-                        onClick={() => handleAcceptInvite(invite.id, invite.circle.id)}
-                        className="gap-1"
-                      >
-                        <Check className="w-4 h-4" />
-                        Accept
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDeclineInvite(invite.id)}
-                        className="gap-1"
-                      >
-                        <X className="w-4 h-4" />
-                        Decline
-                      </Button>
-                    </div>
-                  </div>
-                </Card>
-              ))}
-            </div>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+          {/* Pending Invite Circles - Envelope Style */}
+          {pendingInvites.map((invite) => (
+            <div
+              key={invite.id}
+              className="flex flex-col items-center group"
+            >
+              <div className="relative w-48 h-48 rounded-full border-dashed border-4 border-amber-400/60 bg-amber-50/10 shadow-lg hover:scale-105 transition-all flex flex-col items-center justify-center mb-3 opacity-80">
+                {/* Envelope Icon */}
+                <div className="absolute top-8">
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="40" 
+                    height="40" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                    className="text-amber-400"
+                  >
+                    <rect width="20" height="16" x="2" y="4" rx="2"/>
+                    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                  </svg>
+                </div>
+                
+                {/* Circle Name */}
+                <div className="text-center px-4 mt-8 mb-2">
+                  <h3 className="text-lg font-semibold mb-1">{invite.circle.name}</h3>
+                  <p className="text-xs text-muted-foreground">
+                    from @{invite.invited_by_profile.username || 'member'}
+                  </p>
+                </div>
+                
+                {/* Accept/Decline Buttons */}
+                <div className="absolute bottom-4 flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleAcceptInvite(invite.id, invite.circle.id);
+                    }}
+                    className="bg-green-600 hover:bg-green-700 text-white h-7 px-3"
+                  >
+                    <Check className="w-3 h-3 mr-1" />
+                    Accept
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDeclineInvite(invite.id);
+                    }}
+                    className="h-7 px-3 border-red-400 text-red-600 hover:bg-red-50"
+                  >
+                    <X className="w-3 h-3 mr-1" />
+                    Decline
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {/* Regular Circles */}
           {circles.map((circle) => (
             <div
               key={circle.id}

@@ -55,12 +55,15 @@ const Chat = () => {
   }, [circleId]);
 
   useEffect(() => {
-    if (threadId) {
+    const urlThreadId = searchParams.get("thread");
+    if (urlThreadId && threads.length > 0) {
+      navigate(`/circle/${circleId}/chat?threadId=${urlThreadId}`);
+    } else if (threadId) {
       loadThread();
       loadMessages();
       subscribeToMessages();
     }
-  }, [threadId]);
+  }, [threadId, searchParams, threads]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

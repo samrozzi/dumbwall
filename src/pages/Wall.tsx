@@ -681,11 +681,14 @@ const Wall = () => {
                 // Automatically upload the captured photo
                 const fileExt = file.name.split(".").pop();
                 const fileName = `${user!.id}-${Date.now()}.${fileExt}`;
-                const filePath = `${circleId}/${fileName}`;
+                const filePath = `${user!.id}/${circleId}_${Date.now()}.${fileExt}`;
 
                 const { error: uploadError } = await supabase.storage
                   .from("avatars")
-                  .upload(filePath, file);
+                  .upload(filePath, file, {
+                    contentType: file.type,
+                    upsert: false,
+                  });
 
                 if (uploadError) {
                   notify(uploadError.message, "error");

@@ -91,6 +91,54 @@ export type Database = {
           },
         ]
       }
+      circle_invites: {
+        Row: {
+          circle_id: string
+          created_at: string
+          id: string
+          invite_type: Database["public"]["Enums"]["invite_type"]
+          invited_by: string
+          invited_email: string
+          status: Database["public"]["Enums"]["invite_status"]
+          updated_at: string
+        }
+        Insert: {
+          circle_id: string
+          created_at?: string
+          id?: string
+          invite_type?: Database["public"]["Enums"]["invite_type"]
+          invited_by: string
+          invited_email: string
+          status?: Database["public"]["Enums"]["invite_status"]
+          updated_at?: string
+        }
+        Update: {
+          circle_id?: string
+          created_at?: string
+          id?: string
+          invite_type?: Database["public"]["Enums"]["invite_type"]
+          invited_by?: string
+          invited_email?: string
+          status?: Database["public"]["Enums"]["invite_status"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_invites_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circle_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       circle_members: {
         Row: {
           circle_id: string
@@ -129,6 +177,35 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      circle_settings: {
+        Row: {
+          circle_id: string
+          created_at: string
+          invite_permission: Database["public"]["Enums"]["invite_permission"]
+          updated_at: string
+        }
+        Insert: {
+          circle_id: string
+          created_at?: string
+          invite_permission?: Database["public"]["Enums"]["invite_permission"]
+          updated_at?: string
+        }
+        Update: {
+          circle_id?: string
+          created_at?: string
+          invite_permission?: Database["public"]["Enums"]["invite_permission"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_settings_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: true
+            referencedRelation: "circles"
             referencedColumns: ["id"]
           },
         ]
@@ -239,12 +316,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_invite_to_circle: {
+        Args: { circle_uuid: string; user_uuid: string }
+        Returns: boolean
+      }
+      get_user_id_by_email: { Args: { user_email: string }; Returns: string }
       is_circle_member: {
         Args: { circle_uuid: string; user_uuid: string }
         Returns: boolean
       }
     }
     Enums: {
+      invite_permission: "anyone" | "owner_only"
+      invite_status: "pending" | "accepted" | "rejected" | "cancelled"
+      invite_type: "direct" | "pending_approval"
       member_role: "owner" | "member"
       wall_item_type:
         | "note"
@@ -379,6 +464,9 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      invite_permission: ["anyone", "owner_only"],
+      invite_status: ["pending", "accepted", "rejected", "cancelled"],
+      invite_type: ["direct", "pending_approval"],
       member_role: ["owner", "member"],
       wall_item_type: [
         "note",

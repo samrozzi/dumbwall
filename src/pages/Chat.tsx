@@ -579,14 +579,14 @@ const Chat = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
-      <div className={`${isMobile ? 'px-4 pt-4 pb-20' : 'pl-24 pr-8 pt-8'} ${isMobile ? 'h-screen pb-20' : 'h-[calc(100vh-80px)]'}`}>
+      <div className={`${isMobile ? 'pt-4 pb-20' : 'pl-24 pr-8 pt-8'} ${isMobile ? 'h-screen pb-20' : 'h-[calc(100vh-80px)]'}`}>
         {isMobile ? (
           /* Mobile: Show either thread list OR chat view */
           <>
             {!threadId ? (
               /* Thread List View */
               <div className="flex flex-col gap-4 h-full">
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-4 px-4">
                   <h2 className="text-2xl font-bold">Threads</h2>
                   <div className="flex items-center gap-2">
                     <NotificationCenter />
@@ -679,7 +679,7 @@ const Chat = () => {
             ) : (
               /* Chat View with Back Button */
               <div className="flex flex-col h-full border rounded-lg bg-card overflow-hidden">
-                <div className="p-4 border-b bg-card flex items-center gap-3">
+                <div className="px-4 py-3 border-b bg-card flex items-center gap-3">
                   <Button 
                     size="icon" 
                     variant="ghost"

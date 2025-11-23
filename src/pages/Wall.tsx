@@ -94,15 +94,43 @@ const Wall = () => {
 
   const loadItems = async () => {
     try {
+      // Step 1: Get wall items
       const { data, error } = await supabase
         .from("wall_items")
-        .select("*, profiles:created_by(avatar_url, username)")
+        .select("*")
         .eq("circle_id", circleId)
         .order("z_index", { ascending: true });
 
       if (error) throw error;
-      setItems(data || []);
-      const maxZ = Math.max(...(data || []).map((item) => item.z_index), 0);
+
+      // Step 2: Get unique creator IDs
+      const creatorIds = [...new Set(data?.map(item => item.created_by) || [])];
+
+      if (creatorIds.length === 0) {
+        setItems([]);
+        return;
+      }
+
+      // Step 3: Fetch all creator profiles
+      const { data: profiles, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, avatar_url, username")
+        .in("id", creatorIds);
+
+      if (profilesError) throw profilesError;
+
+      // Step 4: Merge data
+      const itemsWithCreators = (data || []).map(item => {
+        const profile = profiles?.find(p => p.id === item.created_by);
+        return {
+          ...item,
+          creator_avatar_url: profile?.avatar_url,
+          creator_username: profile?.username
+        };
+      });
+
+      setItems(itemsWithCreators as any);
+      const maxZ = Math.max(...itemsWithCreators.map(item => item.z_index), 0);
       setMaxZIndex(maxZ);
     } catch (error: any) {
       notify(error.message, "error");
@@ -217,7 +245,7 @@ const Wall = () => {
 
   const renderItem = (item: WallItem) => {
     const content = item.content as any;
-    const profiles = (item as any).profiles;
+    const itemWithCreator = item as any;
     const isCreator = user?.id === item.created_by;
     
     switch (item.type) {
@@ -228,8 +256,8 @@ const Wall = () => {
             onDelete={() => deleteItem(item.id)}
             onUpdate={(newContent) => updateItem(item.id, { content: newContent as any })}
             isCreator={isCreator}
-            creatorAvatar={profiles?.avatar_url}
-            creatorUsername={profiles?.username}
+            creatorAvatar={itemWithCreator.creator_avatar_url}
+            creatorUsername={itemWithCreator.creator_username}
           />
         );
       case "image":
@@ -237,8 +265,8 @@ const Wall = () => {
           <ImageCard
             content={content}
             onDelete={() => deleteItem(item.id)}
-            creatorAvatar={profiles?.avatar_url}
-            creatorUsername={profiles?.username}
+            creatorAvatar={itemWithCreator.creator_avatar_url}
+            creatorUsername={itemWithCreator.creator_username}
           />
         );
       case "thread":
@@ -280,8 +308,8 @@ const Wall = () => {
               updateItem(item.id, { content: newContent as any })
             }
             isCreator={isCreator}
-            creatorAvatar={profiles?.avatar_url}
-            creatorUsername={profiles?.username}
+            creatorAvatar={itemWithCreator.creator_avatar_url}
+            creatorUsername={itemWithCreator.creator_username}
           />
         );
       default:
@@ -371,9 +399,31 @@ const Wall = () => {
       if (threadError) throw threadError;
 
       // Create the wall item with the thread ID
-      createItem("thread", { title: threadTitle, threadId: threadData.id });
-      
-      // Link the thread to the wall item (will be updated after wall item is created)
+      const position = getSmartPosition();
+      const { data: wallItem, error: wallError } = await supabase
+        .from("wall_items")
+        .insert({
+          circle_id: circleId!,
+          created_by: user!.id,
+          type: "thread",
+          content: { title: threadTitle, threadId: threadData.id },
+          x: position.x,
+          y: position.y,
+          z_index: maxZIndex + 1,
+        })
+        .select()
+        .single();
+
+      if (wallError) throw wallError;
+
+      // Link the thread to the wall item
+      await supabase
+        .from("chat_threads")
+        .update({ linked_wall_item_id: wallItem.id })
+        .eq("id", threadData.id);
+
+      setMaxZIndex(prev => prev + 1);
+      notify("Thread added!", "success");
       setThreadTitle("");
       setThreadDialog(false);
     } catch (error: any) {

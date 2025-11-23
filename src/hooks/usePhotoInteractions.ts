@@ -210,6 +210,17 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
             .from('thread_members')
             .insert({ thread_id: threadId, user_id: wallItem.created_by });
         }
+
+        // Add caption as first message if it exists
+        if (threadId && (wallItem.content as any)?.caption) {
+          await supabase
+            .from('chat_messages')
+            .insert({
+              thread_id: threadId,
+              sender_id: wallItem.created_by,
+              body: (wallItem.content as any).caption,
+            });
+        }
       }
 
       // Add commenter as thread member if not already

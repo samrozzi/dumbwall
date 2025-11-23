@@ -21,6 +21,7 @@ import { EmojiPicker } from "@/components/chat/EmojiPicker";
 import { ReplyPreview } from "@/components/chat/ReplyPreview";
 import ChatPhotoUpload from "@/components/chat/ChatPhotoUpload";
 import { compressImage } from "@/lib/imageCompression";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
 
 interface ChatThread {
   id: string;
@@ -245,12 +246,32 @@ const Chat = () => {
     if (data?.linked_wall_item_id) {
       const { data: wallItem } = await supabase
         .from('wall_items')
-        .select('content')
+        .select('content, created_by')
         .eq('id', data.linked_wall_item_id)
         .single();
       
       if (wallItem) {
-        setThreadPhoto(wallItem.content as { url: string; caption?: string });
+        const content = wallItem.content as { url: string; caption?: string };
+        setThreadPhoto(content);
+        
+        // If caption exists but no messages yet, add it as first message
+        if (content.caption) {
+          const { data: messages, count } = await supabase
+            .from('chat_messages')
+            .select('id', { count: 'exact' })
+            .eq('thread_id', data.id)
+            .limit(1);
+          
+          if (count === 0) {
+            await supabase
+              .from('chat_messages')
+              .insert({
+                thread_id: data.id,
+                sender_id: wallItem.created_by,
+                body: content.caption,
+              });
+          }
+        }
       }
     } else {
       setThreadPhoto(null);
@@ -558,7 +579,7 @@ const Chat = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
-      <div className={`${isMobile ? 'px-4 pt-4 pb-20' : 'pl-24 pr-8 pt-8'} ${isMobile ? 'h-screen pb-20' : 'flex gap-4 h-[calc(100vh-80px)]'}`}>
+      <div className={`${isMobile ? 'px-4 pt-4 pb-20' : 'pl-24 pr-8 pt-8'} ${isMobile ? 'h-screen pb-20' : 'h-[calc(100vh-80px)]'}`}>
         {isMobile ? (
           /* Mobile: Show either thread list OR chat view */
           <>
@@ -824,275 +845,282 @@ const Chat = () => {
             )}
           </>
         ) : (
-          /* Desktop: Two-column layout */
-          <>
-            {/* Threads Sidebar */}
-            <div className="w-[30%] flex flex-col gap-4">
-              <div className="flex items-center justify-between">
-                <h2 className="text-2xl font-bold">Threads</h2>
-                <div className="flex items-center gap-2">
-                  <NotificationCenter />
-                  <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="default">
-                        <Plus className="w-4 h-4 mr-2" />
-                        New
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-md">
-                      <DialogHeader>
-                        <DialogTitle>Create New Thread</DialogTitle>
-                      </DialogHeader>
-                      <div className="space-y-4">
-                        <Input
-                          placeholder="Thread title..."
-                          value={newThreadTitle}
-                          onChange={(e) => setNewThreadTitle(e.target.value)}
-                        />
-                        <div>
-                          <label className="text-sm font-medium mb-2 block">
-                            Add Members ({selectedMembers.length} selected)
-                          </label>
-                          <MemberPicker
-                            circleId={circleId!}
-                            selectedMembers={selectedMembers}
-                            onMemberToggle={handleMemberToggle}
-                            excludeUserIds={[user?.id || ""]}
+          /* Desktop: Show threads sidebar and chat area with resizable panels */
+          <ResizablePanelGroup direction="horizontal">
+            {/* Threads Sidebar Panel */}
+            <ResizablePanel defaultSize={40} minSize={25} maxSize={50}>
+              <div className="flex flex-col gap-4 h-full pr-2">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-2xl font-bold">Threads</h2>
+                  <div className="flex items-center gap-2">
+                    <NotificationCenter />
+                    <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="sm" variant="default">
+                          <Plus className="w-4 h-4 mr-2" />
+                          New
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-md">
+                        <DialogHeader>
+                          <DialogTitle>Create New Thread</DialogTitle>
+                        </DialogHeader>
+                        <div className="space-y-4">
+                          <Input
+                            placeholder="Thread title..."
+                            value={newThreadTitle}
+                            onChange={(e) => setNewThreadTitle(e.target.value)}
                           />
+                          <div>
+                            <label className="text-sm font-medium mb-2 block">
+                              Add Members ({selectedMembers.length} selected)
+                            </label>
+                            <MemberPicker
+                              circleId={circleId!}
+                              selectedMembers={selectedMembers}
+                              onMemberToggle={handleMemberToggle}
+                              excludeUserIds={[user?.id || ""]}
+                            />
+                          </div>
+                          <Button 
+                            onClick={handleCreateThread} 
+                            className="w-full"
+                            disabled={!newThreadTitle.trim() || selectedMembers.length === 0}
+                          >
+                            Create Thread with {selectedMembers.length + 1} member{selectedMembers.length + 1 > 1 ? 's' : ''}
+                          </Button>
                         </div>
-                        <Button 
-                          onClick={handleCreateThread} 
-                          className="w-full"
-                          disabled={!newThreadTitle.trim() || selectedMembers.length === 0}
-                        >
-                          Create Thread with {selectedMembers.length + 1} member{selectedMembers.length + 1 > 1 ? 's' : ''}
+                      </DialogContent>
+                    </Dialog>
+                  </div>
+                </div>
+
+                <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
+                  <TabsList className="w-full">
+                    <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
+                    <TabsTrigger value="wall" className="flex-1">Wall Threads</TabsTrigger>
+                    <TabsTrigger value="convos" className="flex-1">Convos</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
+                <ScrollArea className="flex-1 border rounded-lg bg-card/50 backdrop-blur">
+                  <div className="p-2 space-y-2">
+                    {filteredThreads.map((thread) => (
+                      <button
+                        key={thread.id}
+                        onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
+                        className={`w-full text-left p-3 rounded-lg transition-all hover:bg-card flex items-center gap-3 ${
+                          threadId === thread.id 
+                            ? "bg-card shadow-md" 
+                            : thread.unreadCount > 0 
+                              ? "bg-accent border-l-4 border-primary" 
+                              : "bg-card/40"
+                        }`}
+                      >
+                        {thread.unreadCount > 0 && (
+                          <div className="flex-shrink-0 bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                            {thread.unreadCount > 9 ? "9+" : thread.unreadCount}
+                          </div>
+                        )}
+                        <ThreadAvatarStack 
+                          members={thread.members} 
+                          currentUserId={user?.id || ""} 
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className={`flex items-center gap-2 ${thread.unreadCount > 0 ? 'font-bold' : 'font-medium'}`}>
+                            {thread.linked_wall_item_id && <span>📷</span>}
+                            <span className="truncate">{thread.title}</span>
+                          </div>
+                          <div className={`text-xs mt-1 ${thread.unreadCount > 0 ? 'text-white font-medium' : 'text-muted-foreground'}`}>
+                            {new Date(thread.updated_at).toLocaleDateString()}
+                          </div>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            </ResizablePanel>
+
+            {/* Draggable Handle */}
+            <ResizableHandle withHandle />
+
+            {/* Chat Area Panel */}
+            <ResizablePanel defaultSize={60} minSize={50}>
+              <div className="flex flex-col border rounded-lg bg-card overflow-hidden h-full ml-2">
+                {threadId && currentThread ? (
+                  <>
+                    {/* Chat Header */}
+                    <div className="p-4 border-b bg-card flex items-center justify-between">
+                      <h3 className="text-xl font-bold">{currentThread.title}</h3>
+                      <Dialog open={addMembersDialogOpen} onOpenChange={setAddMembersDialogOpen}>
+                        <DialogTrigger asChild>
+                          <Button size="sm" variant="outline" onClick={() => setSelectedMembers([])}>
+                            <UserPlus className="w-4 h-4 mr-2" />
+                            Add Members
+                          </Button>
+                        </DialogTrigger>
+                        <DialogContent className="max-w-md">
+                          <DialogHeader>
+                            <DialogTitle>Add Members to Thread</DialogTitle>
+                          </DialogHeader>
+                          <div className="space-y-4">
+                            <MemberPicker
+                              circleId={circleId!}
+                              selectedMembers={selectedMembers}
+                              onMemberToggle={handleMemberToggle}
+                            />
+                            <Button 
+                              onClick={handleAddMembers} 
+                              className="w-full"
+                              disabled={selectedMembers.length === 0}
+                            >
+                              Add {selectedMembers.length} member{selectedMembers.length > 1 ? 's' : ''}
+                            </Button>
+                          </div>
+                        </DialogContent>
+                      </Dialog>
+                    </div>
+
+                    {/* Messages */}
+                    <ScrollArea className="flex-1 p-4">
+                      {threadPhoto && (
+                        <div className="mb-4 rounded-lg overflow-hidden border-2 border-primary bg-black">
+                          <img 
+                            src={threadPhoto.url} 
+                            alt={threadPhoto.caption || 'Photo'} 
+                            className="w-full max-h-64 object-contain"
+                          />
+                          {threadPhoto.caption && (
+                            <div className="p-3 bg-muted border-t-2 border-amber-500">
+                              <p className="text-sm font-semibold">{threadPhoto.caption}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {messages.map((message) => 
+                        message.image_url ? (
+                          <ChatMessageWithImage
+                            key={message.id}
+                            id={message.id}
+                            body={message.body}
+                            image_url={message.image_url}
+                            created_at={message.created_at}
+                            sender={{
+                              id: message.sender_id,
+                              username: message.profiles?.username || "Unknown",
+                              display_name: message.profiles?.display_name,
+                              avatar_url: message.profiles?.avatar_url,
+                            }}
+                            isOwn={message.sender_id === user?.id}
+                            onReply={() => setReplyingTo(message)}
+                            onReaction={() => {}}
+                            replyTo={message.replied_message}
+                          />
+                        ) : (
+                          <ChatMessage
+                            key={message.id}
+                            id={message.id}
+                            body={message.body}
+                            created_at={message.created_at}
+                            sender_id={message.sender_id}
+                            sender_name={message.profiles?.display_name || message.profiles?.username || "Unknown"}
+                            sender_avatar={message.profiles?.avatar_url || undefined}
+                            reply_to_id={message.reply_to_id}
+                            replied_message={message.replied_message}
+                            currentUserId={user?.id}
+                            isOwn={message.sender_id === user?.id}
+                            onReply={() => setReplyingTo(message)}
+                          />
+                        )
+                      )}
+                      <div ref={messagesEndRef} />
+                    </ScrollArea>
+
+                    {/* Input */}
+                    <div className="p-4 border-t bg-card">
+                      {replyingTo && (
+                        <ReplyPreview
+                          username={replyingTo.profiles?.display_name || replyingTo.profiles?.username || "Unknown"}
+                          message={replyingTo.body}
+                          onCancel={() => setReplyingTo(null)}
+                        />
+                      )}
+                      <div className="flex gap-2">
+                        <Dialog open={photoDialogOpen} onOpenChange={setPhotoDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button size="icon" variant="outline">
+                              <Camera className="w-4 h-4" />
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-lg">
+                            <DialogHeader>
+                              <DialogTitle>Share a Photo</DialogTitle>
+                            </DialogHeader>
+                            <ChatPhotoUpload 
+                              onPhotoSelected={async (file, caption) => {
+                                if (!user || !threadId) return;
+                                
+                                try {
+                                  const fileName = `${threadId}/${user.id}/${Date.now()}.jpg`;
+                                  const { data: uploadData, error: uploadError } = await supabase.storage
+                                    .from('chat-images')
+                                    .upload(fileName, file);
+
+                                  if (uploadError) throw uploadError;
+
+                                  const { data: { publicUrl } } = supabase.storage
+                                    .from('chat-images')
+                                    .getPublicUrl(fileName);
+
+                                  const { error: messageError } = await supabase
+                                    .from('chat_messages')
+                                    .insert({
+                                      thread_id: threadId,
+                                      sender_id: user.id,
+                                      body: caption,
+                                      image_url: publicUrl,
+                                      reply_to_id: replyingTo?.id,
+                                    });
+
+                                  if (messageError) throw messageError;
+
+                                  setPhotoDialogOpen(false);
+                                  setReplyingTo(null);
+                                  toast.success('Photo sent!');
+                                } catch (error) {
+                                  console.error('Error uploading photo:', error);
+                                  toast.error('Failed to send photo');
+                                }
+                              }}
+                              onClose={() => setPhotoDialogOpen(false)}
+                            />
+                          </DialogContent>
+                        </Dialog>
+                        <Input
+                          placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
+                          value={newMessage}
+                          onChange={(e) => setNewMessage(e.target.value)}
+                          onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+                        />
+                        <EmojiPicker onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)} />
+                        <Button onClick={handleSendMessage} size="icon">
+                          <Send className="w-4 h-4" />
                         </Button>
                       </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </div>
-
-          <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
-            <TabsList className="w-full">
-              <TabsTrigger value="all" className="flex-1">All</TabsTrigger>
-              <TabsTrigger value="wall" className="flex-1">Wall Threads</TabsTrigger>
-              <TabsTrigger value="convos" className="flex-1">Convos</TabsTrigger>
-            </TabsList>
-          </Tabs>
-
-          <ScrollArea className="flex-1 border rounded-lg bg-card/50 backdrop-blur">
-            <div className="p-2 space-y-2">
-              {filteredThreads.map((thread) => (
-                <button
-                  key={thread.id}
-                  onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
-                  className={`w-full text-left p-3 rounded-lg transition-all hover:bg-card flex items-center gap-3 ${
-                    threadId === thread.id 
-                      ? "bg-card shadow-md" 
-                      : thread.unreadCount > 0 
-                        ? "bg-accent border-l-4 border-primary" 
-                        : "bg-card/40"
-                  }`}
-                >
-                  {thread.unreadCount > 0 && (
-                    <div className="flex-shrink-0 bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                      {thread.unreadCount > 9 ? "9+" : thread.unreadCount}
                     </div>
-                  )}
-                  <ThreadAvatarStack 
-                    members={thread.members} 
-                    currentUserId={user?.id || ""} 
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className={`flex items-center gap-2 ${thread.unreadCount > 0 ? 'font-bold' : 'font-medium'}`}>
-                      {thread.linked_wall_item_id && <span>📷</span>}
-                      <span className="truncate">{thread.title}</span>
-                    </div>
-                    <div className={`text-xs mt-1 ${thread.unreadCount > 0 ? 'text-white font-medium' : 'text-muted-foreground'}`}>
-                      {new Date(thread.updated_at).toLocaleDateString()}
+                  </>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center text-muted-foreground">
+                    <div className="text-center">
+                      <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                      <p>Select a thread to start chatting</p>
                     </div>
                   </div>
-                </button>
-              ))}
-            </div>
-          </ScrollArea>
-        </div>
-
-        {/* Chat Area */}
-        <div className="flex-1 flex flex-col border rounded-lg bg-card overflow-hidden">
-          {threadId && currentThread ? (
-            <>
-              {/* Chat Header */}
-              <div className="p-4 border-b bg-card flex items-center justify-between">
-                <h3 className="text-xl font-bold">{currentThread.title}</h3>
-                <Dialog open={addMembersDialogOpen} onOpenChange={setAddMembersDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button size="sm" variant="outline" onClick={() => setSelectedMembers([])}>
-                      <UserPlus className="w-4 h-4 mr-2" />
-                      Add Members
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent className="max-w-md">
-                    <DialogHeader>
-                      <DialogTitle>Add Members to Thread</DialogTitle>
-                    </DialogHeader>
-                    <div className="space-y-4">
-                      <MemberPicker
-                        circleId={circleId!}
-                        selectedMembers={selectedMembers}
-                        onMemberToggle={handleMemberToggle}
-                      />
-                      <Button 
-                        onClick={handleAddMembers} 
-                        className="w-full"
-                        disabled={selectedMembers.length === 0}
-                      >
-                        Add {selectedMembers.length} member{selectedMembers.length > 1 ? 's' : ''}
-                      </Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-
-              {/* Messages */}
-              <ScrollArea className="flex-1 p-4">
-                {threadPhoto && (
-                  <div className="mb-4 rounded-lg overflow-hidden border-2 border-primary bg-black">
-                    <img 
-                      src={threadPhoto.url} 
-                      alt={threadPhoto.caption || 'Photo'} 
-                      className="w-full max-h-64 object-contain"
-                    />
-                    {threadPhoto.caption && (
-                      <div className="p-3 bg-muted border-t-2 border-amber-500">
-                        <p className="text-sm font-semibold">{threadPhoto.caption}</p>
-                      </div>
-                    )}
-                  </div>
                 )}
-                {messages.map((message) => 
-                  message.image_url ? (
-                    <ChatMessageWithImage
-                      key={message.id}
-                      id={message.id}
-                      body={message.body}
-                      image_url={message.image_url}
-                      created_at={message.created_at}
-                      sender={{
-                        id: message.sender_id,
-                        username: message.profiles?.username || "Unknown",
-                        display_name: message.profiles?.display_name,
-                        avatar_url: message.profiles?.avatar_url,
-                      }}
-                      isOwn={message.sender_id === user?.id}
-                      onReply={() => setReplyingTo(message)}
-                      onReaction={() => {}}
-                      replyTo={message.replied_message}
-                    />
-                  ) : (
-                    <ChatMessage
-                      key={message.id}
-                      id={message.id}
-                      body={message.body}
-                      created_at={message.created_at}
-                      sender_id={message.sender_id}
-                      sender_name={message.profiles?.display_name || message.profiles?.username || "Unknown"}
-                      sender_avatar={message.profiles?.avatar_url || undefined}
-                      reply_to_id={message.reply_to_id}
-                      replied_message={message.replied_message}
-                      currentUserId={user?.id}
-                      isOwn={message.sender_id === user?.id}
-                      onReply={() => setReplyingTo(message)}
-                    />
-                  )
-                )}
-                <div ref={messagesEndRef} />
-              </ScrollArea>
-
-              {/* Input */}
-              <div className="p-4 border-t bg-card">
-                {replyingTo && (
-                  <ReplyPreview
-                    username={replyingTo.profiles?.display_name || replyingTo.profiles?.username || "Unknown"}
-                    message={replyingTo.body}
-                    onCancel={() => setReplyingTo(null)}
-                  />
-                )}
-                <div className="flex gap-2">
-                  <Dialog open={photoDialogOpen} onOpenChange={setPhotoDialogOpen}>
-                    <DialogTrigger asChild>
-                      <Button size="icon" variant="outline">
-                        <Camera className="w-4 h-4" />
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent className="max-w-lg">
-                      <DialogHeader>
-                        <DialogTitle>Share a Photo</DialogTitle>
-                      </DialogHeader>
-                      <ChatPhotoUpload 
-                        onPhotoSelected={async (file, caption) => {
-                          if (!user || !threadId) return;
-                          
-                          try {
-                            const fileName = `${threadId}/${user.id}/${Date.now()}.jpg`;
-                            const { data: uploadData, error: uploadError } = await supabase.storage
-                              .from('chat-images')
-                              .upload(fileName, file);
-
-                            if (uploadError) throw uploadError;
-
-                            const { data: { publicUrl } } = supabase.storage
-                              .from('chat-images')
-                              .getPublicUrl(fileName);
-
-                            const { error: messageError } = await supabase
-                              .from('chat_messages')
-                              .insert({
-                                thread_id: threadId,
-                                sender_id: user.id,
-                                body: caption,
-                                image_url: publicUrl,
-                                reply_to_id: replyingTo?.id,
-                              });
-
-                            if (messageError) throw messageError;
-
-                            setPhotoDialogOpen(false);
-                            setReplyingTo(null);
-                            toast.success('Photo sent!');
-                          } catch (error) {
-                            console.error('Error uploading photo:', error);
-                            toast.error('Failed to send photo');
-                          }
-                        }}
-                        onClose={() => setPhotoDialogOpen(false)}
-                      />
-                    </DialogContent>
-                  </Dialog>
-                  <Input
-                    placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
-                  />
-                  <EmojiPicker onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)} />
-                  <Button onClick={handleSendMessage} size="icon">
-                    <Send className="w-4 h-4" />
-                  </Button>
-                </div>
               </div>
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-muted-foreground">
-              <div className="text-center">
-                <MessageSquare className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <p>Select a thread to start chatting</p>
-              </div>
-            </div>
-          )}
-            </div>
-          </>
+            </ResizablePanel>
+          </ResizablePanelGroup>
         )}
       </div>
     </div>

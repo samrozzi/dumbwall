@@ -610,7 +610,7 @@ const Wall = () => {
         </div>
 
         {viewMode === "wall" && isMobile ? (
-          <div className="px-2 space-y-4 pb-24">
+          <div className="space-y-4 pb-24">
             {items.map((item) => {
               const itemWithCreator = item as any;
               return (

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -16,6 +16,7 @@ import CameraCapture from "@/components/wall/CameraCapture";
 import { notify } from "@/components/ui/custom-notification";
 import { Button } from "@/components/ui/button";
 import { LayoutGrid, List, Camera } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Dialog,
   DialogContent,
@@ -41,6 +42,7 @@ const Wall = () => {
   const { circleId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [items, setItems] = useState<WallItem[]>([]);
   const [viewMode, setViewMode] = useState<"wall" | "list">("wall");
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
@@ -99,45 +101,12 @@ const Wall = () => {
     };
   }, [user, circleId, navigate]);
 
-  // Handle window resize to keep items in bounds
-  useEffect(() => {
-    const handleResize = () => {
-      if (!canvasRef.current || items.length === 0) return;
-      
-      const canvas = canvasRef.current;
-      const canvasWidth = canvas.offsetWidth;
-      const canvasHeight = canvas.offsetHeight;
-      
-      items.forEach(item => {
-        // Estimate item dimensions (add padding for safety)
-        const itemWidth = 280;
-        const itemHeight = 280;
-        const padding = 20;
-        
-        let newX = item.x;
-        let newY = item.y;
-        let needsUpdate = false;
-        
-        // Check if item is out of bounds
-        if (item.x + itemWidth > canvasWidth) {
-          newX = Math.max(0, canvasWidth - itemWidth - padding);
-          needsUpdate = true;
-        }
-        
-        if (item.y + itemHeight > canvasHeight) {
-          newY = Math.max(0, canvasHeight - itemHeight - padding);
-          needsUpdate = true;
-        }
-        
-        // Update if position changed
-        if (needsUpdate && (newX !== item.x || newY !== item.y)) {
-          updateItem(item.id, { x: newX, y: newY });
-        }
-      });
-    };
-    
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+  // Calculate dynamic canvas height based on items
+  const canvasHeight = useMemo(() => {
+    if (items.length === 0) return 'calc(100vh - 120px)';
+    const maxY = Math.max(...items.map(item => item.y));
+    const minHeight = window.innerHeight - 120;
+    return Math.max(minHeight, maxY + 600) + 'px'; // 600px padding below lowest item
   }, [items]);
 
   const loadItems = async () => {
@@ -186,11 +155,8 @@ const Wall = () => {
   };
 
   const getSmartPosition = () => {
-    // Use actual canvas dimensions if available
     const canvasWidth = canvasRef.current?.offsetWidth || 1200;
-    const canvasHeight = canvasRef.current?.offsetHeight || 800;
     const itemWidth = 280;
-    const itemHeight = 280;
     const padding = 40;
     
     let x = 100;
@@ -218,9 +184,8 @@ const Wall = () => {
       attempts++;
     }
     
-    // Ensure position is within bounds
+    // Only ensure horizontal position is within bounds
     x = Math.min(x, canvasWidth - itemWidth - padding);
-    y = Math.min(y, canvasHeight - itemHeight - padding);
     
     return { x, y };
   };
@@ -358,22 +323,19 @@ const Wall = () => {
 
     const canvas = canvasRef.current;
     const canvasWidth = canvas.offsetWidth;
-    const canvasHeight = canvas.offsetHeight;
     
-    // Estimate item dimensions
     const itemWidth = 280;
-    const itemHeight = 280;
     const padding = 20;
 
     const newX = e.clientX - dragOffset.x;
     const newY = e.clientY - dragOffset.y;
 
-    // Clamp to boundaries
+    // Only clamp horizontally to prevent off-screen
     const maxX = canvasWidth - itemWidth - padding;
-    const maxY = canvasHeight - itemHeight - padding;
-    
     const clampedX = Math.max(0, Math.min(maxX, newX));
-    const clampedY = Math.max(0, Math.min(maxY, newY));
+    
+    // Allow vertical movement anywhere (no clamping on Y)
+    const clampedY = Math.max(0, newY);
 
     // Snap to grid
     const snappedX = Math.round(clampedX / GRID_SIZE) * GRID_SIZE;
@@ -642,11 +604,22 @@ const Wall = () => {
           </div>
         </div>
 
-        {viewMode === "wall" ? (
+        {viewMode === "wall" && isMobile ? (
+          // Mobile stack view
+          <div className="space-y-4 pb-20">
+            {items.map((item) => (
+              <div key={item.id} className="w-full">
+                {renderItem(item)}
+              </div>
+            ))}
+          </div>
+        ) : viewMode === "wall" ? (
+          // Desktop canvas view
           <div
             ref={canvasRef}
-            className="relative w-full max-w-full min-h-[calc(100vh-120px)] bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border overflow-hidden"
+            className="relative w-full max-w-full bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border overflow-auto"
             style={{
+              height: canvasHeight,
               backgroundImage: `
                 linear-gradient(hsl(var(--border)) 1px, transparent 1px),
                 linear-gradient(90deg, hsl(var(--border)) 1px, transparent 1px)

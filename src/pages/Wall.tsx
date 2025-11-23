@@ -583,7 +583,7 @@ const Wall = () => {
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
 
-      <div className="pl-24 pr-8 pt-8">
+      <div className={`${isMobile ? 'px-4 pt-4 pb-24' : 'pl-24 pr-8 pt-8'}`}>
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">The Wall</h1>
           <div className="flex gap-3 items-center">

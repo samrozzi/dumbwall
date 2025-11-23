@@ -471,6 +471,16 @@ const Wall = () => {
 
       if (threadError) throw threadError;
 
+      // Add the creator as a thread member
+      const { error: memberError } = await supabase
+        .from("thread_members")
+        .insert({
+          thread_id: threadData.id,
+          user_id: user!.id,
+        });
+
+      if (memberError) throw memberError;
+
       // Create the wall item with the thread ID
       const position = getSmartPosition();
       const { data: wallItem, error: wallError } = await supabase

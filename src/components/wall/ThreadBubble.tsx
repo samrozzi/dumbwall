@@ -31,14 +31,15 @@ interface Message {
 const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubbleProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
-  const [newCount, setNewCount] = useState(0);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [newMessage, setNewMessage] = useState("");
   const { user } = useAuth();
 
   useEffect(() => {
-    if (!content.threadId) return;
+    if (!content.threadId || !user) return;
 
-    const loadMessages = async () => {
+    const loadMessagesAndUnreadCount = async () => {
+      // Load recent messages
       const { data, error } = await supabase
         .from("chat_messages")
         .select("*")
@@ -49,9 +50,28 @@ const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubblePro
       if (!error && data) {
         setMessages(data.reverse());
       }
+
+      // Load unread count from database
+      const { data: readStatus } = await supabase
+        .from("thread_read_status")
+        .select("last_read_at")
+        .eq("thread_id", content.threadId)
+        .eq("user_id", user.id)
+        .single();
+
+      const lastReadAt = readStatus?.last_read_at || "1970-01-01";
+
+      const { count } = await supabase
+        .from("chat_messages")
+        .select("*", { count: "exact", head: true })
+        .eq("thread_id", content.threadId)
+        .gt("created_at", lastReadAt)
+        .neq("sender_id", user.id);
+
+      setUnreadCount(count || 0);
     };
 
-    loadMessages();
+    loadMessagesAndUnreadCount();
 
     const channel = supabase
       .channel(`thread-bubble-${content.threadId}`)
@@ -68,7 +88,12 @@ const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubblePro
             const newMessages = [...prev, payload.new as Message];
             return newMessages.slice(-3);
           });
-          setNewCount((prev) => prev + 1);
+          
+          // Only increment unread if message is from another user
+          const newMsg = payload.new as Message;
+          if (newMsg.sender_id !== user.id) {
+            setUnreadCount((prev) => prev + 1);
+          }
         }
       )
       .subscribe();
@@ -76,7 +101,7 @@ const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubblePro
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [content.threadId]);
+  }, [content.threadId, user]);
 
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !user) return;
@@ -101,7 +126,19 @@ const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubblePro
       if (error) throw error;
       
       setNewMessage("");
-      setNewCount(0);
+      setUnreadCount(0);
+      
+      // Update read status when sending a message
+      await supabase
+        .from("thread_read_status")
+        .upsert({
+          thread_id: content.threadId,
+          user_id: user.id,
+          last_read_at: new Date().toISOString()
+        }, {
+          onConflict: "thread_id,user_id"
+        });
+      
       await supabase
         .from("chat_threads")
         .update({ updated_at: new Date().toISOString() })
@@ -111,8 +148,23 @@ const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubblePro
     }
   };
 
-  const handleNavigate = (e: React.MouseEvent) => {
+  const handleNavigate = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    
+    // Mark thread as read when clicking to open
+    if (user) {
+      await supabase
+        .from("thread_read_status")
+        .upsert({
+          thread_id: content.threadId,
+          user_id: user.id,
+          last_read_at: new Date().toISOString()
+        }, {
+          onConflict: "thread_id,user_id"
+        });
+      setUnreadCount(0);
+    }
+    
     if (onClick) onClick();
   };
 
@@ -138,11 +190,11 @@ const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubblePro
         </button>
       )}
       
-      {newCount > 0 && (
+      {unreadCount > 0 && (
         <Badge 
           className="absolute -top-2 -left-2 bg-red-500 hover:bg-red-600"
         >
-          {newCount}
+          {unreadCount > 9 ? "9+" : unreadCount}
         </Badge>
       )}
 
@@ -180,7 +232,7 @@ const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubblePro
           onChange={(e) => setNewMessage(e.target.value)}
           onKeyPress={(e) => e.key === "Enter" && handleSendMessage()}
           onClick={(e) => e.stopPropagation()}
-          className="h-8 text-sm"
+          className="h-8 text-base"
         />
         <Button onClick={handleSendMessage} size="sm" className="h-8 w-8 p-0">
           <Send className="w-3 h-3" />

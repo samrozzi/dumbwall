@@ -57,6 +57,12 @@ const TicTacToe = ({ content, onUpdate, onDelete }: TicTacToeProps) => {
     }
   };
 
+  // Mobile touch handler
+  const handleTouch = (e: React.TouchEvent, index: number) => {
+    e.preventDefault();
+    handleClick(index);
+  };
+
   const handleRematch = () => {
     if (!onUpdate) return;
     const emptyState = Array(9).fill("");
@@ -104,7 +110,7 @@ const TicTacToe = ({ content, onUpdate, onDelete }: TicTacToeProps) => {
 
   return (
     <Card
-      className="p-4 w-64 bg-card shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-105 transform rotate-1 hover:rotate-0 relative"
+      className="p-4 w-full max-w-sm sm:w-64 mx-auto bg-card shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-105 transform rotate-1 hover:rotate-0 relative"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -126,8 +132,10 @@ const TicTacToe = ({ content, onUpdate, onDelete }: TicTacToeProps) => {
             <button
               key={index}
               onClick={() => handleClick(index)}
-              className="aspect-square bg-accent/20 hover:bg-accent/30 rounded-md flex items-center justify-center text-2xl font-bold transition-colors disabled:cursor-not-allowed"
+              onTouchEnd={(e) => handleTouch(e, index)}
+              className="aspect-square min-h-[60px] bg-accent/20 hover:bg-accent/30 active:bg-accent/40 rounded-md flex items-center justify-center text-2xl font-bold transition-colors disabled:cursor-not-allowed touch-manipulation"
               disabled={!!content.winner}
+              style={{ touchAction: 'manipulation' }}
             >
               {cell}
             </button>

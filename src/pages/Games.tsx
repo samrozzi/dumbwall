@@ -175,11 +175,10 @@ const Games = () => {
       <Navigation circleId={circleId} />
       
       <div className="px-4 sm:pl-24 sm:pr-8 py-8 relative">
-        {!isMobile && (
-          <div className="absolute top-8 right-8 z-50">
-            <NotificationCenter />
-          </div>
-        )}
+        {/* Notification Bell */}
+        <div className={`absolute z-50 ${isMobile ? 'top-2 left-4' : 'top-8 right-8'}`}>
+          <NotificationCenter />
+        </div>
         
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Game Invites */}

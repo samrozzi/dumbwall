@@ -451,9 +451,9 @@ const Chat = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
-      <div className={`${isMobile ? 'px-4 pt-4 pb-20' : 'pl-24 pr-8 pt-8'} ${isMobile ? 'h-screen pb-20' : 'flex gap-4 h-[calc(100vh-80px)]'}`}>
-        {/* Notification Bell - Different positioning for mobile/desktop */}
-        <div className={`absolute z-50 ${isMobile ? 'top-4 right-4' : 'top-8 right-8'}`}>
+      <div className={`${isMobile ? 'px-4 pt-4 pb-20' : 'pl-24 pr-8 pt-8'} ${isMobile ? 'h-screen pb-20' : 'flex gap-4 h-[calc(100vh-80px)]'} relative`}>
+        {/* Notification Bell - Positioned to avoid conflicts */}
+        <div className={`absolute z-50 ${isMobile ? 'top-2 left-4' : 'top-8 right-8'}`}>
           <NotificationCenter />
         </div>
         {isMobile ? (

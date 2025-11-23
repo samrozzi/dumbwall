@@ -186,11 +186,10 @@ const People = () => {
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
       <div className={`${isMobile ? 'px-4 pb-24' : 'pl-24 pr-8'} pt-8 relative`}>
-        {!isMobile && (
-          <div className="absolute top-8 right-8 z-50">
-            <NotificationCenter />
-          </div>
-        )}
+        {/* Notification Bell */}
+        <div className={`absolute z-50 ${isMobile ? 'top-2 left-4' : 'top-8 right-8'}`}>
+          <NotificationCenter />
+        </div>
         
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">People</h1>

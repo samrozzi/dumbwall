@@ -744,7 +744,21 @@ const Wall = () => {
                   top: item.y,
                   zIndex: item.z_index,
                 }}
-                onMouseDown={(e) => handleMouseDown(e, item.id)}
+                onMouseDown={(e) => {
+                  // Don't start dragging if clicking on interactive elements
+                  const target = e.target as HTMLElement;
+                  if (
+                    target.tagName === 'INPUT' ||
+                    target.tagName === 'TEXTAREA' ||
+                    target.tagName === 'BUTTON' ||
+                    target.closest('input') ||
+                    target.closest('textarea') ||
+                    target.closest('button')
+                  ) {
+                    return;
+                  }
+                  handleMouseDown(e, item.id);
+                }}
               >
                 {renderItem(item)}
               </div>

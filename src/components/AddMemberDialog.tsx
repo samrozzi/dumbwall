@@ -51,7 +51,6 @@ export function AddMemberDialog({
   const [searchResults, setSearchResults] = useState<UserSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
-  const [showUserPicker, setShowUserPicker] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
 
   useEffect(() => {
@@ -117,7 +116,6 @@ export function AddMemberDialog({
   const handleUserSelect = async (selectedUser: UserSearchResult) => {
     setSelectedUser(selectedUser);
     setSearchTerm(`@${selectedUser.username}`);
-    setShowUserPicker(false);
 
     // For selected users, we'll use their user_id to send notification directly
     // But we still need an email for the invite record
@@ -270,25 +268,22 @@ export function AddMemberDialog({
         
         <div className="space-y-4 py-4">
           <div className="space-y-2">
-            <Label htmlFor="search">Search by Username or Email</Label>
-            <Popover open={showUserPicker} onOpenChange={setShowUserPicker}>
+            <Label htmlFor="search">Search by Username</Label>
+            <Popover open={searchTerm.length >= 2 && !selectedUser}>
               <PopoverTrigger asChild>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     id="search"
                     value={searchTerm}
-                    onChange={(e) => {
-                      setSearchTerm(e.target.value);
-                      setShowUserPicker(true);
-                    }}
-                    onFocus={() => searchResults.length > 0 && setShowUserPicker(true)}
-                    placeholder="@username or email@example.com"
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    placeholder="Search by @username..."
                     className="pl-9"
+                    disabled={!!selectedUser}
                   />
                 </div>
               </PopoverTrigger>
-              {(searchResults.length > 0 || searchError || (searching && searchTerm.length >= 2)) && (
+              {searchTerm.length >= 2 && !selectedUser && (
                 <PopoverContent className="w-[400px] p-0" align="start">
                   <Command>
                     <CommandList>
@@ -353,7 +348,7 @@ export function AddMemberDialog({
 
             {!selectedUser && (
               <div className="space-y-2 pt-2">
-                <Label htmlFor="email" className="text-sm text-muted-foreground">Or enter email directly</Label>
+                <Label htmlFor="email" className="text-sm text-muted-foreground">Or enter email directly (if you know their email)</Label>
                 <Input
                   id="email"
                   type="email"
@@ -361,6 +356,9 @@ export function AddMemberDialog({
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="friend@example.com"
                 />
+                <p className="text-xs text-muted-foreground">
+                  For privacy, email addresses aren't searchable. Search by username above or enter email here.
+                </p>
               </div>
             )}
 

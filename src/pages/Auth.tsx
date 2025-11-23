@@ -68,10 +68,10 @@ const Auth = () => {
           .from("profiles")
           .select("username")
           .eq("username", username)
-          .single();
+          .maybeSingle();
 
         if (existingUser) {
-          toast.error("Username already taken");
+          toast.error(`Username @${username} is already taken. Please choose another.`);
           setLoading(false);
           return;
         }

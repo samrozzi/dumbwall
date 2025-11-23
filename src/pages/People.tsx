@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Navigation from "@/components/Navigation";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -184,7 +185,13 @@ const People = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
-      <div className={`${isMobile ? 'px-4 pb-24' : 'pl-24 pr-8'} pt-8`}>
+      <div className={`${isMobile ? 'px-4 pb-24' : 'pl-24 pr-8'} pt-8 relative`}>
+        {!isMobile && (
+          <div className="absolute top-8 right-8 z-50">
+            <NotificationCenter />
+          </div>
+        )}
+        
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-3xl font-bold">People</h1>
           {canAddMembers && (

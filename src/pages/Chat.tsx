@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import Navigation from "@/components/Navigation";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import { toast } from "sonner";
 import { MessageSquare, Plus, Send, UserPlus, ArrowLeft } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -441,6 +442,11 @@ const Chat = () => {
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
       <div className={`${isMobile ? 'px-4 pt-4 pb-20' : 'pl-24 pr-8 pt-8'} ${isMobile ? 'h-screen pb-20' : 'flex gap-4 h-[calc(100vh-80px)]'}`}>
+        {!isMobile && (
+          <div className="absolute top-8 right-8 z-50">
+            <NotificationCenter />
+          </div>
+        )}
         {isMobile ? (
           /* Mobile: Show either thread list OR chat view */
           <>
@@ -503,10 +509,12 @@ const Chat = () => {
                       <button
                         key={thread.id}
                         onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
-                        className="w-full text-left p-3 rounded-lg transition-all hover:bg-card bg-card/40 flex items-center gap-3"
+                        className={`w-full text-left p-3 rounded-lg transition-all hover:bg-card flex items-center gap-3 ${
+                          thread.unreadCount > 0 ? 'bg-accent border-l-4 border-primary' : 'bg-card/40'
+                        }`}
                       >
                         {thread.unreadCount > 0 && (
-                          <div className="flex-shrink-0 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                          <div className="flex-shrink-0 bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
                             {thread.unreadCount > 9 ? "9+" : thread.unreadCount}
                           </div>
                         )}
@@ -515,7 +523,9 @@ const Chat = () => {
                           currentUserId={user?.id || ""} 
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="font-medium truncate">{thread.title}</div>
+                          <div className={`truncate ${thread.unreadCount > 0 ? 'font-bold' : 'font-medium'}`}>
+                            {thread.title}
+                          </div>
                           <div className="text-xs text-muted-foreground">
                             {new Date(thread.updated_at).toLocaleDateString()}
                           </div>
@@ -683,12 +693,16 @@ const Chat = () => {
                 <button
                   key={thread.id}
                   onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
-                  className={`w-full text-left p-3 rounded-lg transition-all hover:bg-card ${
-                    threadId === thread.id ? "bg-card shadow-md" : "bg-card/40"
-                  } flex items-center gap-3`}
+                  className={`w-full text-left p-3 rounded-lg transition-all hover:bg-card flex items-center gap-3 ${
+                    threadId === thread.id 
+                      ? "bg-card shadow-md" 
+                      : thread.unreadCount > 0 
+                        ? "bg-accent border-l-4 border-primary" 
+                        : "bg-card/40"
+                  }`}
                 >
                   {thread.unreadCount > 0 && (
-                    <div className="flex-shrink-0 bg-red-500 text-white text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                    <div className="flex-shrink-0 bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
                       {thread.unreadCount > 9 ? "9+" : thread.unreadCount}
                     </div>
                   )}
@@ -697,7 +711,7 @@ const Chat = () => {
                     currentUserId={user?.id || ""} 
                   />
                   <div className="flex-1 min-w-0">
-                    <div className="font-medium flex items-center gap-2">
+                    <div className={`flex items-center gap-2 ${thread.unreadCount > 0 ? 'font-bold' : 'font-medium'}`}>
                       {thread.linked_wall_item_id && (
                         <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded">
                           Wall

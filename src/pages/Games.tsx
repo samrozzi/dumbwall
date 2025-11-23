@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import Navigation from "@/components/Navigation";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import { GameWrapper } from "@/components/games/GameWrapper";
 import { GameCard } from "@/components/games/GameCard";
 import { GameInvites } from "@/components/games/GameInvites";
@@ -27,8 +28,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { notify } from "@/components/ui/custom-notification";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const Games = () => {
+  const isMobile = useIsMobile();
   const { circleId } = useParams();
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -171,7 +174,13 @@ const Games = () => {
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
       
-      <div className="px-4 sm:pl-24 sm:pr-8 py-8">
+      <div className="px-4 sm:pl-24 sm:pr-8 py-8 relative">
+        {!isMobile && (
+          <div className="absolute top-8 right-8 z-50">
+            <NotificationCenter />
+          </div>
+        )}
+        
         <div className="max-w-7xl mx-auto space-y-6">
           {/* Game Invites */}
           <GameInvites />

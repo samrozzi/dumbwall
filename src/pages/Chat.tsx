@@ -271,10 +271,11 @@ const Chat = () => {
             .eq("id", payload.new.sender_id)
             .single();
 
-          setMessages((prev) => [
-            ...prev,
-            { ...payload.new, profiles: profile } as ChatMessage,
-          ]);
+          setMessages((prev) => {
+            // Remove any temp/optimistic messages when real message arrives
+            const withoutTemp = prev.filter(m => !m.id.startsWith('temp-'));
+            return [...withoutTemp, { ...payload.new, profiles: profile } as ChatMessage];
+          });
           
           // Auto-mark as read when viewing thread
           await supabase

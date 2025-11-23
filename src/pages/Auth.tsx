@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -7,7 +7,20 @@ import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { notify } from "@/components/ui/custom-notification";
+import { cn } from "@/lib/utils";
 import wallLogo from "@/assets/wall-logo.png";
+
+// Debounce utility
+const debounce = <T extends (...args: any[]) => any>(
+  func: T,
+  wait: number
+): ((...args: Parameters<T>) => void) => {
+  let timeout: NodeJS.Timeout;
+  return (...args: Parameters<T>) => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => func(...args), wait);
+  };
+};
 
 const Auth = () => {
   const [searchParams] = useSearchParams();
@@ -20,6 +33,8 @@ const Auth = () => {
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
   const [inviteInfo, setInviteInfo] = useState<{circleName: string} | null>(null);
+  const [usernameAvailable, setUsernameAvailable] = useState<boolean | null>(null);
+  const [checkingUsername, setCheckingUsername] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -49,6 +64,44 @@ const Auth = () => {
     }
   };
 
+  const checkUsernameAvailability = async (username: string) => {
+    if (!username || username.length < 3) {
+      setUsernameAvailable(null);
+      return;
+    }
+
+    setCheckingUsername(true);
+    
+    try {
+      const { data: existingUser } = await supabase
+        .from("profiles")
+        .select("username")
+        .eq("username", username)
+        .maybeSingle();
+
+      setUsernameAvailable(!existingUser);
+    } catch (error) {
+      console.error("Error checking username:", error);
+      setUsernameAvailable(null);
+    } finally {
+      setCheckingUsername(false);
+    }
+  };
+
+  const debouncedCheckUsername = useCallback(
+    debounce((username: string) => checkUsernameAvailability(username), 500),
+    []
+  );
+
+  useEffect(() => {
+    if (!isLogin && username) {
+      debouncedCheckUsername(username);
+    } else {
+      setUsernameAvailable(null);
+      setCheckingUsername(false);
+    }
+  }, [username, isLogin, debouncedCheckUsername]);
+
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -63,14 +116,8 @@ const Auth = () => {
         notify("Welcome back!", "success");
         navigate("/");
       } else {
-        // Check if username is taken
-        const { data: existingUser } = await supabase
-          .from("profiles")
-          .select("username")
-          .eq("username", username)
-          .maybeSingle();
-
-        if (existingUser) {
+        // Prevent submission if username is unavailable
+        if (usernameAvailable === false) {
           toast.error(`Username @${username} is already taken. Please choose another.`);
           setLoading(false);
           return;
@@ -170,12 +217,31 @@ const Auth = () => {
                   id="username"
                   type="text"
                   value={username}
-                  onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                  onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
                   required
-                  className="mt-1"
+                  className={cn(
+                    "mt-1",
+                    usernameAvailable === false && "border-destructive focus-visible:ring-destructive"
+                  )}
                   placeholder="username (3-20 chars, alphanumeric + _)"
                   pattern="[a-zA-Z0-9_]{3,20}"
                 />
+                {username && username.length >= 3 && (
+                  <p className={cn(
+                    "text-sm mt-1.5",
+                    checkingUsername && "text-muted-foreground",
+                    usernameAvailable === true && "text-green-600",
+                    usernameAvailable === false && "text-destructive"
+                  )}>
+                    {checkingUsername ? (
+                      <>Checking availability...</>
+                    ) : usernameAvailable === true ? (
+                      <>✓ @{username} is available</>
+                    ) : usernameAvailable === false ? (
+                      <>✗ @{username} is already taken</>
+                    ) : null}
+                  </p>
+                )}
               </div>
             </>
           )}

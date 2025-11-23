@@ -143,7 +143,7 @@ export function AddMemberDialog({
             invitedEmail: email,
             circleName,
             inviterName,
-            type: userExists ? 'existing_user' : 'new_user',
+            type: 'new_user', // Backend will determine if user exists
           },
         });
 

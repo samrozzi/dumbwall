@@ -41,27 +41,16 @@ export function AddMemberDialog({
   const [checkingEmail, setCheckingEmail] = useState(false);
 
   useEffect(() => {
-    const checkEmail = async () => {
-      if (!email || !email.includes('@')) {
-        setUserExists(null);
-        return;
-      }
-
-      setCheckingEmail(true);
-      try {
-        const { data } = await supabase
-          .rpc('get_user_id_by_email', { user_email: email });
-        
-        setUserExists(!!data);
-      } catch (error) {
-        setUserExists(null);
-      } finally {
-        setCheckingEmail(false);
-      }
-    };
-
-    const timer = setTimeout(checkEmail, 500);
-    return () => clearTimeout(timer);
+    // Simple email format validation only - no database checks
+    if (!email || !email.includes('@')) {
+      setUserExists(null);
+      setCheckingEmail(false);
+      return;
+    }
+    
+    // Just validate email format, backend will handle user existence
+    setCheckingEmail(false);
+    setUserExists(null);
   }, [email]);
 
   const handleSendInvite = async () => {
@@ -96,26 +85,7 @@ export function AddMemberDialog({
         return;
       }
 
-      // For existing users, check if they're already members via profiles table
-      if (userExists) {
-        const { data: existingMember } = await supabase
-          .from('profiles')
-          .select(`
-            id,
-            circle_members!inner (
-              circle_id
-            )
-          `)
-          .eq('circle_members.circle_id', circleId)
-          .ilike('username', email.split('@')[0])
-          .maybeSingle();
-
-        if (existingMember) {
-          toast.error('User is already a member of this circle');
-          setSending(false);
-          return;
-        }
-      }
+      // Backend will handle duplicate member checking during invite acceptance
 
       // Create invite record
       const { data: invite, error: inviteError } = await supabase
@@ -210,24 +180,6 @@ export function AddMemberDialog({
               onChange={(e) => setEmail(e.target.value)}
               placeholder="friend@example.com"
             />
-            {checkingEmail && (
-              <p className="text-sm text-muted-foreground">Checking...</p>
-            )}
-            {userExists !== null && !checkingEmail && (
-              <div className="flex items-center gap-2 text-sm">
-                {userExists ? (
-                  <>
-                    <CheckCircle className="w-4 h-4 text-green-600" />
-                    <span className="text-green-600">Existing user - will receive in-app notification</span>
-                  </>
-                ) : (
-                  <>
-                    <Mail className="w-4 h-4 text-blue-600" />
-                    <span className="text-blue-600">New user - will receive signup invitation</span>
-                  </>
-                )}
-              </div>
-            )}
             {!isOwner && invitePermission === 'owner_only' && (
               <p className="text-sm text-amber-600">
                 This circle requires owner approval. Your request will be sent to the owner.

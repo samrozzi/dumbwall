@@ -280,6 +280,7 @@ const Wall = () => {
   };
 
   const handleMouseDown = (e: React.MouseEvent, itemId: string) => {
+    e.preventDefault(); // Prevent text selection
     const item = items.find((i) => i.id === itemId);
     if (!item) return;
 
@@ -569,7 +570,7 @@ const Wall = () => {
             {items.map((item) => (
               <div
                 key={item.id}
-                className="absolute cursor-move"
+                className="absolute cursor-move select-none"
                 style={{
                   left: item.x,
                   top: item.y,

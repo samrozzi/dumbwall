@@ -13,12 +13,12 @@ import { Mail, Users } from "lucide-react";
 interface PendingInvite {
   id: string;
   circle_id: string;
-  circles: {
+  circles?: {
     name: string;
-  };
-  profiles: {
+  } | null;
+  profiles?: {
     display_name: string | null;
-  };
+  } | null;
 }
 
 interface InviteAcceptDialogProps {
@@ -52,7 +52,7 @@ export const InviteAcceptDialog = ({
             <div className="flex items-center justify-center gap-2 text-base">
               <Users className="h-4 w-4" />
               <span className="font-semibold text-foreground">
-                {invite.circles.name}
+                {invite.circles?.name || "Circle Invite"}
               </span>
             </div>
             <p className="text-sm">

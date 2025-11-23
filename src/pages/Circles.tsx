@@ -256,7 +256,7 @@ const Circles = () => {
               <div className="relative w-48 h-48 rounded-full border-dashed border-4 border-primary/40 bg-primary/5 shadow-lg hover:scale-105 transition-all flex flex-col items-center justify-center mb-3 opacity-80 animate-pulse">
                 <Mail className="w-10 h-10 text-primary mb-2" />
                 <div className="text-center px-4">
-                  <h3 className="text-lg font-semibold mb-1">{invite.circles?.name || "Unknown Circle"}</h3>
+                  <h3 className="text-lg font-semibold mb-1">{invite.circles?.name || "Circle Invite"}</h3>
                   <p className="text-xs text-muted-foreground">
                     Tap to view
                   </p>

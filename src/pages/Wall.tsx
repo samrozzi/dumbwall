@@ -718,7 +718,7 @@ const Wall = () => {
           // Desktop canvas view
           <div
             ref={canvasRef}
-            className="relative w-full max-w-full bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border overflow-hidden"
+            className="relative w-full max-w-full bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border overflow-hidden pb-20"
             style={{
               height: canvasHeight,
               backgroundImage: `

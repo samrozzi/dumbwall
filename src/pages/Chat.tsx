@@ -9,15 +9,18 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import Navigation from "@/components/Navigation";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { toast } from "sonner";
-import { MessageSquare, Plus, Send, UserPlus, ArrowLeft } from "lucide-react";
+import { MessageSquare, Plus, Send, UserPlus, ArrowLeft, Camera } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MemberPicker from "@/components/chat/MemberPicker";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ThreadAvatarStack } from "@/components/chat/ThreadAvatarStack";
 import { ChatMessage } from "@/components/chat/ChatMessage";
+import ChatMessageWithImage from "@/components/chat/ChatMessageWithImage";
 import { EmojiPicker } from "@/components/chat/EmojiPicker";
 import { ReplyPreview } from "@/components/chat/ReplyPreview";
+import ChatPhotoUpload from "@/components/chat/ChatPhotoUpload";
+import { compressImage } from "@/lib/imageCompression";
 
 interface ChatThread {
   id: string;
@@ -42,6 +45,8 @@ interface ThreadWithMembers extends ChatThread {
 interface ChatMessageType {
   id: string;
   body: string;
+  image_url?: string | null;
+  image_caption?: string | null;
   created_at: string;
   sender_id: string;
   reply_to_id?: string | null;
@@ -73,6 +78,7 @@ const Chat = () => {
   const [newThreadTitle, setNewThreadTitle] = useState("");
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [addMembersDialogOpen, setAddMembersDialogOpen] = useState(false);
+  const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [replyingTo, setReplyingTo] = useState<ChatMessageType | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -690,22 +696,56 @@ const Chat = () => {
                 </div>
 
                 <ScrollArea className="flex-1 p-4">
-                  {messages.map((message) => (
-                    <ChatMessage
-                      key={message.id}
-                      id={message.id}
-                      body={message.body}
-                      created_at={message.created_at}
-                      sender_id={message.sender_id}
-                      sender_name={message.profiles?.display_name || message.profiles?.username || "Unknown"}
-                      sender_avatar={message.profiles?.avatar_url || undefined}
-                      reply_to_id={message.reply_to_id}
-                      replied_message={message.replied_message}
-                      currentUserId={user?.id}
-                      isOwn={message.sender_id === user?.id}
-                      onReply={() => setReplyingTo(message)}
-                    />
-                  ))}
+                  {threadPhoto && (
+                    <div className="mb-4 rounded-lg overflow-hidden border-2 border-primary bg-black">
+                      <img 
+                        src={threadPhoto.url} 
+                        alt={threadPhoto.caption || 'Photo'} 
+                        className="w-full max-h-64 object-contain"
+                      />
+                      {threadPhoto.caption && (
+                        <div className="p-3 bg-muted border-t-2 border-amber-500">
+                          <p className="text-sm font-semibold">{threadPhoto.caption}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {messages.map((message) => 
+                    message.image_url ? (
+                      <ChatMessageWithImage
+                        key={message.id}
+                        id={message.id}
+                        body={message.body}
+                        image_url={message.image_url}
+                        created_at={message.created_at}
+                        sender={{
+                          id: message.sender_id,
+                          username: message.profiles?.username || "Unknown",
+                          display_name: message.profiles?.display_name,
+                          avatar_url: message.profiles?.avatar_url,
+                        }}
+                        isOwn={message.sender_id === user?.id}
+                        onReply={() => setReplyingTo(message)}
+                        onReaction={() => {}}
+                        replyTo={message.replied_message}
+                      />
+                    ) : (
+                      <ChatMessage
+                        key={message.id}
+                        id={message.id}
+                        body={message.body}
+                        created_at={message.created_at}
+                        sender_id={message.sender_id}
+                        sender_name={message.profiles?.display_name || message.profiles?.username || "Unknown"}
+                        sender_avatar={message.profiles?.avatar_url || undefined}
+                        reply_to_id={message.reply_to_id}
+                        replied_message={message.replied_message}
+                        currentUserId={user?.id}
+                        isOwn={message.sender_id === user?.id}
+                        onReply={() => setReplyingTo(message)}
+                      />
+                    )
+                  )}
                   <div ref={messagesEndRef} />
                 </ScrollArea>
 
@@ -718,6 +758,56 @@ const Chat = () => {
                     />
                   )}
                   <div className="flex gap-2">
+                    <Dialog open={photoDialogOpen} onOpenChange={setPhotoDialogOpen}>
+                      <DialogTrigger asChild>
+                        <Button size="icon" variant="outline">
+                          <Camera className="w-4 h-4" />
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent className="max-w-lg">
+                        <DialogHeader>
+                          <DialogTitle>Share a Photo</DialogTitle>
+                        </DialogHeader>
+                        <ChatPhotoUpload 
+                          onPhotoSelected={async (file, caption) => {
+                            if (!user || !threadId) return;
+                            
+                            try {
+                              const fileName = `${threadId}/${user.id}/${Date.now()}.jpg`;
+                              const { data: uploadData, error: uploadError } = await supabase.storage
+                                .from('chat-images')
+                                .upload(fileName, file);
+
+                              if (uploadError) throw uploadError;
+
+                              const { data: { publicUrl } } = supabase.storage
+                                .from('chat-images')
+                                .getPublicUrl(fileName);
+
+                              const { error: messageError } = await supabase
+                                .from('chat_messages')
+                                .insert({
+                                  thread_id: threadId,
+                                  sender_id: user.id,
+                                  body: caption,
+                                  image_url: publicUrl,
+                                  reply_to_id: replyingTo?.id,
+                                });
+
+                              if (messageError) throw messageError;
+
+                              setPhotoDialogOpen(false);
+                              setReplyingTo(null);
+                              toast.success('Photo sent!');
+                            } catch (error) {
+                              console.error('Error uploading photo:', error);
+                              toast.error('Failed to send photo');
+                            }
+                          }}
+                          onClose={() => setPhotoDialogOpen(false)}
+                        />
+                      </DialogContent>
+                    </Dialog>
                     <Input
                       placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
                       value={newMessage}
@@ -881,22 +971,42 @@ const Chat = () => {
                     )}
                   </div>
                 )}
-                {messages.map((message) => (
-                  <ChatMessage
-                    key={message.id}
-                    id={message.id}
-                    body={message.body}
-                    created_at={message.created_at}
-                    sender_id={message.sender_id}
-                    sender_name={message.profiles?.display_name || message.profiles?.username || "Unknown"}
-                    sender_avatar={message.profiles?.avatar_url || undefined}
-                    reply_to_id={message.reply_to_id}
-                    replied_message={message.replied_message}
-                    currentUserId={user?.id}
-                    isOwn={message.sender_id === user?.id}
-                    onReply={() => setReplyingTo(message)}
-                  />
-                ))}
+                {messages.map((message) => 
+                  message.image_url ? (
+                    <ChatMessageWithImage
+                      key={message.id}
+                      id={message.id}
+                      body={message.body}
+                      image_url={message.image_url}
+                      created_at={message.created_at}
+                      sender={{
+                        id: message.sender_id,
+                        username: message.profiles?.username || "Unknown",
+                        display_name: message.profiles?.display_name,
+                        avatar_url: message.profiles?.avatar_url,
+                      }}
+                      isOwn={message.sender_id === user?.id}
+                      onReply={() => setReplyingTo(message)}
+                      onReaction={() => {}}
+                      replyTo={message.replied_message}
+                    />
+                  ) : (
+                    <ChatMessage
+                      key={message.id}
+                      id={message.id}
+                      body={message.body}
+                      created_at={message.created_at}
+                      sender_id={message.sender_id}
+                      sender_name={message.profiles?.display_name || message.profiles?.username || "Unknown"}
+                      sender_avatar={message.profiles?.avatar_url || undefined}
+                      reply_to_id={message.reply_to_id}
+                      replied_message={message.replied_message}
+                      currentUserId={user?.id}
+                      isOwn={message.sender_id === user?.id}
+                      onReply={() => setReplyingTo(message)}
+                    />
+                  )
+                )}
                 <div ref={messagesEndRef} />
               </ScrollArea>
 
@@ -910,6 +1020,56 @@ const Chat = () => {
                   />
                 )}
                 <div className="flex gap-2">
+                  <Dialog open={photoDialogOpen} onOpenChange={setPhotoDialogOpen}>
+                    <DialogTrigger asChild>
+                      <Button size="icon" variant="outline">
+                        <Camera className="w-4 h-4" />
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent className="max-w-lg">
+                      <DialogHeader>
+                        <DialogTitle>Share a Photo</DialogTitle>
+                      </DialogHeader>
+                      <ChatPhotoUpload 
+                        onPhotoSelected={async (file, caption) => {
+                          if (!user || !threadId) return;
+                          
+                          try {
+                            const fileName = `${threadId}/${user.id}/${Date.now()}.jpg`;
+                            const { data: uploadData, error: uploadError } = await supabase.storage
+                              .from('chat-images')
+                              .upload(fileName, file);
+
+                            if (uploadError) throw uploadError;
+
+                            const { data: { publicUrl } } = supabase.storage
+                              .from('chat-images')
+                              .getPublicUrl(fileName);
+
+                            const { error: messageError } = await supabase
+                              .from('chat_messages')
+                              .insert({
+                                thread_id: threadId,
+                                sender_id: user.id,
+                                body: caption,
+                                image_url: publicUrl,
+                                reply_to_id: replyingTo?.id,
+                              });
+
+                            if (messageError) throw messageError;
+
+                            setPhotoDialogOpen(false);
+                            setReplyingTo(null);
+                            toast.success('Photo sent!');
+                          } catch (error) {
+                            console.error('Error uploading photo:', error);
+                            toast.error('Failed to send photo');
+                          }
+                        }}
+                        onClose={() => setPhotoDialogOpen(false)}
+                      />
+                    </DialogContent>
+                  </Dialog>
                   <Input
                     placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
                     value={newMessage}

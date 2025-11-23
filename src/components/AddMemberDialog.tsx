@@ -52,6 +52,7 @@ export function AddMemberDialog({
   const [searching, setSearching] = useState(false);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserSearchResult | null>(null);
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   useEffect(() => {
     const searchUsers = async () => {
@@ -94,6 +95,15 @@ export function AddMemberDialog({
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
 
+  // Control popover visibility based on search term
+  useEffect(() => {
+    if (searchTerm.length >= 2 && !selectedUser) {
+      setPopoverOpen(true);
+    } else {
+      setPopoverOpen(false);
+    }
+  }, [searchTerm, selectedUser]);
+
   // Get email from username lookup
   const getEmailFromUserId = async (userId: string): Promise<string | null> => {
     try {
@@ -116,6 +126,7 @@ export function AddMemberDialog({
   const handleUserSelect = async (selectedUser: UserSearchResult) => {
     setSelectedUser(selectedUser);
     setSearchTerm(`@${selectedUser.username}`);
+    setPopoverOpen(false);
 
     // For selected users, we'll use their user_id to send notification directly
     // But we still need an email for the invite record
@@ -269,7 +280,7 @@ export function AddMemberDialog({
         <div className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="search">Search by Username</Label>
-            <Popover open={searchTerm.length >= 2 && !selectedUser}>
+            <Popover open={popoverOpen} onOpenChange={setPopoverOpen} modal={false}>
               <PopoverTrigger asChild>
                 <div className="relative">
                   <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -277,14 +288,24 @@ export function AddMemberDialog({
                     id="search"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
+                    onFocus={() => {
+                      if (searchTerm.length >= 2) {
+                        setPopoverOpen(true);
+                      }
+                    }}
                     placeholder="Search by @username..."
                     className="pl-9"
                     disabled={!!selectedUser}
+                    autoComplete="off"
                   />
                 </div>
               </PopoverTrigger>
-              {searchTerm.length >= 2 && !selectedUser && (
-                <PopoverContent className="w-[400px] p-0" align="start">
+              {popoverOpen && (
+                <PopoverContent 
+                  className="w-[400px] p-0" 
+                  align="start"
+                  onOpenAutoFocus={(e) => e.preventDefault()}
+                >
                   <Command>
                     <CommandList>
                       {searching ? (

@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,13 +10,44 @@ import { notify } from "@/components/ui/custom-notification";
 import { Sparkles } from "lucide-react";
 
 const Auth = () => {
+  const [searchParams] = useSearchParams();
+  const inviteToken = searchParams.get('invite');
+  
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [username, setUsername] = useState("");
   const [loading, setLoading] = useState(false);
+  const [inviteInfo, setInviteInfo] = useState<{circleName: string} | null>(null);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (inviteToken) {
+      loadInviteInfo();
+      setIsLogin(false);
+    }
+  }, [inviteToken]);
+
+  const loadInviteInfo = async () => {
+    if (!inviteToken) return;
+
+    try {
+      const { data } = await supabase
+        .from("circle_invites")
+        .select("invited_email, circles!circle_invites_circle_id_fkey(name)")
+        .eq("id", inviteToken)
+        .eq("status", "pending")
+        .single();
+
+      if (data) {
+        setEmail(data.invited_email);
+        setInviteInfo({ circleName: (data.circles as any).name });
+      }
+    } catch (error) {
+      console.error("Error loading invite:", error);
+    }
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,6 +97,30 @@ const Auth = () => {
             .eq("id", authData.user.id);
         }
 
+        // If signing up via invite, accept it
+        if (inviteToken && authData.user) {
+          const { data: invite } = await supabase
+            .from("circle_invites")
+            .select("circle_id")
+            .eq("id", inviteToken)
+            .single();
+
+          if (invite) {
+            await supabase
+              .from("circle_members")
+              .insert({
+                circle_id: invite.circle_id,
+                user_id: authData.user.id,
+                role: "member",
+              });
+
+            await supabase
+              .from("circle_invites")
+              .update({ status: "accepted" })
+              .eq("id", inviteToken);
+          }
+        }
+
         toast.success("Account created! Welcome to The Wall!");
         navigate("/");
       }
@@ -85,6 +140,14 @@ const Auth = () => {
             The Wall
           </h1>
         </div>
+
+        {inviteInfo && (
+          <div className="mb-4 p-4 bg-primary/10 border border-primary/20 rounded-lg">
+            <p className="text-sm text-center">
+              🎉 You're signing up to join <strong>{inviteInfo.circleName}</strong>!
+            </p>
+          </div>
+        )}
 
         <form onSubmit={handleAuth} className="space-y-4">
           {!isLogin && (

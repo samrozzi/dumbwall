@@ -6,8 +6,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, LogOut, Sparkles } from "lucide-react";
+import { Plus, LogOut, Sparkles, Check, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -22,8 +23,21 @@ interface Circle {
   created_at: string;
 }
 
+interface PendingInvite {
+  id: string;
+  circle: {
+    id: string;
+    name: string;
+  };
+  invited_by_profile: {
+    display_name: string | null;
+    username: string | null;
+  };
+}
+
 const Circles = () => {
   const [circles, setCircles] = useState<Circle[]>([]);
+  const [pendingInvites, setPendingInvites] = useState<PendingInvite[]>([]);
   const [newCircleName, setNewCircleName] = useState("");
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -37,6 +51,7 @@ const Circles = () => {
       return;
     }
     loadCircles();
+    loadPendingInvites();
   }, [user, navigate]);
 
   const loadCircles = async () => {
@@ -68,6 +83,81 @@ const Circles = () => {
       toast.error(error.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadPendingInvites = async () => {
+    if (!user?.email) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("circle_invites")
+        .select(`
+          id,
+          circles!circle_invites_circle_id_fkey(id, name),
+          profiles!circle_invites_invited_by_fkey(display_name, username)
+        `)
+        .eq("invited_email", user.email)
+        .eq("status", "pending");
+
+      if (error) throw error;
+
+      const formatted = data?.map(invite => ({
+        id: invite.id,
+        circle: invite.circles as any,
+        invited_by_profile: invite.profiles as any,
+      })) || [];
+
+      setPendingInvites(formatted as PendingInvite[]);
+    } catch (error: any) {
+      console.error("Error loading pending invites:", error);
+    }
+  };
+
+  const handleAcceptInvite = async (inviteId: string, circleId: string) => {
+    if (!user) return;
+
+    try {
+      // Add user to circle
+      const { error: memberError } = await supabase
+        .from("circle_members")
+        .insert({
+          circle_id: circleId,
+          user_id: user.id,
+          role: "member",
+        });
+
+      if (memberError) throw memberError;
+
+      // Update invite status
+      const { error: updateError } = await supabase
+        .from("circle_invites")
+        .update({ status: "accepted" })
+        .eq("id", inviteId);
+
+      if (updateError) throw updateError;
+
+      toast.success("You've joined the circle!");
+      loadCircles();
+      loadPendingInvites();
+    } catch (error: any) {
+      toast.error("Failed to accept invite: " + error.message);
+    }
+  };
+
+  const handleDeclineInvite = async (inviteId: string) => {
+    try {
+      const { error } = await supabase
+        .from("circle_invites")
+        .update({ status: "rejected" })
+        .eq("id", inviteId);
+
+      if (error) throw error;
+
+      toast.success("Invite declined");
+      loadPendingInvites();
+    } catch (error: any) {
+      toast.error("Failed to decline invite: " + error.message);
     }
   };
 
@@ -136,6 +226,50 @@ const Circles = () => {
             Sign Out
           </Button>
         </div>
+
+        {/* Pending Invites */}
+        {pendingInvites.length > 0 && (
+          <div className="mb-8">
+            <h2 className="text-2xl font-semibold mb-4 flex items-center gap-2">
+              Pending Invites
+              <Badge variant="secondary">{pendingInvites.length}</Badge>
+            </h2>
+            <div className="space-y-3">
+              {pendingInvites.map((invite) => (
+                <Card key={invite.id} className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h3 className="font-semibold text-lg">{invite.circle.name}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Invited by {invite.invited_by_profile.display_name || invite.invited_by_profile.username || 'A member'}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        variant="default"
+                        onClick={() => handleAcceptInvite(invite.id, invite.circle.id)}
+                        className="gap-1"
+                      >
+                        <Check className="w-4 h-4" />
+                        Accept
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDeclineInvite(invite.id)}
+                        className="gap-1"
+                      >
+                        <X className="w-4 h-4" />
+                        Decline
+                      </Button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           {circles.map((circle) => (

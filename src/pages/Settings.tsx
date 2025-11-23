@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
 import { Upload, LogOut, Trash2, Users, Plus, AlertTriangle, Settings2 } from "lucide-react";
+import { CircleSettingsDialog } from "@/components/CircleSettingsDialog";
 
 interface UserProfile {
   id: string;
@@ -51,6 +52,9 @@ const Settings = () => {
   const [deleteCircleId, setDeleteCircleId] = useState<string | null>(null);
   const [renameCircleId, setRenameCircleId] = useState<string | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [settingsCircleId, setSettingsCircleId] = useState<string | null>(null);
+  const [settingsCircleName, setSettingsCircleName] = useState("");
+  const [circleSettings, setCircleSettings] = useState<Record<string, 'anyone' | 'owner_only'>>({});
 
   useEffect(() => {
     if (!user) {
@@ -59,6 +63,7 @@ const Settings = () => {
     }
     loadProfile();
     loadUserCircles();
+    loadCircleSettings();
     setUserEmail(user.email || "");
   }, [user, navigate]);
 
@@ -201,6 +206,33 @@ const Settings = () => {
       toast.success("Avatar removed!");
     } catch (error: any) {
       toast.error(error.message);
+    }
+  };
+
+  const loadCircleSettings = async () => {
+    if (!user) return;
+
+    try {
+      const { data: memberCircles } = await supabase
+        .from("circle_members")
+        .select("circle_id")
+        .eq("user_id", user.id);
+
+      if (!memberCircles) return;
+
+      const circleIds = memberCircles.map(m => m.circle_id);
+      const { data: settings } = await supabase
+        .from("circle_settings")
+        .select("circle_id, invite_permission")
+        .in("circle_id", circleIds);
+
+      const settingsMap: Record<string, 'anyone' | 'owner_only'> = {};
+      settings?.forEach(s => {
+        settingsMap[s.circle_id] = s.invite_permission as 'anyone' | 'owner_only';
+      });
+      setCircleSettings(settingsMap);
+    } catch (error: any) {
+      console.error("Error loading circle settings:", error);
     }
   };
 
@@ -560,6 +592,17 @@ const Settings = () => {
                         {circle.role === "owner" && (
                           <>
                             <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSettingsCircleId(circle.id);
+                                setSettingsCircleName(circle.name);
+                              }}
+                              title="Circle Settings"
+                            >
+                              <Settings2 className="w-4 h-4" />
+                            </Button>
+                            <Button
                               variant="outline"
                               onClick={() => {
                                 setRenameCircleId(circle.id);
@@ -712,6 +755,21 @@ const Settings = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Circle Settings Dialog */}
+      {settingsCircleId && (
+        <CircleSettingsDialog
+          open={settingsCircleId !== null}
+          onOpenChange={(open) => !open && setSettingsCircleId(null)}
+          circleId={settingsCircleId}
+          circleName={settingsCircleName}
+          currentPermission={circleSettings[settingsCircleId] || 'owner_only'}
+          onSuccess={() => {
+            loadCircleSettings();
+            loadUserCircles();
+          }}
+        />
+      )}
     </div>
   );
 };

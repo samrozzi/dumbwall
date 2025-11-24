@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Music, ExternalLink, X } from "lucide-react";
@@ -16,13 +17,31 @@ interface MusicDropProps {
 }
 
 export const MusicDrop = ({ content, onDelete, isCreator }: MusicDropProps) => {
+  const [showEmbed, setShowEmbed] = useState(false);
   const musicUrl = content.spotifyUrl || content.youtubeUrl || content.appleUrl;
 
-  const handlePlay = () => {
-    if (musicUrl) {
-      window.open(musicUrl, "_blank");
+  const getSpotifyEmbedUrl = (url: string): string | null => {
+    const match = url.match(/spotify\.com\/(track|album|playlist)\/([a-zA-Z0-9]+)/);
+    if (match) {
+      return `https://open.spotify.com/embed/${match[1]}/${match[2]}`;
     }
+    return null;
   };
+
+  const getYouTubeEmbedUrl = (url: string): string | null => {
+    const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
+    const match = url.match(regExp);
+    if (match && match[7].length === 11) {
+      return `https://www.youtube.com/embed/${match[7]}`;
+    }
+    return null;
+  };
+
+  const embedUrl = content.spotifyUrl 
+    ? getSpotifyEmbedUrl(content.spotifyUrl)
+    : content.youtubeUrl
+    ? getYouTubeEmbedUrl(content.youtubeUrl)
+    : null;
 
   return (
     <Card className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border-2 border-indigo-200 dark:border-indigo-800 w-[280px] relative">
@@ -52,18 +71,54 @@ export const MusicDrop = ({ content, onDelete, isCreator }: MusicDropProps) => {
         <div className="flex-1 min-w-0">
           <h4 className="font-bold text-sm truncate text-gray-900 dark:text-white">{content.songTitle}</h4>
           <p className="text-xs text-gray-700 dark:text-gray-300 truncate">{content.artist}</p>
-          {musicUrl && (
+        </div>
+      </div>
+      
+      {embedUrl && (
+        <div className="mt-3">
+          {showEmbed ? (
+            <>
+              <iframe
+                src={embedUrl}
+                width="100%"
+                height="152"
+                frameBorder="0"
+                allow="encrypted-media"
+                className="rounded"
+                title={`${content.songTitle} player`}
+              />
+              <Button
+                onClick={() => setShowEmbed(false)}
+                variant="ghost"
+                size="sm"
+                className="w-full mt-2"
+              >
+                Hide Player
+              </Button>
+            </>
+          ) : (
             <Button
-              onClick={handlePlay}
+              onClick={() => setShowEmbed(true)}
               size="sm"
-              className="mt-2 bg-indigo-500 hover:bg-indigo-600 text-white"
+              className="w-full bg-indigo-500 hover:bg-indigo-600 text-white"
             >
-              <ExternalLink className="w-3 h-3 mr-1" />
-              Play
+              Show Player
             </Button>
           )}
         </div>
-      </div>
+      )}
+
+      {musicUrl && (
+        <Button
+          onClick={() => window.open(musicUrl, "_blank")}
+          size="sm"
+          variant="outline"
+          className="w-full mt-2 border-indigo-300 dark:border-indigo-700"
+        >
+          <ExternalLink className="w-3 h-3 mr-1" />
+          Open in {content.spotifyUrl ? "Spotify" : content.youtubeUrl ? "YouTube" : "Music App"}
+        </Button>
+      )}
     </Card>
   );
 };

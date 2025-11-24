@@ -16,17 +16,32 @@ interface AudioClipProps {
 export const AudioClip = ({ content, onDelete, isCreator }: AudioClipProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
+  const [error, setError] = useState<string | null>(null);
   const audioRef = useRef<HTMLAudioElement>(null);
 
-  const togglePlay = () => {
+  const togglePlay = async () => {
     if (!audioRef.current) return;
 
-    if (isPlaying) {
-      audioRef.current.pause();
-    } else {
-      audioRef.current.play();
+    try {
+      if (isPlaying) {
+        audioRef.current.pause();
+        setIsPlaying(false);
+      } else {
+        console.log("Playing audio from:", content.audioUrl);
+        await audioRef.current.play();
+        setIsPlaying(true);
+        setError(null);
+      }
+    } catch (err: any) {
+      console.error("Audio playback error:", err);
+      setError(err.message || "Failed to play audio");
+      setIsPlaying(false);
     }
-    setIsPlaying(!isPlaying);
+  };
+
+  const handleError = (e: any) => {
+    console.error("Audio loading error:", e);
+    setError("Failed to load audio. Browser may not support this format.");
   };
 
   const handleTimeUpdate = () => {
@@ -60,6 +75,8 @@ export const AudioClip = ({ content, onDelete, isCreator }: AudioClipProps) => {
         src={content.audioUrl}
         onTimeUpdate={handleTimeUpdate}
         onEnded={handleEnded}
+        onError={handleError}
+        preload="auto"
       />
       <div className="flex items-center gap-3">
         <Button
@@ -84,6 +101,11 @@ export const AudioClip = ({ content, onDelete, isCreator }: AudioClipProps) => {
       </div>
       {content.caption && (
         <p className="text-sm text-foreground mt-3">{content.caption}</p>
+      )}
+      {error && (
+        <p className="text-xs text-red-600 dark:text-red-400 mt-2">
+          {error}
+        </p>
       )}
     </Card>
   );

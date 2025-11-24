@@ -82,21 +82,29 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
   useLayoutEffect(() => {
     const calculateRowSpans = () => {
       const newRowSpans = itemRefs.current.map((ref) => {
-        if (!ref) return 1;
+        if (!ref) return 30; // Minimum fallback
         const height = ref.offsetHeight;
-        // Each grid row is 10px, add 1 for gap spacing
-        return Math.ceil(height / 10) + 1;
+        // Each grid row is 10px, add extra padding to prevent overlap
+        const baseSpan = Math.ceil(height / 10);
+        const gapPadding = 3; // Extra spacing between items
+        return Math.max(30, baseSpan + gapPadding);
       });
       setRowSpans(newRowSpans);
     };
 
-    // Calculate on mount and when items change
-    calculateRowSpans();
+    // Initial calculation with delay to ensure DOM is ready
+    const timer = setTimeout(calculateRowSpans, 50);
 
     // Recalculate on window resize
-    const handleResize = () => calculateRowSpans();
+    const handleResize = () => {
+      setTimeout(calculateRowSpans, 50);
+    };
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', handleResize);
+    };
   }, [children.length, columnCount]);
 
   // Generate stable random rotation for each item based on its ID
@@ -147,8 +155,9 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
-        gap: '0.75rem',
+        gap: '1rem',
         gridAutoRows: '10px',
+        gridAutoFlow: 'dense',
       }}
     >
       {children.map((child, index) => {
@@ -163,11 +172,12 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
             ref={el => itemRefs.current[index] = el}
             className={cn(
               "transition-all duration-300 touch-none",
-              isDragging && "opacity-50 scale-95 z-[9999]"
+              isDragging && "opacity-50 scale-95 z-[9999]",
+              rowSpans.length === 0 && "opacity-0"
             )}
             style={{
               gridColumn: `span ${columnSpan}`,
-              gridRowEnd: `span ${rowSpans[index] || 1}`,
+              gridRowEnd: `span ${rowSpans[index] || 30}`,
               transform: isDragging 
                 ? `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg) scale(1.05)`
                 : `translate(${offset.x}px, ${offset.y}px) rotate(${rotation}deg)`,

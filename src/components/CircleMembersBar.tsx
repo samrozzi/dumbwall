@@ -83,10 +83,6 @@ export const CircleMembersBar = ({ circleId, onAddMember, compact = false }: Cir
             show_presence,
             status_mode,
             last_active_at
-          ),
-          circle_profiles!circle_profiles_user_id_fkey (
-            nickname,
-            avatar_override_url
           )
         `)
         .eq('circle_id', circleId);
@@ -96,26 +92,38 @@ export const CircleMembersBar = ({ circleId, onAddMember, compact = false }: Cir
         throw error;
       }
 
-      console.log('Members query response:', { 
-        dataLength: data?.length, 
-        firstItem: data?.[0],
-        error 
-      });
+      if (!data) {
+        setMembers([]);
+        return;
+      }
 
-      const formattedMembers: Member[] = (data || [])
+      // Fetch circle profiles separately to avoid filtering issues
+      const { data: circleProfiles } = await supabase
+        .from('circle_profiles')
+        .select('user_id, nickname, avatar_override_url')
+        .eq('circle_id', circleId);
+
+      const circleProfilesMap = new Map(
+        (circleProfiles || []).map(cp => [cp.user_id, cp])
+      );
+
+      const formattedMembers: Member[] = data
         .filter((item: any) => item.profiles)
-        .map((item: any) => ({
-          user_id: item.user_id,
-          username: item.profiles.username,
-          display_name: item.profiles.display_name,
-          avatar_url: item.profiles.avatar_url,
-          show_presence: item.profiles.show_presence,
-          status_mode: item.profiles.status_mode,
-          last_active_at: item.profiles.last_active_at,
-          nickname: item.circle_profiles?.[0]?.nickname || null,
-          avatar_override_url: item.circle_profiles?.[0]?.avatar_override_url || null,
-          role: item.role,
-        }));
+        .map((item: any) => {
+          const circleProfile = circleProfilesMap.get(item.user_id);
+          return {
+            user_id: item.user_id,
+            username: item.profiles.username,
+            display_name: item.profiles.display_name,
+            avatar_url: item.profiles.avatar_url,
+            show_presence: item.profiles.show_presence,
+            status_mode: item.profiles.status_mode,
+            last_active_at: item.profiles.last_active_at,
+            nickname: circleProfile?.nickname || null,
+            avatar_override_url: circleProfile?.avatar_override_url || null,
+            role: item.role,
+          };
+        });
 
       // Sort: online first, then by name
       formattedMembers.sort((a, b) => {

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Plus, StickyNote, ImageIcon, MessageSquare, Gamepad2, Grid3x3, Megaphone, ArrowLeft, BarChart3, Mic, Music, Zap, FileText, Pencil } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -26,7 +26,9 @@ const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnou
   const isMobile = useIsMobile();
 
   // Scroll hide/show behavior
-  useState(() => {
+  useEffect(() => {
+    if (!isMobile) return;
+
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
       
@@ -43,7 +45,7 @@ const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnou
 
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  });
+  }, [isMobile, lastScrollY]);
 
   const menuItems = [
     { icon: FileText, label: "Post", color: "bg-yellow-400 hover:bg-yellow-500", action: () => { setShowPostSubmenu(true); } },

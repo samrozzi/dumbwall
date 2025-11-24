@@ -44,7 +44,7 @@ export const MusicDrop = ({ content, onDelete, isCreator }: MusicDropProps) => {
     : null;
 
   return (
-    <Card className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border-2 border-indigo-200 dark:border-indigo-800 w-[280px] relative">
+    <Card className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border-2 border-indigo-200 dark:border-indigo-800 w-[380px] relative">
       {isCreator && onDelete && (
         <button
           onClick={(e) => {
@@ -81,7 +81,7 @@ export const MusicDrop = ({ content, onDelete, isCreator }: MusicDropProps) => {
               <iframe
                 src={embedUrl}
                 width="100%"
-                height="232"
+                height="152"
                 frameBorder="0"
                 allow="encrypted-media"
                 className="rounded"

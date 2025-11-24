@@ -28,7 +28,7 @@ const AnnouncementBubble = ({ content, onDelete, creatorAvatar, creatorUsername,
       <Card 
         className={cn(
           "border-2 border-[#0000AA] bg-gradient-to-b from-[#0000AA] to-[#1084D0] shadow-[inset_1px_1px_0px_rgba(255,255,255,0.3),inset_-1px_-1px_0px_rgba(0,0,0,0.3)] overflow-hidden",
-          fullWidth ? "w-full" : "w-full min-w-[300px] max-w-[400px]"
+          fullWidth ? "w-full max-w-full" : "w-full min-w-[300px] max-w-[400px]"
         )}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}

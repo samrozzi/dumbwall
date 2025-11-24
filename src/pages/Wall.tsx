@@ -889,11 +889,11 @@ const Wall = () => {
         </div>
 
         {viewMode === "wall" && isMobile ? (
-          <div className="space-y-4 pb-24 flex flex-col items-center max-h-[calc(100vh-200px)] overflow-y-auto">
+          <div className="space-y-4 pb-24 flex flex-col items-center max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden">
             {items.map((item) => {
               const itemWithCreator = item as any;
               return (
-                <div key={item.id} className="w-full">
+                <div key={item.id} className="w-full max-w-full">
                   {item.type === "note" && (
                     <StickyNote
                       content={item.content as any}
@@ -1072,22 +1072,28 @@ const Wall = () => {
                   key={item.id}
                   className="p-4 bg-card border border-border rounded-lg flex items-center gap-4 hover:bg-muted/50 cursor-pointer"
                   onClick={() => {
-                    if (isMobile) {
-                      // Mobile: items don't have x,y positioning, just stay in list
-                      return;
-                    }
-                    // Desktop: switch to wall and highlight
                     setViewMode("wall");
-                    setTimeout(() => {
-                      const el = document.querySelector(`[data-item-id="${item.id}"]`);
-                      if (el) {
-                        el.scrollIntoView({ behavior: "smooth", block: "center" });
-                        el.classList.add('ring-4', 'ring-primary', 'ring-offset-2');
-                        setTimeout(() => {
-                          el.classList.remove('ring-4', 'ring-primary', 'ring-offset-2');
-                        }, 2000);
-                      }
-                    }, 100);
+                    if (isMobile) {
+                      // On mobile, switch to wall view and scroll to item in the vertical list
+                      setTimeout(() => {
+                        const el = document.querySelector(`[data-item-id="${item.id}"]`);
+                        if (el) {
+                          el.scrollIntoView({ behavior: "smooth", block: "center" });
+                        }
+                      }, 100);
+                    } else {
+                      // Desktop: switch to wall and highlight
+                      setTimeout(() => {
+                        const el = document.querySelector(`[data-item-id="${item.id}"]`);
+                        if (el) {
+                          el.scrollIntoView({ behavior: "smooth", block: "center" });
+                          el.classList.add('ring-4', 'ring-primary', 'ring-offset-2');
+                          setTimeout(() => {
+                            el.classList.remove('ring-4', 'ring-primary', 'ring-offset-2');
+                          }, 2000);
+                        }
+                      }, 100);
+                    }
                   }}
                 >
                   <span className="text-2xl">{getItemIcon(item.type)}</span>

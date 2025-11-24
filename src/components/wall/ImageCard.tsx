@@ -59,7 +59,7 @@ const ImageCard = ({
     <Card
       className={cn(
         "p-2 bg-card shadow-lg transition-all duration-300 cursor-move hover:shadow-2xl hover:scale-105 transform -rotate-1 hover:rotate-0 relative",
-        fullWidth ? "w-full" : "w-64"
+        fullWidth ? "w-full max-w-full" : "w-64"
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

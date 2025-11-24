@@ -488,38 +488,180 @@ export type Database = {
         }
         Relationships: []
       }
+      profile_interests: {
+        Row: {
+          created_at: string | null
+          id: string
+          interest: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          interest: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          interest?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_interests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profile_views: {
+        Row: {
+          id: string
+          profile_user_id: string
+          viewed_at: string | null
+          viewer_user_id: string | null
+        }
+        Insert: {
+          id?: string
+          profile_user_id: string
+          viewed_at?: string | null
+          viewer_user_id?: string | null
+        }
+        Update: {
+          id?: string
+          profile_user_id?: string
+          viewed_at?: string | null
+          viewer_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "profile_views_profile_user_id_fkey"
+            columns: ["profile_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "profile_views_viewer_user_id_fkey"
+            columns: ["viewer_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
+          bio: string | null
+          bio_public: boolean | null
+          cover_url: string | null
           created_at: string
           display_name: string | null
           email: string | null
           id: string
+          interests_public: boolean | null
+          last_seen_at: string | null
           last_username_change_at: string | null
+          location: string | null
+          location_public: boolean | null
+          pronouns: string | null
+          pronouns_public: boolean | null
+          social_links_public: boolean | null
+          status: Database["public"]["Enums"]["user_status"] | null
+          tagline: string | null
+          tagline_public: boolean | null
           updated_at: string
           username: string
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string | null
+          bio_public?: boolean | null
+          cover_url?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
           id: string
+          interests_public?: boolean | null
+          last_seen_at?: string | null
           last_username_change_at?: string | null
+          location?: string | null
+          location_public?: boolean | null
+          pronouns?: string | null
+          pronouns_public?: boolean | null
+          social_links_public?: boolean | null
+          status?: Database["public"]["Enums"]["user_status"] | null
+          tagline?: string | null
+          tagline_public?: boolean | null
           updated_at?: string
           username: string
         }
         Update: {
           avatar_url?: string | null
+          bio?: string | null
+          bio_public?: boolean | null
+          cover_url?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
           id?: string
+          interests_public?: boolean | null
+          last_seen_at?: string | null
           last_username_change_at?: string | null
+          location?: string | null
+          location_public?: boolean | null
+          pronouns?: string | null
+          pronouns_public?: boolean | null
+          social_links_public?: boolean | null
+          status?: Database["public"]["Enums"]["user_status"] | null
+          tagline?: string | null
+          tagline_public?: boolean | null
           updated_at?: string
           username?: string
         }
         Relationships: []
+      }
+      social_links: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          handle_or_url: string
+          id: string
+          is_public: boolean | null
+          platform: Database["public"]["Enums"]["social_platform"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          handle_or_url: string
+          id?: string
+          is_public?: boolean | null
+          platform: Database["public"]["Enums"]["social_platform"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          handle_or_url?: string
+          id?: string
+          is_public?: boolean | null
+          platform?: Database["public"]["Enums"]["social_platform"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "social_links_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       thread_members: {
         Row: {
@@ -792,6 +934,18 @@ export type Database = {
       invite_status: "pending" | "accepted" | "rejected" | "cancelled"
       invite_type: "direct" | "pending_approval"
       member_role: "owner" | "member"
+      social_platform:
+        | "instagram"
+        | "tiktok"
+        | "x"
+        | "discord"
+        | "steam"
+        | "spotify"
+        | "twitch"
+        | "youtube"
+        | "website"
+        | "other"
+      user_status: "available" | "busy" | "away" | "offline"
       wall_item_type:
         | "note"
         | "image"
@@ -943,6 +1097,19 @@ export const Constants = {
       invite_status: ["pending", "accepted", "rejected", "cancelled"],
       invite_type: ["direct", "pending_approval"],
       member_role: ["owner", "member"],
+      social_platform: [
+        "instagram",
+        "tiktok",
+        "x",
+        "discord",
+        "steam",
+        "spotify",
+        "twitch",
+        "youtube",
+        "website",
+        "other",
+      ],
+      user_status: ["available", "busy", "away", "offline"],
       wall_item_type: [
         "note",
         "image",

@@ -12,6 +12,7 @@ import Games from "./pages/Games";
 import Chat from "./pages/Chat";
 import People from "./pages/People";
 import Settings from "./pages/Settings";
+import PublicProfile from "./pages/PublicProfile";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/circle/:circleId/people" element={<People />} />
             <Route path="/circle/:circleId/settings" element={<Settings />} />
             <Route path="/settings" element={<Settings />} />
+            <Route path="/u/:username" element={<PublicProfile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

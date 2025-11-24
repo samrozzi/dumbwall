@@ -61,16 +61,16 @@ export const AudioClip = ({ content, onDelete, isCreator, fullWidth }: AudioClip
   const progress = content.duration > 0 ? (currentTime / content.duration) * 100 : 0;
 
   return (
-    <Card className={`p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-2 border-orange-200 dark:border-orange-800 ${fullWidth ? 'w-full' : 'w-[280px]'} max-w-full relative`}>
+    <Card className={`group p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-2 border-orange-200 dark:border-orange-800 ${fullWidth ? 'w-full' : 'w-[280px]'} max-w-full relative`}>
       {onDelete && (
         <button
           onClick={(e) => {
             e.stopPropagation();
             setShowDeleteConfirm(true);
           }}
-          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white dark:bg-black hover:bg-white/90 dark:hover:bg-black/90 flex items-center justify-center transition-colors z-10 shadow-md"
+          className="absolute -top-3 -right-3 bg-destructive text-destructive-foreground rounded-full w-8 h-8 shadow-md hover:scale-110 transition-all z-10 flex items-center justify-center opacity-0 group-hover:opacity-100"
         >
-          <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <X className="w-5 h-5" />
         </button>
       )}
       <audio

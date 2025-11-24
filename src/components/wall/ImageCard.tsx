@@ -64,7 +64,7 @@ const ImageCard = ({
     <CardPersonality type="image" className={fullWidth ? "w-full" : "w-64"}>
       <Card
         className={cn(
-          "group relative bg-card shadow-lg transition-all duration-300 cursor-move hover:shadow-2xl hover:scale-105 overflow-hidden",
+          "group relative bg-card shadow-lg transition-all duration-300 cursor-move hover:shadow-2xl hover:scale-105 overflow-hidden rounded-3xl",
           fullWidth ? "w-full max-w-full" : "w-64"
         )}
         onMouseEnter={() => setIsHovered(true)}
@@ -78,7 +78,7 @@ const ImageCard = ({
             e.stopPropagation();
             setShowDeleteConfirm(true);
           }}
-          className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full w-8 h-8 shadow-md hover:scale-110 transition-all z-10 flex items-center justify-center opacity-0 group-hover:opacity-100"
+          className="absolute -top-3 -right-3 bg-destructive text-destructive-foreground rounded-full w-8 h-8 shadow-md hover:scale-110 transition-all z-10 flex items-center justify-center opacity-0 group-hover:opacity-100"
         >
           <X className="w-5 h-5" />
         </button>
@@ -127,13 +127,13 @@ const ImageCard = ({
         <img
           src={content.url}
           alt={content.caption || "Wall image"}
-          className="w-full h-full object-cover"
+          className="w-full h-full object-cover block"
           draggable="false"
           onDragStart={(e) => e.preventDefault()}
         />
       </div>
       {content.caption && (
-        <p className="text-sm text-foreground p-3">{content.caption}</p>
+        <p className="mt-2 text-sm text-neutral-100 break-words px-3 pb-3">{content.caption}</p>
       )}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>

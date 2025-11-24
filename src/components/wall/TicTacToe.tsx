@@ -151,7 +151,7 @@ const TicTacToe = ({ content, onUpdate, onDelete }: TicTacToeProps) => {
 
   return (
     <Card
-      className="p-4 w-full max-w-sm sm:w-64 mx-auto bg-card shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-105 transform rotate-1 hover:rotate-0 relative"
+      className="group p-4 w-full max-w-sm sm:w-64 mx-auto bg-card shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-105 transform rotate-1 hover:rotate-0 relative"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -161,7 +161,7 @@ const TicTacToe = ({ content, onUpdate, onDelete }: TicTacToeProps) => {
             e.stopPropagation();
             setShowDeleteConfirm(true);
           }}
-          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-8 h-8 shadow-md hover:scale-110 transition-transform z-10 flex items-center justify-center"
+          className="absolute -top-3 -right-3 bg-destructive text-destructive-foreground rounded-full w-8 h-8 shadow-md hover:scale-110 transition-all z-10 flex items-center justify-center opacity-0 group-hover:opacity-100"
         >
           <X className="w-5 h-5" />
         </button>

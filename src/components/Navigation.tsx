@@ -14,6 +14,9 @@ const Navigation = ({ circleId, hideBackButton }: NavigationProps) => {
   const location = useLocation();
   const navigate = useNavigate();
   
+  // Check if we're on a profile page (should highlight People nav)
+  const isOnProfilePage = location.pathname.startsWith('/u/');
+  
   // If no circleId and hideBackButton is true, don't render anything
   if (!circleId && hideBackButton) {
     return null;
@@ -64,22 +67,27 @@ const Navigation = ({ circleId, hideBackButton }: NavigationProps) => {
     return (
       <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 border-t border-border">
         <div className="flex items-center justify-around px-2 py-3">
-          {navItems.map((item) => (
-            <NavLink
-              key={item.path}
-              to={item.path}
-              className={({ isActive }) =>
-                cn(
-                  "p-3 rounded-full transition-all duration-300",
-                  isActive
-                    ? "bg-primary text-primary-foreground shadow-lg"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                )
-              }
-            >
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path || 
+                           (item.label === "People" && isOnProfilePage);
+            
+            return (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                className={
+                  cn(
+                    "p-3 rounded-full transition-all duration-300",
+                    isActive
+                      ? "bg-primary text-primary-foreground shadow-lg"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  )
+                }
+              >
               <item.icon className="w-5 h-5" />
             </NavLink>
-          ))}
+          );
+        })}
         </div>
       </nav>
     );
@@ -89,7 +97,8 @@ const Navigation = ({ circleId, hideBackButton }: NavigationProps) => {
     <nav className="fixed left-4 top-1/2 -translate-y-1/2 z-[10000] bg-card/80 backdrop-blur-md border border-border rounded-full p-2 shadow-lg">
       <div className="flex flex-col gap-2">
         {navItems.map((item) => {
-          const isCurrentPage = location.pathname === item.path;
+          const isCurrentPage = location.pathname === item.path ||
+                               (item.label === "People" && isOnProfilePage);
           
           return (
             <div key={item.path} className="relative group">

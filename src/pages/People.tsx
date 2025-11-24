@@ -191,7 +191,7 @@ const People = () => {
           )}
         </div>
 
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-full overflow-hidden">{/* Ensure 2 cols on mobile, no overflow */}
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 max-w-full overflow-hidden">{/* 2 cols on mobile/tablet, 3 on desktop */}
           {members.map((member, index) => {
             const rotation = isMobile ? 0 : (index % 2 === 0 ? 1 : -1) * (1 + (index % 3)); // No rotation on mobile
             const borderRadii = [

@@ -39,13 +39,13 @@ const AnnouncementBubble = ({ content, onDelete, creatorAvatar, creatorUsername,
             <Megaphone className="w-4 h-4 text-white" />
             <span className="text-white font-bold text-sm">Announcement</span>
           </div>
-          {onDelete && isHovered && (
+          {onDelete && (
             <button
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete();
               }}
-              className="w-5 h-5 bg-[#C0C0C0] hover:bg-[#E0E0E0] border border-white shadow-[inset_1px_1px_0px_white,inset_-1px_-1px_0px_#808080] flex items-center justify-center text-black font-bold text-xs transition-colors"
+              className="w-6 h-6 bg-[#C0C0C0] hover:bg-[#E0E0E0] border border-white shadow-[inset_1px_1px_0px_white,inset_-1px_-1px_0px_#808080] flex items-center justify-center text-black font-bold text-sm transition-colors"
             >
               ×
             </button>

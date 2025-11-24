@@ -11,9 +11,10 @@ interface AudioClipProps {
   };
   onDelete?: () => void;
   isCreator?: boolean;
+  fullWidth?: boolean;
 }
 
-export const AudioClip = ({ content, onDelete, isCreator }: AudioClipProps) => {
+export const AudioClip = ({ content, onDelete, isCreator, fullWidth }: AudioClipProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -58,16 +59,16 @@ export const AudioClip = ({ content, onDelete, isCreator }: AudioClipProps) => {
   const progress = content.duration > 0 ? (currentTime / content.duration) * 100 : 0;
 
   return (
-    <Card className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-2 border-orange-200 dark:border-orange-800 w-[280px] relative">
-      {isCreator && onDelete && (
+    <Card className={`p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-2 border-orange-200 dark:border-orange-800 ${fullWidth ? 'w-full max-w-full' : 'w-[280px]'} relative`}>
+      {onDelete && (
         <button
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
           }}
-          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/80 dark:bg-black/80 hover:bg-white dark:hover:bg-black flex items-center justify-center transition-colors z-10"
+          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white dark:bg-black hover:bg-white/90 dark:hover:bg-black/90 flex items-center justify-center transition-colors z-10 shadow-md"
         >
-          <X className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+          <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
         </button>
       )}
       <audio

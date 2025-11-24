@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, StickyNote, ImageIcon, MessageSquare, Gamepad2, Grid3x3, Megaphone, ArrowLeft, BarChart3, Mic, Music, Zap, FileText } from "lucide-react";
+import { Plus, StickyNote, ImageIcon, MessageSquare, Gamepad2, Grid3x3, Megaphone, ArrowLeft, BarChart3, Mic, Music, Zap, FileText, Pencil } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -41,7 +41,7 @@ const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnou
 
   const imageOptions = [
     { icon: ImageIcon, label: "Upload Image", color: "bg-blue-400 hover:bg-blue-500", action: () => { onAddImage(); setShowImageSubmenu(false); setIsOpen(false); } },
-    { icon: StickyNote, label: "Draw Doodle", color: "bg-teal-400 hover:bg-teal-500", action: () => { onAddDoodle(); setShowImageSubmenu(false); setIsOpen(false); } },
+    { icon: Pencil, label: "Draw Doodle", color: "bg-teal-400 hover:bg-teal-500", action: () => { onAddDoodle(); setShowImageSubmenu(false); setIsOpen(false); } },
   ];
 
   const gameOptions = [

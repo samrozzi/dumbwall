@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 import { CreatorBadge } from "@/components/CreatorBadge";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface StickyNoteProps {
   content: {
@@ -35,6 +36,7 @@ const StickyNote = ({ content, onDelete, onUpdate, isCreator, creatorAvatar, cre
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(content.title);
   const [editBody, setEditBody] = useState(content.body);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const handleDoubleClick = () => {
     if (isCreator && onUpdate) {
@@ -87,7 +89,7 @@ const StickyNote = ({ content, onDelete, onUpdate, isCreator, creatorAvatar, cre
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onDelete();
+              setShowDeleteConfirm(true);
             }}
             className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-8 h-8 shadow-md hover:scale-110 transition-transform z-10 flex items-center justify-center"
           >
@@ -127,6 +129,26 @@ const StickyNote = ({ content, onDelete, onUpdate, isCreator, creatorAvatar, cre
           </>
         )}
       </Card>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this sticky note?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this sticky note from the wall.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, keep it</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              onDelete?.();
+              setShowDeleteConfirm(false);
+            }}>
+              Yes, delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

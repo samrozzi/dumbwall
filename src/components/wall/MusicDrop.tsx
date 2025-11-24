@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Music, ExternalLink, X, Play } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface MusicDropProps {
   content: {
@@ -19,6 +20,7 @@ interface MusicDropProps {
 
 export const MusicDrop = ({ content, onDelete, isCreator, fullWidth }: MusicDropProps) => {
   const [showEmbed, setShowEmbed] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const musicUrl = content.spotifyUrl || content.youtubeUrl || content.appleUrl;
 
   const getSpotifyEmbedUrl = (url: string): string | null => {
@@ -45,12 +47,12 @@ export const MusicDrop = ({ content, onDelete, isCreator, fullWidth }: MusicDrop
     : null;
 
   return (
-    <Card className={`p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border-2 border-indigo-200 dark:border-indigo-800 ${fullWidth ? 'w-full max-w-full' : 'w-[380px] max-w-full'} relative`}>
+    <Card className={`p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border-2 border-indigo-200 dark:border-indigo-800 ${fullWidth ? 'w-full' : 'w-[380px]'} max-w-full relative`}>
       {onDelete && (
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onDelete();
+            setShowDeleteConfirm(true);
           }}
           className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white dark:bg-black hover:bg-white/90 dark:hover:bg-black/90 flex items-center justify-center transition-colors z-10 shadow-md"
         >
@@ -133,6 +135,26 @@ export const MusicDrop = ({ content, onDelete, isCreator, fullWidth }: MusicDrop
           Open in {content.spotifyUrl ? "Spotify" : content.youtubeUrl ? "YouTube" : "Music App"}
         </Button>
       )}
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this music?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this music from the wall.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, keep it</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              onDelete?.();
+              setShowDeleteConfirm(false);
+            }}>
+              Yes, delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

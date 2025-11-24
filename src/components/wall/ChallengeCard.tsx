@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Zap, Image as ImageIcon, MessageSquare, ChevronDown, ChevronUp, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface ChallengeCardProps {
   content: {
@@ -25,6 +26,7 @@ export const ChallengeCard = ({ content, itemId, currentUserId, onDelete, isCrea
   const [responseText, setResponseText] = useState("");
   const [uploading, setUploading] = useState(false);
   const [showResponses, setShowResponses] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { toast } = useToast();
 
   const responses = content.responses || [];
@@ -108,12 +110,12 @@ export const ChallengeCard = ({ content, itemId, currentUserId, onDelete, isCrea
 
   return (
     <>
-      <Card className={`p-4 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20 border-2 border-rose-200 dark:border-rose-800 ${fullWidth ? 'w-full max-w-full' : 'w-[320px] max-w-full'} relative`}>
+      <Card className={`p-4 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20 border-2 border-rose-200 dark:border-rose-800 ${fullWidth ? 'w-full' : 'w-[320px]'} max-w-full relative`}>
         {onDelete && (
           <button
             onClick={(e) => {
               e.stopPropagation();
-              onDelete();
+              setShowDeleteConfirm(true);
             }}
             className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white dark:bg-black hover:bg-white/90 dark:hover:bg-black/90 flex items-center justify-center transition-colors z-10 shadow-md"
           >
@@ -221,6 +223,26 @@ export const ChallengeCard = ({ content, itemId, currentUserId, onDelete, isCrea
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this challenge?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this challenge from the wall.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, keep it</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              onDelete?.();
+              setShowDeleteConfirm(false);
+            }}>
+              Yes, delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 };

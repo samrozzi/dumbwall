@@ -6,10 +6,11 @@ interface StatusSelectorProps {
 }
 
 const statuses = [
-  { value: "available", label: "Available", color: "text-green-500" },
-  { value: "busy", label: "Busy", color: "text-red-500" },
-  { value: "away", label: "Away", color: "text-yellow-500" },
-  { value: "offline", label: "Offline", color: "text-gray-400" }
+  { value: "auto", label: "Auto", color: "text-blue-500" },
+  { value: "manual_online", label: "Online", color: "text-green-500" },
+  { value: "manual_away", label: "Away", color: "text-yellow-500" },
+  { value: "manual_dnd", label: "Do Not Disturb", color: "text-orange-500" },
+  { value: "manual_offline", label: "Appear Offline", color: "text-gray-400" }
 ];
 
 export const StatusSelector = ({ value, onChange }: StatusSelectorProps) => {

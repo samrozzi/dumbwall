@@ -197,6 +197,57 @@ export type Database = {
           },
         ]
       }
+      circle_profiles: {
+        Row: {
+          avatar_override_url: string | null
+          circle_id: string
+          created_at: string | null
+          id: string
+          nickname: string | null
+          tagline_override: string | null
+          updated_at: string | null
+          user_id: string
+          visibility: Json | null
+        }
+        Insert: {
+          avatar_override_url?: string | null
+          circle_id: string
+          created_at?: string | null
+          id?: string
+          nickname?: string | null
+          tagline_override?: string | null
+          updated_at?: string | null
+          user_id: string
+          visibility?: Json | null
+        }
+        Update: {
+          avatar_override_url?: string | null
+          circle_id?: string
+          created_at?: string | null
+          id?: string
+          nickname?: string | null
+          tagline_override?: string | null
+          updated_at?: string | null
+          user_id?: string
+          visibility?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_profiles_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circle_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       circle_settings: {
         Row: {
           circle_id: string
@@ -564,14 +615,17 @@ export type Database = {
           email: string | null
           id: string
           interests_public: boolean | null
+          last_active_at: string | null
           last_seen_at: string | null
           last_username_change_at: string | null
           location: string | null
           location_public: boolean | null
           pronouns: string | null
           pronouns_public: boolean | null
+          show_presence: boolean | null
           social_links_public: boolean | null
           status: Database["public"]["Enums"]["user_status"] | null
+          status_mode: string | null
           tagline: string | null
           tagline_public: boolean | null
           updated_at: string
@@ -587,14 +641,17 @@ export type Database = {
           email?: string | null
           id: string
           interests_public?: boolean | null
+          last_active_at?: string | null
           last_seen_at?: string | null
           last_username_change_at?: string | null
           location?: string | null
           location_public?: boolean | null
           pronouns?: string | null
           pronouns_public?: boolean | null
+          show_presence?: boolean | null
           social_links_public?: boolean | null
           status?: Database["public"]["Enums"]["user_status"] | null
+          status_mode?: string | null
           tagline?: string | null
           tagline_public?: boolean | null
           updated_at?: string
@@ -610,14 +667,17 @@ export type Database = {
           email?: string | null
           id?: string
           interests_public?: boolean | null
+          last_active_at?: string | null
           last_seen_at?: string | null
           last_username_change_at?: string | null
           location?: string | null
           location_public?: boolean | null
           pronouns?: string | null
           pronouns_public?: boolean | null
+          show_presence?: boolean | null
           social_links_public?: boolean | null
           status?: Database["public"]["Enums"]["user_status"] | null
+          status_mode?: string | null
           tagline?: string | null
           tagline_public?: boolean | null
           updated_at?: string

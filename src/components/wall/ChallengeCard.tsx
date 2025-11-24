@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Zap, Image as ImageIcon, MessageSquare, ChevronDown, ChevronUp } from "lucide-react";
+import { Zap, Image as ImageIcon, MessageSquare, ChevronDown, ChevronUp, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -15,9 +15,11 @@ interface ChallengeCardProps {
   };
   itemId: string;
   currentUserId?: string;
+  onDelete?: () => void;
+  isCreator?: boolean;
 }
 
-export const ChallengeCard = ({ content, itemId, currentUserId }: ChallengeCardProps) => {
+export const ChallengeCard = ({ content, itemId, currentUserId, onDelete, isCreator }: ChallengeCardProps) => {
   const [showRespond, setShowRespond] = useState(false);
   const [responseText, setResponseText] = useState("");
   const [uploading, setUploading] = useState(false);
@@ -37,13 +39,13 @@ export const ChallengeCard = ({ content, itemId, currentUserId }: ChallengeCardP
       const filePath = `${currentUserId}/${Math.random()}.${fileExt}`;
 
       const { error: uploadError } = await supabase.storage
-        .from('wall-images')
+        .from('chat-images')
         .upload(filePath, file);
 
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
-        .from('wall-images')
+        .from('chat-images')
         .getPublicUrl(filePath);
 
       await handleSubmitResponse(publicUrl);
@@ -105,14 +107,25 @@ export const ChallengeCard = ({ content, itemId, currentUserId }: ChallengeCardP
 
   return (
     <>
-      <Card className="p-4 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20 border-2 border-rose-200 dark:border-rose-800 w-[320px]">
+      <Card className="p-4 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20 border-2 border-rose-200 dark:border-rose-800 w-[320px] relative">
+        {isCreator && onDelete && (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onDelete();
+            }}
+            className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/80 dark:bg-black/80 hover:bg-white dark:hover:bg-black flex items-center justify-center transition-colors z-10"
+          >
+            <X className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+          </button>
+        )}
         <div className="space-y-3">
           <div className="flex items-start gap-3">
             <div className="bg-rose-500 rounded-full p-2 flex-shrink-0">
               <Zap className="w-5 h-5 text-white" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="font-bold text-base mb-2 break-words">{content.prompt}</h3>
+              <h3 className="font-bold text-base mb-2 break-words text-gray-900 dark:text-white">{content.prompt}</h3>
               <div className="flex gap-2 flex-wrap">
                 {!hasResponded && (
                   <Button

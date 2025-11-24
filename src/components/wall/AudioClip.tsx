@@ -1,7 +1,7 @@
 import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Play, Pause } from "lucide-react";
+import { Play, Pause, X } from "lucide-react";
 
 interface AudioClipProps {
   content: {
@@ -9,9 +9,11 @@ interface AudioClipProps {
     duration: number;
     caption?: string;
   };
+  onDelete?: () => void;
+  isCreator?: boolean;
 }
 
-export const AudioClip = ({ content }: AudioClipProps) => {
+export const AudioClip = ({ content, onDelete, isCreator }: AudioClipProps) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -41,7 +43,18 @@ export const AudioClip = ({ content }: AudioClipProps) => {
   const progress = content.duration > 0 ? (currentTime / content.duration) * 100 : 0;
 
   return (
-    <Card className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-2 border-orange-200 dark:border-orange-800 w-[280px]">
+    <Card className="p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-2 border-orange-200 dark:border-orange-800 w-[280px] relative">
+      {isCreator && onDelete && (
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDelete();
+          }}
+          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/80 dark:bg-black/80 hover:bg-white dark:hover:bg-black flex items-center justify-center transition-colors z-10"
+        >
+          <X className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+        </button>
+      )}
       <audio
         ref={audioRef}
         src={content.audioUrl}
@@ -63,7 +76,7 @@ export const AudioClip = ({ content }: AudioClipProps) => {
               style={{ width: `${progress}%` }}
             />
           </div>
-          <div className="flex justify-between text-xs text-muted-foreground mt-1">
+          <div className="flex justify-between text-xs text-gray-700 dark:text-gray-300 mt-1">
             <span>{Math.floor(currentTime)}s</span>
             <span>{content.duration}s</span>
           </div>

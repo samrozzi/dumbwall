@@ -12,7 +12,7 @@ interface DoodleCanvasProps {
 
 export const DoodleCanvas = ({ content, onDelete, isCreator, fullWidth }: DoodleCanvasProps) => {
   return (
-    <Card className={`p-2 bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/20 dark:to-cyan-950/20 border-2 border-teal-200 dark:border-teal-800 ${fullWidth ? 'w-full max-w-full' : 'w-[320px]'} relative`}>
+    <Card className={`p-2 bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/20 dark:to-cyan-950/20 border-2 border-teal-200 dark:border-teal-800 ${fullWidth ? 'w-full max-w-full' : 'w-[240px]'} relative`}>
       {onDelete && (
         <button
           onClick={(e) => {

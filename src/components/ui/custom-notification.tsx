@@ -46,7 +46,7 @@ export const CustomNotification = () => {
   if (notifications.length === 0) return null;
 
   return (
-    <div className="fixed top-8 left-1/2 -translate-x-1/2 z-50 flex flex-col gap-2 pointer-events-none">
+    <div className="fixed top-8 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2 pointer-events-none">
       {notifications.map((notification, index) => (
         <div
           key={notification.id}

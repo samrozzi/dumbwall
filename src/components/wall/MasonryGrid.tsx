@@ -78,8 +78,14 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
     }
   }, [draggedIndex, handleDragMove, handleDragEnd]);
 
-  // Calculate row spans based on item heights
+  // Calculate row spans based on item heights (skip for mobile)
   useLayoutEffect(() => {
+    // Skip row span calculation on mobile - let CSS Grid auto-size
+    if (columnCount === 2) {
+      setRowSpans([]);
+      return;
+    }
+
     const calculateRowSpans = () => {
       const newRowSpans = itemRefs.current.map((ref) => {
         if (!ref) return 20; // Reduced minimum fallback
@@ -164,9 +170,9 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
-        gap: columnCount === 2 ? '0.5rem' : '1rem', // Tighter gap on mobile/tablet
-        gridAutoRows: '10px',
-        gridAutoFlow: 'dense',
+        gap: columnCount === 2 ? '0.5rem' : '1rem',
+        gridAutoRows: columnCount === 2 ? 'auto' : '10px', // Natural sizing on mobile
+        gridAutoFlow: columnCount === 2 ? 'row' : 'dense', // Predictable stacking on mobile
       }}
     >
       {children.map((child, index) => {
@@ -185,7 +191,7 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
             )}
             style={{
               gridColumn: `span ${columnSpan}`,
-              gridRowEnd: `span ${rowSpans[index] || 20}`,
+              gridRowEnd: columnCount === 2 ? 'auto' : `span ${rowSpans[index] || 20}`,
               transform: isDragging 
                 ? `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg) scale(1.05)`
                 : `translate(${offset.x}px, ${offset.y}px) rotate(${rotation}deg)`,
@@ -201,13 +207,16 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
               e.currentTarget.addEventListener('touchmove', cleanup, { once: true });
             }}
             onMouseDown={(e) => {
-              const timeout = setTimeout(() => {
-                handleMouseDown(index, e);
-              }, 500);
-              
-              const cleanup = () => clearTimeout(timeout);
-              window.addEventListener('mouseup', cleanup, { once: true });
-              window.addEventListener('mousemove', cleanup, { once: true });
+              // Only enable drag on desktop with faster response
+              if (columnCount === 3) {
+                const timeout = setTimeout(() => {
+                  handleMouseDown(index, e);
+                }, 200); // Faster drag activation on desktop
+                
+                const cleanup = () => clearTimeout(timeout);
+                window.addEventListener('mouseup', cleanup, { once: true });
+                window.addEventListener('mousemove', cleanup, { once: true });
+              }
             }}
           >
             {child}

@@ -187,10 +187,10 @@ export const WallItemViewerDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="p-4 gap-0 bg-background/95 border max-w-[90vw] sm:max-w-[600px] max-h-[95vh] overflow-auto backdrop-blur-sm [&>button]:hidden">
+      <DialogContent className="p-0 gap-0 bg-transparent border-none shadow-none max-w-fit max-h-[95vh] overflow-visible [&>button]:hidden">
         <DialogClose asChild>
           <button
-            className="absolute top-2 left-2 z-10 rounded-full bg-yellow-500 hover:bg-yellow-600 text-black p-2 shadow-lg transition-all hover:scale-110"
+            className="absolute -top-12 left-1/2 -translate-x-1/2 z-[10002] rounded-full bg-yellow-500 hover:bg-yellow-600 text-black p-2 shadow-lg transition-all hover:scale-110"
             aria-label="Minimize"
           >
             <Minus className="h-4 w-4" />

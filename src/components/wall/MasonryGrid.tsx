@@ -22,7 +22,7 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
     const updateColumns = () => {
       const width = window.innerWidth;
       if (width < 640) {
-        setColumnCount(1); // Single column on mobile for clean stacking
+        setColumnCount(2); // Two-column masonry on mobile like Pinterest
       } else if (width < 1024) {
         setColumnCount(2);
       } else {
@@ -78,14 +78,8 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
     }
   }, [draggedIndex, handleDragMove, handleDragEnd]);
 
-  // Calculate row spans based on item heights (only for masonry layout)
+  // Calculate row spans based on item heights
   useLayoutEffect(() => {
-    // Skip calculation for mobile single-column layout
-    if (columnCount === 1) {
-      setRowSpans([]);
-      return;
-    }
-
     const calculateRowSpans = () => {
       const newRowSpans = itemRefs.current.map((ref) => {
         if (!ref) return 20; // Reduced minimum fallback
@@ -115,24 +109,21 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
 
   // Generate stable random rotation for each item based on its ID
   const getRotation = (index: number) => {
-    // No rotation on mobile for clean stacking
-    if (columnCount === 1) return 0;
     const seed = itemIds[index]?.charCodeAt(0) || 0;
-    const rotation = ((seed % 7) - 3);
-    return rotation;
+    // Subtle rotation on mobile, full rotation on desktop
+    if (columnCount === 2) {
+      return ((seed % 5) - 2); // ±2° on mobile/tablet
+    }
+    return ((seed % 7) - 3); // ±3° on desktop
   };
 
   // Generate column span based on item type and random variation
   const getColumnSpan = (index: number) => {
-    // Always span 1 column on mobile for clean stacking
-    if (columnCount === 1) return 1;
-    
     const seed = itemIds[index]?.charCodeAt(0) || 0;
     const random = (seed % 100) / 100;
     
     if (columnCount === 2) {
-      // Tablet: 60% narrow (1 col), 40% wide (2 col)
-      return random > 0.6 ? 2 : 1;
+      return 1; // Always 1 column on mobile/tablet for clean masonry
     } else {
       // Desktop: 50% narrow, 35% medium, 15% wide
       if (random > 0.85) return 3;
@@ -143,12 +134,17 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
 
   // Generate random micro-offsets for chaos
   const getOffset = (index: number) => {
-    // No offset on mobile for clean stacking
-    if (columnCount === 1) return { x: 0, y: 0 };
     const seed = itemIds[index]?.charCodeAt(0) || 0;
+    // Smaller offsets on mobile for tighter packing
+    if (columnCount === 2) {
+      return {
+        x: ((seed % 3) - 1), // ±1px on mobile/tablet
+        y: ((seed % 3) - 1),
+      };
+    }
     return {
-      x: ((seed % 5) - 2), // -2px to +2px
-      y: ((seed % 7) - 3), // -3px to +3px
+      x: ((seed % 5) - 2), // ±2px on desktop
+      y: ((seed % 7) - 3),
     };
   };
 
@@ -161,20 +157,6 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
     handleDragStart(index, e.clientX, e.clientY);
   };
 
-  // Mobile: Simple vertical flexbox layout
-  if (columnCount === 1) {
-    return (
-      <div className="flex flex-col gap-3 pb-24 px-2 max-w-full">
-        {children.map((child, index) => (
-          <div key={itemIds[index]} className="w-full">
-            {child}
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // Desktop/Tablet: Masonry grid layout
   return (
     <div 
       ref={containerRef}
@@ -182,7 +164,7 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
-        gap: '1rem',
+        gap: columnCount === 2 ? '0.5rem' : '1rem', // Tighter gap on mobile/tablet
         gridAutoRows: '10px',
         gridAutoFlow: 'dense',
       }}

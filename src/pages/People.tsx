@@ -1,15 +1,14 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Navigation from "@/components/Navigation";
-import { NotificationCenter } from "@/components/NotificationCenter";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { MessageCircle, UserPlus } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Users } from "lucide-react";
 import { toast } from "sonner";
 import { AddMemberDialog } from "@/components/AddMemberDialog";
-import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Member {
   user_id: string;
@@ -172,79 +171,62 @@ const People = () => {
   const canAddMembers = isOwner || invitePermission === 'anyone';
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-background">
-        <Navigation circleId={circleId} />
-        <div className={`${isMobile ? 'px-4 pb-24' : 'pl-24 pr-8'} pt-8`}>
-          <p className="text-muted-foreground">Loading members...</p>
-        </div>
-      </div>
-    );
+    return <div>Loading...</div>;
   }
 
   return (
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
-      <div className={`${isMobile ? 'px-4 pb-24' : 'pl-24 pr-8'} pt-8`}>
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-3xl font-bold">People</h1>
-          <div className="flex items-center gap-2">
-            <NotificationCenter />
-            {canAddMembers && (
-              <Button onClick={() => setAddMemberOpen(true)} className="gap-2">
-                <UserPlus className="w-4 h-4" />
-                Add Member
-              </Button>
-            )}
-          </div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {members.map((member) => (
-            <div
-              key={member.user_id}
-              className="bg-card border border-border rounded-lg p-6 flex items-center gap-4"
-            >
-              <Avatar className="h-16 w-16">
-                <AvatarImage src={member.profile?.avatar_url || undefined} />
-                <AvatarFallback className="bg-primary text-primary-foreground">
-                  {getInitials(member)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">{getDisplayName(member)}</h3>
-                {member.profile?.username && (
-                  <p className="text-sm text-muted-foreground">@{member.profile.username}</p>
-                )}
-              </div>
-              {member.user_id !== user?.id && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() =>
-                    handleStartChat(member.user_id, getDisplayName(member))
-                  }
-                  className="gap-2"
-                >
-                  <MessageCircle className="w-4 h-4" />
-                  Chat
-                </Button>
-              )}
-            </div>
-          ))}
+
+      <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold">{circleName}</h1>
+          {canAddMembers && (
+            <Button onClick={() => setAddMemberOpen(true)}>
+              <Users className="mr-2 h-4 w-4" />
+              Add Member
+            </Button>
+          )}
         </div>
 
-        {circleId && (
-          <AddMemberDialog
-            open={addMemberOpen}
-            onOpenChange={setAddMemberOpen}
-            circleId={circleId}
-            circleName={circleName}
-            isOwner={isOwner}
-            invitePermission={invitePermission}
-            onSuccess={loadMembers}
-          />
-        )}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {members.map((member) => (
+            <Card 
+              key={member.user_id}
+              className="cursor-pointer hover:shadow-lg transition-shadow"
+              onClick={() => navigate(`/u/${member.profile.username}`)}
+            >
+              <CardContent className="p-6">
+                <div className="flex items-start gap-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={member.profile.avatar_url || undefined} />
+                    <AvatarFallback className="text-lg">
+                      {getInitials(member)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-semibold truncate">
+                      {getDisplayName(member)}
+                    </h3>
+                    <p className="text-sm text-muted-foreground truncate">
+                      @{member.profile.username}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
+
+      <AddMemberDialog
+        open={addMemberOpen}
+        onOpenChange={setAddMemberOpen}
+        circleId={circleId || ""}
+        isOwner={isOwner}
+        invitePermission={invitePermission}
+        onMemberAdded={() => { loadMembers(); }}
+      />
     </div>
   );
 };

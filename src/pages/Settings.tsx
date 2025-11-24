@@ -7,6 +7,7 @@ import { NotificationCenter } from "@/components/NotificationCenter";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,16 +15,34 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Upload, LogOut, Trash2, Users, Plus, AlertTriangle, Settings2 } from "lucide-react";
+import { Upload, LogOut, Trash2, Users, Plus, AlertTriangle, Settings2, Eye } from "lucide-react";
 import { CircleSettingsDialog } from "@/components/CircleSettingsDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { ProfileHeader } from "@/components/profile/ProfileHeader";
+import { StatusSelector } from "@/components/profile/StatusSelector";
+import { PrivacyToggle } from "@/components/profile/PrivacyToggle";
+import { InterestTags } from "@/components/profile/InterestTags";
+import { SocialLinkIcon } from "@/components/profile/SocialLinkIcon";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface UserProfile {
   id: string;
   display_name: string | null;
   username: string | null;
   avatar_url: string | null;
+  cover_url: string | null;
+  bio: string | null;
+  tagline: string | null;
+  location: string | null;
+  pronouns: string | null;
+  status: string;
   last_username_change_at: string | null;
+  bio_public: boolean;
+  tagline_public: boolean;
+  location_public: boolean;
+  pronouns_public: boolean;
+  interests_public: boolean;
+  social_links_public: boolean;
 }
 
 interface UserCircle {
@@ -47,6 +66,17 @@ const Settings = () => {
   const [username, setUsername] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [userEmail, setUserEmail] = useState("");
+  const [bio, setBio] = useState("");
+  const [tagline, setTagline] = useState("");
+  const [location, setLocation] = useState("");
+  const [pronouns, setPronouns] = useState("");
+  const [status, setStatus] = useState("available");
+  const [interests, setInterests] = useState<string[]>([]);
+  const [newInterest, setNewInterest] = useState("");
+  const [socialLinks, setSocialLinks] = useState<any[]>([]);
+  const [newLinkPlatform, setNewLinkPlatform] = useState("");
+  const [newLinkHandle, setNewLinkHandle] = useState("");
+  const [addLinkOpen, setAddLinkOpen] = useState(false);
 
   // Circles state
   const [circles, setCircles] = useState<UserCircle[]>([]);
@@ -88,6 +118,30 @@ const Settings = () => {
     setDisplayName(data.display_name || "");
     setUsername(data.username || "");
     setAvatarUrl(data.avatar_url || "");
+    setBio(data.bio || "");
+    setTagline(data.tagline || "");
+    setLocation(data.location || "");
+    setPronouns(data.pronouns || "");
+    setStatus(data.status || "available");
+
+    // Load interests
+    const { data: interestsData } = await supabase
+      .from("profile_interests")
+      .select("interest")
+      .eq("user_id", user.id);
+    if (interestsData) {
+      setInterests(interestsData.map(i => i.interest));
+    }
+
+    // Load social links
+    const { data: linksData } = await supabase
+      .from("social_links")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("display_order");
+    if (linksData) {
+      setSocialLinks(linksData);
+    }
   };
 
   const loadUserCircles = async () => {
@@ -211,6 +265,126 @@ const Settings = () => {
       toast.error(error.message);
     }
   };
+
+  const handleSaveProfile = async () => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ 
+          bio, 
+          tagline, 
+          location, 
+          pronouns, 
+          status: status as "available" | "busy" | "away" | "offline",
+          bio_public: profile?.bio_public ?? true,
+          tagline_public: profile?.tagline_public ?? true,
+          location_public: profile?.location_public ?? true,
+          pronouns_public: profile?.pronouns_public ?? true
+        })
+        .eq("id", user.id);
+
+      if (error) throw error;
+      toast.success("Profile updated!");
+      loadProfile();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleTogglePrivacy = async (field: string, value: boolean) => {
+    if (!user) return;
+
+    try {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ [field]: value })
+        .eq("id", user.id);
+
+      if (error) throw error;
+      loadProfile();
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleAddInterest = async () => {
+    if (!user || !newInterest.trim()) return;
+
+    try {
+      await supabase
+        .from("profile_interests")
+        .insert({ user_id: user.id, interest: newInterest.trim() });
+
+      setInterests([...interests, newInterest.trim()]);
+      setNewInterest("");
+      toast.success("Interest added!");
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleRemoveInterest = async (interest: string) => {
+    if (!user) return;
+
+    try {
+      await supabase
+        .from("profile_interests")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("interest", interest);
+
+      setInterests(interests.filter(i => i !== interest));
+      toast.success("Interest removed!");
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleAddSocialLink = async () => {
+    if (!user || !newLinkPlatform || !newLinkHandle.trim()) return;
+
+    try {
+      const { data } = await supabase
+        .from("social_links")
+        .insert([{
+          user_id: user.id,
+          platform: newLinkPlatform as any,
+          handle_or_url: newLinkHandle.trim(),
+          display_order: socialLinks.length
+        }])
+        .select()
+        .single();
+
+      if (data) {
+        setSocialLinks([...socialLinks, data]);
+        setNewLinkPlatform("");
+        setNewLinkHandle("");
+        setAddLinkOpen(false);
+        toast.success("Social link added!");
+      }
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
+  const handleRemoveSocialLink = async (linkId: string) => {
+    if (!user) return;
+
+    try {
+      await supabase
+        .from("social_links")
+        .delete()
+        .eq("id", linkId);
+
+      setSocialLinks(socialLinks.filter(l => l.id !== linkId));
+      toast.success("Social link removed!");
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
 
   const loadCircleSettings = async () => {
     if (!user) return;
@@ -465,89 +639,219 @@ const Settings = () => {
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
+            {/* Profile Preview */}
             <Card>
+              {profile && (
+                <ProfileHeader
+                  userId={user?.id || ""}
+                  displayName={profile.display_name || undefined}
+                  username={profile.username || ""}
+                  avatarUrl={profile.avatar_url || undefined}
+                  coverUrl={profile.cover_url || undefined}
+                  status={profile.status}
+                  isOwnProfile={true}
+                  onViewPublicProfile={() => navigate(`/u/${profile.username}`)}
+                  onEditProfile={() => {
+                    document.getElementById("about-section")?.scrollIntoView({ behavior: "smooth" });
+                  }}
+                />
+              )}
+            </Card>
+
+            {/* Status */}
+            <Card id="about-section">
               <CardHeader>
-                <CardTitle>Avatar</CardTitle>
-                <CardDescription>Upload or manage your profile picture</CardDescription>
+                <CardTitle>Status</CardTitle>
+                <CardDescription>Let people know your availability</CardDescription>
               </CardHeader>
-              <CardContent className="flex flex-col items-center gap-4">
-                <Avatar className="w-32 h-32">
-                  <AvatarImage src={avatarUrl || undefined} />
-                  <AvatarFallback className="text-4xl">
-                    {username?.slice(0, 2).toUpperCase() || displayName?.slice(0, 2).toUpperCase() || "??"}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex gap-2">
-                  <Button variant="outline" asChild>
-                    <label className="cursor-pointer">
-                      <Upload className="w-4 h-4 mr-2" />
-                      Upload Photo
-                      <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleAvatarUpload}
-                      />
-                    </label>
-                  </Button>
-                  {avatarUrl && (
-                    <Button variant="destructive" onClick={handleDeleteAvatar}>
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Remove
-                    </Button>
-                  )}
-                </div>
+              <CardContent>
+                <StatusSelector value={status} onChange={setStatus} />
+                <Button onClick={handleSaveProfile} className="mt-4">Save Status</Button>
               </CardContent>
             </Card>
 
+            {/* About Me */}
             <Card>
               <CardHeader>
-                <CardTitle>Display Name</CardTitle>
-                <CardDescription>Your public display name</CardDescription>
+                <CardTitle>About Me</CardTitle>
+                <CardDescription>Share more about yourself</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="Display name"
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                  />
-                  <Button onClick={handleSaveDisplayName}>Save</Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Username</CardTitle>
-                <CardDescription>
-                  Your unique identifier (3-20 characters, lowercase only)
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-2">
-                  <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
-                    <Input
-                      className="pl-7"
-                      placeholder="username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value.toLowerCase())}
-                      disabled={daysRemaining !== null && daysRemaining > 0}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Tagline</Label>
+                    <PrivacyToggle
+                      isPublic={profile?.tagline_public ?? true}
+                      onChange={(val) => handleTogglePrivacy("tagline_public", val)}
                     />
                   </div>
-                  <Button 
-                    onClick={handleSaveUsername}
-                    disabled={daysRemaining !== null && daysRemaining > 0}
-                  >
-                    Save
-                  </Button>
+                  <Input
+                    placeholder="A short one-liner about you"
+                    value={tagline}
+                    onChange={(e) => setTagline(e.target.value)}
+                    maxLength={100}
+                  />
                 </div>
-                {daysRemaining !== null && daysRemaining > 0 && (
-                  <p className="text-sm text-muted-foreground">
-                    ℹ️ You can change your username in {daysRemaining} days
-                  </p>
-                )}
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Bio</Label>
+                    <PrivacyToggle
+                      isPublic={profile?.bio_public ?? true}
+                      onChange={(val) => handleTogglePrivacy("bio_public", val)}
+                    />
+                  </div>
+                  <Textarea
+                    placeholder="Tell people about yourself..."
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                    maxLength={240}
+                    rows={4}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Location</Label>
+                    <PrivacyToggle
+                      isPublic={profile?.location_public ?? true}
+                      onChange={(val) => handleTogglePrivacy("location_public", val)}
+                    />
+                  </div>
+                  <Input
+                    placeholder="City, Country"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <Label>Pronouns</Label>
+                    <PrivacyToggle
+                      isPublic={profile?.pronouns_public ?? true}
+                      onChange={(val) => handleTogglePrivacy("pronouns_public", val)}
+                    />
+                  </div>
+                  <Input
+                    placeholder="she/her, he/him, they/them, etc."
+                    value={pronouns}
+                    onChange={(e) => setPronouns(e.target.value)}
+                  />
+                </div>
+
+                <Button onClick={handleSaveProfile}>Save About Me</Button>
+              </CardContent>
+            </Card>
+
+            {/* Interests */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Interests</CardTitle>
+                    <CardDescription>Add tags that represent your interests</CardDescription>
+                  </div>
+                  <PrivacyToggle
+                    isPublic={profile?.interests_public ?? true}
+                    onChange={(val) => handleTogglePrivacy("interests_public", val)}
+                  />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <InterestTags interests={interests} isEditable onRemove={handleRemoveInterest} />
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Add an interest..."
+                    value={newInterest}
+                    onChange={(e) => setNewInterest(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleAddInterest()}
+                  />
+                  <Button onClick={handleAddInterest}>Add</Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Social Links */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle>Social Links</CardTitle>
+                    <CardDescription>Connect your other social profiles</CardDescription>
+                  </div>
+                  <PrivacyToggle
+                    isPublic={profile?.social_links_public ?? true}
+                    onChange={(val) => handleTogglePrivacy("social_links_public", val)}
+                  />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  {socialLinks.map(link => (
+                    <div key={link.id} className="relative group">
+                      <SocialLinkIcon platform={link.platform} handleOrUrl={link.handle_or_url} isEditable />
+                      <button
+                        onClick={() => handleRemoveSocialLink(link.id)}
+                        className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <Button onClick={() => setAddLinkOpen(true)} variant="outline" className="w-full">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Social Link
+                </Button>
+              </CardContent>
+            </Card>
+
+            {/* Account Basics */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Account Basics</CardTitle>
+                <CardDescription>Your display name and username</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Display Name</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Display name"
+                      value={displayName}
+                      onChange={(e) => setDisplayName(e.target.value)}
+                    />
+                    <Button onClick={handleSaveDisplayName}>Save</Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Username</Label>
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">@</span>
+                      <Input
+                        className="pl-7"
+                        placeholder="username"
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value.toLowerCase())}
+                        disabled={daysRemaining !== null && daysRemaining > 0}
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleSaveUsername}
+                      disabled={daysRemaining !== null && daysRemaining > 0}
+                    >
+                      Save
+                    </Button>
+                  </div>
+                  {daysRemaining !== null && daysRemaining > 0 && (
+                    <p className="text-sm text-muted-foreground">
+                      ℹ️ You can change your username in {daysRemaining} days
+                    </p>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
@@ -779,6 +1083,50 @@ const Settings = () => {
           }}
         />
       )}
+
+      {/* Add Social Link Dialog */}
+      <Dialog open={addLinkOpen} onOpenChange={setAddLinkOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Social Link</DialogTitle>
+            <DialogDescription>Connect your social media profiles</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Platform</Label>
+              <Select value={newLinkPlatform} onValueChange={setNewLinkPlatform}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select platform" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="instagram">Instagram</SelectItem>
+                  <SelectItem value="tiktok">TikTok</SelectItem>
+                  <SelectItem value="x">X (Twitter)</SelectItem>
+                  <SelectItem value="discord">Discord</SelectItem>
+                  <SelectItem value="steam">Steam</SelectItem>
+                  <SelectItem value="spotify">Spotify</SelectItem>
+                  <SelectItem value="twitch">Twitch</SelectItem>
+                  <SelectItem value="youtube">YouTube</SelectItem>
+                  <SelectItem value="website">Website</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Username or URL</Label>
+              <Input
+                placeholder="@username or https://..."
+                value={newLinkHandle}
+                onChange={(e) => setNewLinkHandle(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddLinkOpen(false)}>Cancel</Button>
+            <Button onClick={handleAddSocialLink}>Add Link</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

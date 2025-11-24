@@ -9,6 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Users } from "lucide-react";
 import { toast } from "sonner";
 import { AddMemberDialog } from "@/components/AddMemberDialog";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface Member {
   user_id: string;
@@ -223,9 +224,10 @@ const People = () => {
         open={addMemberOpen}
         onOpenChange={setAddMemberOpen}
         circleId={circleId || ""}
+        circleName={circleName}
         isOwner={isOwner}
         invitePermission={invitePermission}
-        onMemberAdded={() => { loadMembers(); }}
+        onSuccess={() => { loadMembers(); }}
       />
     </div>
   );

@@ -177,10 +177,10 @@ const People = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-8">
+    <div className="min-h-screen bg-background pb-24 md:pb-8 overflow-x-hidden">{/* Prevent horizontal scroll */}
       <Navigation circleId={circleId} />
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl md:pl-24">{/* Add left padding on desktop for nav */}
+      <div className="container mx-auto px-4 py-8 max-w-6xl md:pl-24 w-full">{/* Full width container */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">{circleName}</h1>
           {canAddMembers && (
@@ -191,9 +191,9 @@ const People = () => {
           )}
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-full overflow-hidden">{/* Ensure 2 cols on mobile, no overflow */}
           {members.map((member, index) => {
-            const rotation = (index % 2 === 0 ? 1 : -1) * (1 + (index % 3));
+            const rotation = isMobile ? 0 : (index % 2 === 0 ? 1 : -1) * (1 + (index % 3)); // No rotation on mobile
             const borderRadii = [
               '50% 60% 70% 40%',
               '60% 40% 60% 40%',
@@ -208,7 +208,7 @@ const People = () => {
                 className={cn(
                   "cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-300 relative",
                   "bg-gradient-to-br from-background/95 to-background/90 backdrop-blur-sm",
-                  "border-[6px] p-1 overflow-hidden"
+                  "border-[6px] p-1 overflow-hidden w-full" // Ensure full width within grid cell
                 )}
                 style={{
                   transform: `rotate(${rotation}deg)`,

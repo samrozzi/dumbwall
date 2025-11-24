@@ -646,20 +646,37 @@ const Settings = () => {
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
-            {/* Back to People Button */}
+            {/* Back Button - Mobile: Floating Left, Desktop: Above Profile Card */}
             {circleId && (
-              <div className="flex items-center gap-3 mb-2">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => navigate(`/circle/${circleId}/people`)}
-                  className="rounded-full"
-                  title="Back to My Friends"
-                >
-                  <ArrowLeft className="h-5 w-5" />
-                </Button>
-                <h2 className="text-2xl font-bold">My Profile</h2>
-              </div>
+              <>
+                {/* Mobile: Floating back button on left edge */}
+                {isMobile && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => navigate(`/circle/${circleId}/people`)}
+                    className="fixed left-2 top-20 z-50 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground shadow-lg backdrop-blur-sm h-12 w-12"
+                    title="Back to My Friends"
+                  >
+                    <ArrowLeft className="h-5 w-5" />
+                  </Button>
+                )}
+                
+                {/* Desktop: Back button left of profile header */}
+                {!isMobile && (
+                  <div className="flex items-center gap-3 -ml-16">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => navigate(`/circle/${circleId}/people`)}
+                      className="rounded-full hover:bg-muted"
+                      title="Back to My Friends"
+                    >
+                      <ArrowLeft className="h-5 w-5" />
+                    </Button>
+                  </div>
+                )}
+              </>
             )}
             
             {/* Profile Preview */}

@@ -76,7 +76,7 @@ export const CircleMembersBar = ({ circleId, onAddMember, compact = false }: Cir
         .select(`
           user_id,
           role,
-          profiles (
+          profiles!circle_members_user_id_fkey (
             username,
             display_name,
             avatar_url,
@@ -84,7 +84,7 @@ export const CircleMembersBar = ({ circleId, onAddMember, compact = false }: Cir
             status_mode,
             last_active_at
           ),
-          circle_profiles (
+          circle_profiles!circle_profiles_user_id_fkey (
             nickname,
             avatar_override_url
           )

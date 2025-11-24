@@ -484,20 +484,42 @@ const Wall = () => {
             content={content}
             itemId={item.id}
             currentUserId={user?.id}
+            onDelete={() => deleteItem(item.id)}
+            isCreator={isCreator}
           />
         );
       case "audio":
-        return <AudioClip content={content} />;
+        return (
+          <AudioClip
+            content={content}
+            onDelete={() => deleteItem(item.id)}
+            isCreator={isCreator}
+          />
+        );
       case "doodle":
-        return <DoodleCanvas content={content} />;
+        return (
+          <DoodleCanvas
+            content={content}
+            onDelete={() => deleteItem(item.id)}
+            isCreator={isCreator}
+          />
+        );
       case "music":
-        return <MusicDrop content={content} />;
+        return (
+          <MusicDrop
+            content={content}
+            onDelete={() => deleteItem(item.id)}
+            isCreator={isCreator}
+          />
+        );
       case "challenge":
         return (
           <ChallengeCard
             content={content}
             itemId={item.id}
             currentUserId={user?.id}
+            onDelete={() => deleteItem(item.id)}
+            isCreator={isCreator}
           />
         );
       case "game_tictactoe":

@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { X, MessageSquare, Send, ExternalLink } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { CardPersonality } from "@/components/wall/CardPersonality";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -171,12 +172,13 @@ const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubblePro
   };
 
   return (
-    <Card
-      className={cn(
-        "p-4 hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-200 relative flex flex-col",
-        fullWidth ? "w-full max-w-full" : ""
-      )}
-      onMouseEnter={() => setIsHovered(true)}
+    <CardPersonality type="thread" className={fullWidth ? "w-full" : ""}>
+      <Card
+        className={cn(
+          "p-4 hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-200 relative flex flex-col",
+          fullWidth ? "w-full max-w-full" : ""
+        )}
+        onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       style={{ minHeight: "200px", maxHeight: "280px", maxWidth: fullWidth ? "100%" : "400px" }}
     >
@@ -261,6 +263,7 @@ const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubblePro
         </AlertDialogContent>
       </AlertDialog>
     </Card>
+    </CardPersonality>
   );
 };
 

@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { X } from "lucide-react";
 import { CreatorBadge } from "@/components/CreatorBadge";
+import { CardPersonality } from "@/components/wall/CardPersonality";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface StickyNoteProps {
@@ -60,19 +61,19 @@ const StickyNote = ({ content, onDelete, onUpdate, isCreator, creatorAvatar, cre
   };
 
   return (
-    <div className="relative">
-      {stackCount && stackCount > 1 && (
-        <div className="absolute -right-2 -top-2 bg-secondary text-secondary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-10 shadow-md">
-          +{stackCount - 1}
-        </div>
-      )}
-      <Card
+    <CardPersonality type="note" className={fullWidth ? "w-full" : "w-64"}>
+      <div className="relative">
+        {stackCount && stackCount > 1 && (
+          <div className="absolute -right-2 -top-2 bg-secondary text-secondary-foreground rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold z-10 shadow-md">
+            +{stackCount - 1}
+          </div>
+        )}
+        <Card
         className={cn(
           "p-4 shadow-lg transition-all duration-300 cursor-move relative",
           fullWidth ? "w-full max-w-full" : "w-64",
           colorMap[content.color] || colorMap.yellow,
-          "hover:shadow-2xl hover:scale-105",
-          "transform rotate-1 hover:rotate-0"
+          "hover:shadow-2xl hover:scale-105"
         )}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -149,7 +150,8 @@ const StickyNote = ({ content, onDelete, onUpdate, isCreator, creatorAvatar, cre
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+      </div>
+    </CardPersonality>
   );
 };
 

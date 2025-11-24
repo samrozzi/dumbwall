@@ -21,7 +21,29 @@ const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnou
   const [showSubmenu, setShowSubmenu] = useState(false);
   const [showPostSubmenu, setShowPostSubmenu] = useState(false);
   const [showImageSubmenu, setShowImageSubmenu] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const isMobile = useIsMobile();
+
+  // Scroll hide/show behavior
+  useState(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      if (currentScrollY < 50) {
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY) {
+        setIsVisible(false); // Scrolling down
+      } else {
+        setIsVisible(true); // Scrolling up
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  });
 
   const menuItems = [
     { icon: FileText, label: "Post", color: "bg-yellow-400 hover:bg-yellow-500", action: () => { setShowPostSubmenu(true); } },
@@ -60,7 +82,7 @@ const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnou
 
   return (
     <TooltipProvider>
-      <div className={`fixed z-[9999] ${isMobile ? 'bottom-24 right-8' : 'bottom-8 right-8'}`}>
+      <div className={`fixed z-[9999] transition-all duration-300 ${isMobile ? 'bottom-24 right-8' : 'bottom-8 right-8'} ${!isVisible && isMobile ? 'translate-y-32 opacity-0' : 'translate-y-0 opacity-100'}`}>
         {/* Menu Items */}
         {isOpen && !showSubmenu && !showPostSubmenu && !showImageSubmenu && (
           <div className="absolute bottom-20 right-0 flex flex-col-reverse gap-3 items-center">

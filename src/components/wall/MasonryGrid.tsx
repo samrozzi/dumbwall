@@ -78,16 +78,22 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
     }
   }, [draggedIndex, handleDragMove, handleDragEnd]);
 
-  // Calculate row spans based on item heights
+  // Calculate row spans based on item heights (only for masonry layout)
   useLayoutEffect(() => {
+    // Skip calculation for mobile single-column layout
+    if (columnCount === 1) {
+      setRowSpans([]);
+      return;
+    }
+
     const calculateRowSpans = () => {
       const newRowSpans = itemRefs.current.map((ref) => {
-        if (!ref) return 30; // Minimum fallback
+        if (!ref) return 20; // Reduced minimum fallback
         const height = ref.offsetHeight;
         // Each grid row is 10px, add extra padding to prevent overlap
         const baseSpan = Math.ceil(height / 10);
-        const gapPadding = 3; // Extra spacing between items
-        return Math.max(30, baseSpan + gapPadding);
+        const gapPadding = 2; // Reduced from 3 for tighter packing
+        return Math.max(20, baseSpan + gapPadding); // Reduced from 30
       });
       setRowSpans(newRowSpans);
     };
@@ -155,6 +161,20 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
     handleDragStart(index, e.clientX, e.clientY);
   };
 
+  // Mobile: Simple vertical flexbox layout
+  if (columnCount === 1) {
+    return (
+      <div className="flex flex-col gap-3 pb-24 px-2 max-w-full">
+        {children.map((child, index) => (
+          <div key={itemIds[index]} className="w-full">
+            {child}
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Desktop/Tablet: Masonry grid layout
   return (
     <div 
       ref={containerRef}
@@ -162,7 +182,7 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
-        gap: columnCount === 1 ? '0.75rem' : '1rem',
+        gap: '1rem',
         gridAutoRows: '10px',
         gridAutoFlow: 'dense',
       }}
@@ -179,12 +199,11 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
             ref={el => itemRefs.current[index] = el}
             className={cn(
               "transition-all duration-300 touch-none",
-              isDragging && "opacity-50 scale-95 z-[9999]",
-              rowSpans.length === 0 && "opacity-0"
+              isDragging && "opacity-50 scale-95 z-[9999]"
             )}
             style={{
               gridColumn: `span ${columnSpan}`,
-              gridRowEnd: `span ${rowSpans[index] || 30}`,
+              gridRowEnd: `span ${rowSpans[index] || 20}`,
               transform: isDragging 
                 ? `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg) scale(1.05)`
                 : `translate(${offset.x}px, ${offset.y}px) rotate(${rotation}deg)`,

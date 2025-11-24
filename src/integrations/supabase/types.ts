@@ -798,6 +798,11 @@ export type Database = {
         | "thread"
         | "game_tictactoe"
         | "announcement"
+        | "poll"
+        | "audio"
+        | "doodle"
+        | "music"
+        | "challenge"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -944,6 +949,11 @@ export const Constants = {
         "thread",
         "game_tictactoe",
         "announcement",
+        "poll",
+        "audio",
+        "doodle",
+        "music",
+        "challenge",
       ],
     },
   },

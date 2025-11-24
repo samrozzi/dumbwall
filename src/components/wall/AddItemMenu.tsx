@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, StickyNote, ImageIcon, MessageSquare, Gamepad2, Grid3x3, Megaphone, ArrowLeft } from "lucide-react";
+import { Plus, StickyNote, ImageIcon, MessageSquare, Gamepad2, Grid3x3, Megaphone, ArrowLeft, BarChart3, Mic, Paintbrush, Music, Zap } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -9,9 +9,14 @@ interface AddItemMenuProps {
   onAddThread: () => void;
   onAddGame: (gameType: string) => void;
   onAddAnnouncement: () => void;
+  onAddPoll: () => void;
+  onAddAudio: () => void;
+  onAddDoodle: () => void;
+  onAddMusic: () => void;
+  onAddChallenge: () => void;
 }
 
-const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnouncement }: AddItemMenuProps) => {
+const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnouncement, onAddPoll, onAddAudio, onAddDoodle, onAddMusic, onAddChallenge }: AddItemMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showSubmenu, setShowSubmenu] = useState(false);
   const isMobile = useIsMobile();
@@ -20,6 +25,11 @@ const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnou
     { icon: StickyNote, label: "Note", color: "bg-yellow-400 hover:bg-yellow-500", action: () => { onAddNote(); setIsOpen(false); } },
     { icon: ImageIcon, label: "Image", color: "bg-blue-400 hover:bg-blue-500", action: () => { onAddImage(); setIsOpen(false); } },
     { icon: MessageSquare, label: "Thread", color: "bg-purple-400 hover:bg-purple-500", action: () => { onAddThread(); setIsOpen(false); } },
+    { icon: BarChart3, label: "Poll", color: "bg-pink-400 hover:bg-pink-500", action: () => { onAddPoll(); setIsOpen(false); } },
+    { icon: Mic, label: "Audio", color: "bg-orange-400 hover:bg-orange-500", action: () => { onAddAudio(); setIsOpen(false); } },
+    { icon: Paintbrush, label: "Doodle", color: "bg-teal-400 hover:bg-teal-500", action: () => { onAddDoodle(); setIsOpen(false); } },
+    { icon: Music, label: "Music", color: "bg-indigo-400 hover:bg-indigo-500", action: () => { onAddMusic(); setIsOpen(false); } },
+    { icon: Zap, label: "Challenge", color: "bg-rose-400 hover:bg-rose-500", action: () => { onAddChallenge(); setIsOpen(false); } },
     { icon: Gamepad2, label: "Games", color: "bg-green-400 hover:bg-green-500", action: () => { setShowSubmenu(true); } },
     { icon: Megaphone, label: "Announcement", color: "bg-red-400 hover:bg-red-500", action: () => { onAddAnnouncement(); setIsOpen(false); } },
   ];

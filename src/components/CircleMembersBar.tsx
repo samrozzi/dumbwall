@@ -76,7 +76,7 @@ export const CircleMembersBar = ({ circleId, onAddMember, compact = false }: Cir
         .select(`
           user_id,
           role,
-          profiles:user_id (
+          profiles (
             username,
             display_name,
             avatar_url,
@@ -96,20 +96,26 @@ export const CircleMembersBar = ({ circleId, onAddMember, compact = false }: Cir
         throw error;
       }
 
-      console.log('Members data:', data);
+      console.log('Members query response:', { 
+        dataLength: data?.length, 
+        firstItem: data?.[0],
+        error 
+      });
 
-      const formattedMembers: Member[] = (data || []).map((item: any) => ({
-        user_id: item.user_id,
-        username: item.profiles.username,
-        display_name: item.profiles.display_name,
-        avatar_url: item.profiles.avatar_url,
-        show_presence: item.profiles.show_presence,
-        status_mode: item.profiles.status_mode,
-        last_active_at: item.profiles.last_active_at,
-        nickname: item.circle_profiles?.[0]?.nickname || null,
-        avatar_override_url: item.circle_profiles?.[0]?.avatar_override_url || null,
-        role: item.role,
-      }));
+      const formattedMembers: Member[] = (data || [])
+        .filter((item: any) => item.profiles)
+        .map((item: any) => ({
+          user_id: item.user_id,
+          username: item.profiles.username,
+          display_name: item.profiles.display_name,
+          avatar_url: item.profiles.avatar_url,
+          show_presence: item.profiles.show_presence,
+          status_mode: item.profiles.status_mode,
+          last_active_at: item.profiles.last_active_at,
+          nickname: item.circle_profiles?.[0]?.nickname || null,
+          avatar_override_url: item.circle_profiles?.[0]?.avatar_override_url || null,
+          role: item.role,
+        }));
 
       // Sort: online first, then by name
       formattedMembers.sort((a, b) => {

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useMemo } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -842,6 +842,7 @@ const Wall = () => {
         {viewMode === "wall" && isMobile ? (
           <MasonryGrid 
             itemIds={items.filter(item => item.id !== pendingDelete?.id).map(item => item.id)}
+            itemTypes={items.filter(item => item.id !== pendingDelete?.id).map(item => item.type)}
             onReorder={(itemId, newOrder) => {
               // Optional: Update item order in database
               console.log('Reordered:', itemId, 'to position', newOrder);
@@ -850,7 +851,7 @@ const Wall = () => {
             {items.filter(item => item.id !== pendingDelete?.id).map((item) => {
               const itemWithCreator = item as any;
               return (
-                <div key={item.id} data-item-id={item.id} className="w-full max-w-full px-2">
+                <React.Fragment key={item.id}>
                   {item.type === "note" && (
                     <StickyNote
                       content={item.content as any}
@@ -865,7 +866,6 @@ const Wall = () => {
                       creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
                       creatorUsername={itemWithCreator.creator_profile?.username}
                       hideAvatar={true}
-                      fullWidth={true}
                     />
                   )}
                   {item.type === "image" && (
@@ -876,7 +876,6 @@ const Wall = () => {
                       creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
                       creatorUsername={itemWithCreator.creator_profile?.username}
                       hideAvatar={true}
-                      fullWidth={true}
                       currentUserId={user?.id}
                     />
                   )}
@@ -886,7 +885,6 @@ const Wall = () => {
                       onDelete={() => handleThreadDelete(item.id, (item.content as any).threadId)}
                       onClick={() => navigate(`/circle/${circleId}/chat?threadId=${(item.content as any).threadId}`)}
                       hideAvatar={true}
-                      fullWidth={true}
                     />
                   )}
                   {item.type === "game_tictactoe" && (
@@ -923,7 +921,6 @@ const Wall = () => {
                       creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
                       creatorUsername={itemWithCreator.creator_profile?.username}
                       hideAvatar={true}
-                      fullWidth={true}
                     />
                   )}
                   {item.type === "poll" && (
@@ -933,7 +930,6 @@ const Wall = () => {
                       currentUserId={user?.id}
                       onDelete={() => deleteItem(item.id)}
                       isCreator={item.created_by === user?.id}
-                      fullWidth={true}
                     />
                   )}
                   {item.type === "audio" && (
@@ -941,7 +937,6 @@ const Wall = () => {
                       content={item.content as any}
                       onDelete={() => deleteItem(item.id)}
                       isCreator={item.created_by === user?.id}
-                      fullWidth={true}
                     />
                   )}
                   {item.type === "doodle" && (
@@ -949,7 +944,6 @@ const Wall = () => {
                       content={item.content as any}
                       onDelete={() => deleteItem(item.id)}
                       isCreator={item.created_by === user?.id}
-                      fullWidth={true}
                     />
                   )}
                   {item.type === "music" && (
@@ -957,7 +951,6 @@ const Wall = () => {
                       content={item.content as any}
                       onDelete={() => deleteItem(item.id)}
                       isCreator={item.created_by === user?.id}
-                      fullWidth={true}
                     />
                   )}
                   {item.type === "challenge" && (
@@ -967,10 +960,9 @@ const Wall = () => {
                       currentUserId={user?.id}
                       onDelete={() => deleteItem(item.id)}
                       isCreator={item.created_by === user?.id}
-                      fullWidth={true}
                     />
                   )}
-                </div>
+                </React.Fragment>
               );
             })}
           </MasonryGrid>

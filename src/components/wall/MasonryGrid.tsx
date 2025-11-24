@@ -5,9 +5,10 @@ interface MasonryGridProps {
   children: React.ReactNode[];
   onReorder?: (itemId: string, newOrder: number) => void;
   itemIds: string[];
+  itemTypes: string[];
 }
 
-export const MasonryGrid = ({ children, onReorder, itemIds }: MasonryGridProps) => {
+export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: MasonryGridProps) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [columnCount, setColumnCount] = useState(2);
@@ -83,6 +84,31 @@ export const MasonryGrid = ({ children, onReorder, itemIds }: MasonryGridProps) 
     return rotation;
   };
 
+  // Generate column span based on item type and random variation
+  const getColumnSpan = (index: number) => {
+    const seed = itemIds[index]?.charCodeAt(0) || 0;
+    const random = (seed % 100) / 100;
+    
+    if (columnCount === 2) {
+      // Mobile: 60% narrow (1 col), 40% wide (2 col)
+      return random > 0.6 ? 2 : 1;
+    } else {
+      // Tablet: 50% narrow, 35% medium, 15% wide
+      if (random > 0.85) return 3;
+      if (random > 0.50) return 2;
+      return 1;
+    }
+  };
+
+  // Generate random micro-offsets for chaos
+  const getOffset = (index: number) => {
+    const seed = itemIds[index]?.charCodeAt(0) || 0;
+    return {
+      x: ((seed % 5) - 2), // -2px to +2px
+      y: ((seed % 7) - 3), // -3px to +3px
+    };
+  };
+
   const handleTouchStart = (index: number, e: React.TouchEvent) => {
     const touch = e.touches[0];
     handleDragStart(index, touch.clientX, touch.clientY);
@@ -99,12 +125,14 @@ export const MasonryGrid = ({ children, onReorder, itemIds }: MasonryGridProps) 
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
-        gap: '1rem',
+        gap: '0.75rem',
         gridAutoRows: '10px',
       }}
     >
       {children.map((child, index) => {
         const rotation = getRotation(index);
+        const offset = getOffset(index);
+        const columnSpan = getColumnSpan(index);
         const isDragging = draggedIndex === index;
 
         return (
@@ -116,10 +144,10 @@ export const MasonryGrid = ({ children, onReorder, itemIds }: MasonryGridProps) 
               isDragging && "opacity-50 scale-95 z-[9999]"
             )}
             style={{
-              gridColumn: 'span 1',
+              gridColumn: `span ${columnSpan}`,
               transform: isDragging 
                 ? `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg) scale(1.05)`
-                : `rotate(${rotation}deg)`,
+                : `translate(${offset.x}px, ${offset.y}px) rotate(${rotation}deg)`,
               transition: isDragging ? 'none' : 'transform 0.3s ease-out',
             }}
             onTouchStart={(e) => {

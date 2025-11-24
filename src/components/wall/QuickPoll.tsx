@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Check, X } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface PollOption {
   id: string;
@@ -26,6 +27,7 @@ interface QuickPollProps {
 export const QuickPoll = ({ content, itemId, currentUserId, onDelete, isCreator, fullWidth }: QuickPollProps) => {
   const { toast } = useToast();
   const [voting, setVoting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const totalVotes = content.options.reduce((sum, opt) => sum + opt.votes.length, 0);
   const hasVoted = content.options.some(opt => opt.votes.includes(currentUserId || ""));
@@ -61,12 +63,12 @@ export const QuickPoll = ({ content, itemId, currentUserId, onDelete, isCreator,
   };
 
   return (
-    <Card className={`p-4 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 border-2 border-pink-200 dark:border-pink-800 ${fullWidth ? 'w-full max-w-full' : 'w-[280px] max-w-full'} relative`}>
+    <Card className={`p-4 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 border-2 border-pink-200 dark:border-pink-800 ${fullWidth ? 'w-full' : 'w-[280px]'} max-w-full relative`}>
       {onDelete && (
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onDelete();
+            setShowDeleteConfirm(true);
           }}
           className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white dark:bg-black hover:bg-white/90 dark:hover:bg-black/90 flex items-center justify-center transition-colors z-10 shadow-md"
         >
@@ -109,6 +111,26 @@ export const QuickPoll = ({ content, itemId, currentUserId, onDelete, isCreator,
           {totalVotes} vote{totalVotes !== 1 ? "s" : ""}
         </p>
       )}
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this poll?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this poll from the wall.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, keep it</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              onDelete?.();
+              setShowDeleteConfirm(false);
+            }}>
+              Yes, delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

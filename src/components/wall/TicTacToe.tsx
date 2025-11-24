@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { supabase } from "@/integrations/supabase/client";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface TicTacToeProps {
   content: {
@@ -22,6 +23,7 @@ interface TicTacToeProps {
 
 const TicTacToe = ({ content, onUpdate, onDelete }: TicTacToeProps) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [winnerProfile, setWinnerProfile] = useState<{
     username: string | null;
     display_name: string | null;
@@ -157,7 +159,7 @@ const TicTacToe = ({ content, onUpdate, onDelete }: TicTacToeProps) => {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onDelete();
+            setShowDeleteConfirm(true);
           }}
           className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-8 h-8 shadow-md hover:scale-110 transition-transform z-10 flex items-center justify-center"
         >
@@ -231,6 +233,26 @@ const TicTacToe = ({ content, onUpdate, onDelete }: TicTacToeProps) => {
           Current turn: <span className="font-bold text-foreground">{content.turn}</span>
         </p>
       )}
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this game?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this tic-tac-toe game from the wall.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, keep it</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              onDelete?.();
+              setShowDeleteConfirm(false);
+            }}>
+              Yes, delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { supabase } from "@/integrations/supabase/client";
 import { X, MessageSquare, Send, ExternalLink } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -33,6 +34,7 @@ const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubblePro
   const [messages, setMessages] = useState<Message[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [newMessage, setNewMessage] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const { user } = useAuth();
 
   useEffect(() => {
@@ -182,7 +184,7 @@ const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubblePro
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onDelete();
+            setShowDeleteConfirm(true);
           }}
           className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-8 h-8 hover:bg-red-600 transition-colors z-10 flex items-center justify-center shadow-md"
         >
@@ -238,6 +240,26 @@ const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubblePro
           <Send className="w-3 h-3" />
         </Button>
       </div>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this thread?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this thread bubble from the wall.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, keep it</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              onDelete?.();
+              setShowDeleteConfirm(false);
+            }}>
+              Yes, delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

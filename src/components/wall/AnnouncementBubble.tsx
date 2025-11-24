@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Megaphone, X } from "lucide-react";
 import { CreatorBadge } from "@/components/CreatorBadge";
 import { cn } from "@/lib/utils";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface AnnouncementBubbleProps {
   content: {
@@ -17,6 +18,7 @@ interface AnnouncementBubbleProps {
 
 const AnnouncementBubble = ({ content, onDelete, creatorAvatar, creatorUsername, hideAvatar, fullWidth }: AnnouncementBubbleProps) => {
   const [isHovered, setIsHovered] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   return (
     <div className="relative">
@@ -43,7 +45,7 @@ const AnnouncementBubble = ({ content, onDelete, creatorAvatar, creatorUsername,
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onDelete();
+                setShowDeleteConfirm(true);
               }}
               className="w-6 h-6 bg-[#C0C0C0] hover:bg-[#E0E0E0] border border-white shadow-[inset_1px_1px_0px_white,inset_-1px_-1px_0px_#808080] flex items-center justify-center text-black font-bold text-sm transition-colors"
             >
@@ -69,6 +71,26 @@ const AnnouncementBubble = ({ content, onDelete, creatorAvatar, creatorUsername,
           </div>
         </div>
       </Card>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this announcement?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this announcement from the wall.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, keep it</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              onDelete?.();
+              setShowDeleteConfirm(false);
+            }}>
+              Yes, delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };

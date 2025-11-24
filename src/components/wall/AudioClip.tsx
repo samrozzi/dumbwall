@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, X } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface AudioClipProps {
   content: {
@@ -18,6 +19,7 @@ export const AudioClip = ({ content, onDelete, isCreator, fullWidth }: AudioClip
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const audioRef = useRef<HTMLAudioElement>(null);
 
   const togglePlay = async () => {
@@ -59,12 +61,12 @@ export const AudioClip = ({ content, onDelete, isCreator, fullWidth }: AudioClip
   const progress = content.duration > 0 ? (currentTime / content.duration) * 100 : 0;
 
   return (
-    <Card className={`p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-2 border-orange-200 dark:border-orange-800 ${fullWidth ? 'w-full max-w-full' : 'w-[280px] max-w-full'} relative`}>
+    <Card className={`p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-2 border-orange-200 dark:border-orange-800 ${fullWidth ? 'w-full' : 'w-[280px]'} max-w-full relative`}>
       {onDelete && (
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onDelete();
+            setShowDeleteConfirm(true);
           }}
           className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white dark:bg-black hover:bg-white/90 dark:hover:bg-black/90 flex items-center justify-center transition-colors z-10 shadow-md"
         >
@@ -108,6 +110,26 @@ export const AudioClip = ({ content, onDelete, isCreator, fullWidth }: AudioClip
           {error}
         </p>
       )}
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this audio clip?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this audio clip from the wall.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, keep it</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              onDelete?.();
+              setShowDeleteConfirm(false);
+            }}>
+              Yes, delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

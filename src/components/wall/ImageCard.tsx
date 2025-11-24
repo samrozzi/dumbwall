@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, ArrowUp, ArrowDown, Send } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { CreatorBadge } from "@/components/CreatorBadge";
 import { cn } from "@/lib/utils";
 import { usePhotoInteractions } from "@/hooks/usePhotoInteractions";
@@ -38,6 +39,7 @@ const ImageCard = ({
   const [isHovered, setIsHovered] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   
   const {
     comments,
@@ -70,7 +72,7 @@ const ImageCard = ({
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onDelete();
+            setShowDeleteConfirm(true);
           }}
           className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-8 h-8 shadow-md hover:scale-110 transition-transform z-10 flex items-center justify-center"
         >
@@ -247,6 +249,26 @@ const ImageCard = ({
           </div>
         </DialogContent>
       </Dialog>
+
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this image?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this image from the wall.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>No, keep it</AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              onDelete?.();
+              setShowDeleteConfirm(false);
+            }}>
+              Yes, delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };

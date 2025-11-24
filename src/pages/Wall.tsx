@@ -792,11 +792,11 @@ const Wall = () => {
         </div>
 
         {viewMode === "wall" && isMobile ? (
-          <div className="space-y-4 pb-24 flex flex-col items-center max-h-[calc(100vh-200px)] overflow-y-auto px-2">
+          <div className="space-y-4 pb-24 flex flex-col items-center max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden px-0">
             {items.filter(item => item.id !== pendingDelete?.id).map((item) => {
               const itemWithCreator = item as any;
               return (
-                <div key={item.id} data-item-id={item.id} className="w-full max-w-full">
+                <div key={item.id} data-item-id={item.id} className="w-full max-w-full px-2">
                   {item.type === "note" && (
                     <StickyNote
                       content={item.content as any}

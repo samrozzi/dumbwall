@@ -19,7 +19,6 @@ import { DoodleCanvas } from "@/components/wall/DoodleCanvas";
 import { MusicDrop } from "@/components/wall/MusicDrop";
 import { ChallengeCard } from "@/components/wall/ChallengeCard";
 import AddItemMenu from "@/components/wall/AddItemMenu";
-import { MasonryGrid } from "@/components/wall/MasonryGrid";
 import CameraCapture from "@/components/wall/CameraCapture";
 import { CreatePollDialog } from "@/components/wall/CreatePollDialog";
 import { CreateAudioDialog } from "@/components/wall/CreateAudioDialog";
@@ -385,11 +384,12 @@ const Wall = () => {
   };
 
   const handleMouseDown = (e: React.MouseEvent, itemId: string) => {
+    e.preventDefault(); // Prevent text selection
     const item = items.find(i => i.id === itemId);
     if (!item) return;
 
     setDraggedItem(itemId);
-    setIsDragging(true);
+    setIsDragging(false); // Not dragging until threshold met
     const canvasRect = canvasRef.current?.getBoundingClientRect();
     if (canvasRect) {
       setDragOffset({
@@ -405,6 +405,11 @@ const Wall = () => {
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!draggedItem || !canvasRef.current) return;
+
+    // Set dragging state once moved
+    if (!isDragging) {
+      setIsDragging(true);
+    }
 
     const canvasRect = canvasRef.current.getBoundingClientRect();
     const newX = Math.max(0, Math.min(e.clientX - canvasRect.left - dragOffset.x, canvasRect.width - 280));
@@ -840,18 +845,14 @@ const Wall = () => {
         </div>
 
         {viewMode === "wall" && isMobile ? (
-          <MasonryGrid 
-            itemIds={items.filter(item => item.id !== pendingDelete?.id).map(item => item.id)}
-            itemTypes={items.filter(item => item.id !== pendingDelete?.id).map(item => item.type)}
-            onReorder={(itemId, newOrder) => {
-              // Optional: Update item order in database
-              console.log('Reordered:', itemId, 'to position', newOrder);
-            }}
-          >
+          <div className="columns-2 gap-3 pb-24">
             {items.filter(item => item.id !== pendingDelete?.id).map((item) => {
               const itemWithCreator = item as any;
               return (
-                <React.Fragment key={item.id}>
+                <div 
+                  key={item.id} 
+                  className="break-inside-avoid mb-3"
+                >
                   {item.type === "note" && (
                     <StickyNote
                       content={item.content as any}
@@ -896,7 +897,6 @@ const Wall = () => {
                         const currentContent = item.content as any;
                         let updatedContent = { ...currentContent };
                         
-                        // Assign playerO on first O move
                         if (!currentContent.playerO && state.includes('O')) {
                           updatedContent.playerO = user?.id;
                         }
@@ -962,10 +962,10 @@ const Wall = () => {
                       isCreator={item.created_by === user?.id}
                     />
                   )}
-                </React.Fragment>
+                </div>
               );
             })}
-          </MasonryGrid>
+          </div>
         ) : viewMode === "wall" ? (
           // Desktop canvas view
           <div

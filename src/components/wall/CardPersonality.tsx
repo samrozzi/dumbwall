@@ -10,7 +10,7 @@ interface CardPersonalityProps {
 export const CardPersonality = ({ children, type, className }: CardPersonalityProps) => {
   const personalityStyles = {
     note: "before:absolute before:top-2 before:left-2 before:w-12 before:h-6 before:bg-gradient-to-br before:from-yellow-200/60 before:to-yellow-300/60 before:rotate-[-5deg] before:rounded-sm before:shadow-sm before:content-['']",
-    image: "border-[6px] border-white shadow-[0_2px_8px_rgba(0,0,0,0.15)]",
+    image: "", // No extra styling - use same card style as notes
     thread: "before:absolute before:bottom-4 before:left-[-8px] before:w-0 before:h-0 before:border-t-[8px] before:border-t-transparent before:border-r-[12px] before:border-r-card before:border-b-[8px] before:border-b-transparent before:content-['']",
     announcement: "", // Already has Windows 98 style
     poll: "before:absolute before:top-[-8px] before:left-[20%] before:right-[20%] before:h-2 before:bg-gradient-to-r before:from-zinc-400 before:via-zinc-300 before:to-zinc-400 before:rounded-t-sm before:shadow-sm before:content-['']",

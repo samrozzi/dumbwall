@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import Navigation from "@/components/Navigation";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { toast } from "sonner";
-import { MessageSquare, Plus, Send, UserPlus, ArrowLeft, Camera } from "lucide-react";
+import { MessageSquare, Plus, Send, UserPlus, ArrowLeft, Camera, Search as SearchIcon, Sparkles } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MemberPicker from "@/components/chat/MemberPicker";
@@ -22,6 +22,17 @@ import { ReplyPreview } from "@/components/chat/ReplyPreview";
 import ChatPhotoUpload from "@/components/chat/ChatPhotoUpload";
 import { compressImage } from "@/lib/imageCompression";
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { useTypingIndicator } from "@/hooks/useTypingIndicator";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
+import { TypingIndicator } from "@/components/chat/TypingIndicator";
+import { SwipeableMessage } from "@/components/chat/SwipeableMessage";
+import { GifPicker } from "@/components/chat/GifPicker";
+import { VoiceRecorder } from "@/components/chat/VoiceRecorder";
+import { MessageSearch } from "@/components/chat/MessageSearch";
+import { DateSeparator } from "@/components/chat/DateSeparator";
+import { UnreadJumpButton } from "@/components/chat/UnreadJumpButton";
+import { MessageAnimations } from "@/components/chat/MessageAnimations";
+import { isSameDay, parseISO } from "date-fns";
 
 interface ChatThread {
   id: string;
@@ -87,6 +98,35 @@ const Chat = () => {
     return saved ? parseFloat(saved) : 40;
   });
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
+  // New feature states
+  const [searchDialogOpen, setSearchDialogOpen] = useState(false);
+  const [messageEffect, setMessageEffect] = useState<{ type: 'confetti' | 'hearts' | 'lasers' | 'fireworks' | 'balloons' } | null>(null);
+  const [showUnreadButton, setShowUnreadButton] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [editingMessage, setEditingMessage] = useState<ChatMessageType | null>(null);
+
+  // Typing indicators
+  const { typingUsers, handleTyping, stopTypingIndicator } = useTypingIndicator(threadId, user?.id);
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts([
+    {
+      key: 'k',
+      ctrlKey: true,
+      callback: () => setSearchDialogOpen(true),
+      description: 'Search messages'
+    },
+    {
+      key: 'Escape',
+      callback: () => {
+        setReplyingTo(null);
+        setEditingMessage(null);
+      },
+      description: 'Cancel reply/edit'
+    }
+  ], !searchDialogOpen);
 
   useEffect(() => {
     if (circleId && user) {
@@ -433,6 +473,9 @@ const Chat = () => {
   const handleSendMessage = async () => {
     if (!newMessage.trim() || !currentThread || !user) return;
 
+    // Stop typing indicator
+    stopTypingIndicator();
+
     // Validate message
     const MessageSchema = z.object({
       body: z.string()
@@ -443,14 +486,14 @@ const Chat = () => {
 
     try {
       const validated = MessageSchema.parse({ body: newMessage });
-      
+
       const tempId = `temp-${Date.now()}`;
       const { data: userProfile } = await supabase
         .from("profiles")
         .select("display_name, username, avatar_url")
         .eq("id", user.id)
         .single();
-      
+
       // Optimistic UI update
       const optimisticMessage: ChatMessageType = {
         id: tempId,
@@ -464,7 +507,7 @@ const Chat = () => {
           sender_name: replyingTo.profiles?.display_name || replyingTo.profiles?.username || "Unknown"
         } : null
       };
-      
+
       setMessages((prev) => [...prev, optimisticMessage]);
       setNewMessage("");
       const replyToId = replyingTo?.id;
@@ -499,6 +542,92 @@ const Chat = () => {
         toast.error("Failed to send message");
       }
     }
+  };
+
+  const handleVoiceMessage = async (audioFile: File, duration: number) => {
+    if (!currentThread || !user || !threadId) return;
+
+    try {
+      const fileName = `${threadId}/${user.id}/${Date.now()}.webm`;
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('voice-messages')
+        .upload(fileName, audioFile);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('voice-messages')
+        .getPublicUrl(fileName);
+
+      const { error: messageError } = await supabase
+        .from('chat_messages')
+        .insert({
+          thread_id: threadId,
+          sender_id: user.id,
+          body: '[Voice Message]',
+          voice_url: publicUrl,
+          voice_duration: duration,
+          message_type: 'voice',
+          reply_to_id: replyingTo?.id
+        });
+
+      if (messageError) throw messageError;
+
+      setReplyingTo(null);
+      toast.success('Voice message sent!');
+    } catch (error) {
+      console.error('Error sending voice message:', error);
+      toast.error('Failed to send voice message');
+    }
+  };
+
+  const handleGifMessage = async (gifUrl: string, gifTitle: string) => {
+    if (!currentThread || !user || !threadId) return;
+
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .insert({
+          thread_id: threadId,
+          sender_id: user.id,
+          body: gifTitle || '[GIF]',
+          gif_url: gifUrl,
+          gif_title: gifTitle,
+          message_type: 'gif',
+          reply_to_id: replyingTo?.id
+        });
+
+      if (error) throw error;
+
+      setReplyingTo(null);
+      toast.success('GIF sent!');
+
+      // Trigger confetti animation
+      setMessageEffect({ type: 'confetti' });
+    } catch (error) {
+      console.error('Error sending GIF:', error);
+      toast.error('Failed to send GIF');
+    }
+  };
+
+  const handleMessageSearch = (threadId: string, messageId: string) => {
+    navigate(`/circle/${circleId}/chat?threadId=${threadId}`);
+    // Scroll to message after navigation
+    setTimeout(() => {
+      const messageElement = document.getElementById(`message-${messageId}`);
+      if (messageElement) {
+        messageElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        messageElement.classList.add('highlight-message');
+        setTimeout(() => {
+          messageElement.classList.remove('highlight-message');
+        }, 2000);
+      }
+    }, 500);
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    setShowUnreadButton(false);
   };
 
   const handleCreateThread = async () => {
@@ -687,14 +816,22 @@ const Chat = () => {
               /* Chat View with Back Button */
               <div className="flex flex-col h-full border rounded-lg bg-card overflow-hidden">
                 <div className="px-4 py-3 border-b bg-card flex items-center gap-3">
-                  <Button 
-                    size="icon" 
+                  <Button
+                    size="icon"
                     variant="ghost"
                     onClick={() => navigate(`/circle/${circleId}/chat`)}
                   >
                     <ArrowLeft className="w-5 h-5" />
                   </Button>
                   <h3 className="text-xl font-bold flex-1">{currentThread?.title}</h3>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    onClick={() => setSearchDialogOpen(true)}
+                    title="Search messages (Ctrl+K)"
+                  >
+                    <SearchIcon className="w-4 h-4" />
+                  </Button>
                   <Dialog open={addMembersDialogOpen} onOpenChange={setAddMembersDialogOpen}>
                     <DialogTrigger asChild>
                       <Button size="sm" variant="outline" onClick={() => setSelectedMembers([])}>
@@ -785,6 +922,10 @@ const Chat = () => {
                       onCancel={() => setReplyingTo(null)}
                     />
                   )}
+
+                  {/* Typing Indicators */}
+                  <TypingIndicator typingUsers={typingUsers} />
+
                   <div className="flex gap-2">
                     <Dialog open={photoDialogOpen} onOpenChange={setPhotoDialogOpen}>
                       <DialogTrigger asChild>
@@ -796,10 +937,10 @@ const Chat = () => {
                         <DialogHeader>
                           <DialogTitle>Share a Photo</DialogTitle>
                         </DialogHeader>
-                        <ChatPhotoUpload 
+                        <ChatPhotoUpload
                           onPhotoSelected={async (file, caption) => {
                             if (!user || !threadId) return;
-                            
+
                             try {
                               const fileName = `${threadId}/${user.id}/${Date.now()}.jpg`;
                               const { data: uploadData, error: uploadError } = await supabase.storage
@@ -836,11 +977,28 @@ const Chat = () => {
                         />
                       </DialogContent>
                     </Dialog>
+
+                    <VoiceRecorder
+                      onVoiceRecorded={handleVoiceMessage}
+                      threadId={threadId || ''}
+                      userId={user?.id || ''}
+                    />
+
+                    <GifPicker onGifSelect={handleGifMessage} />
+
                     <Input
                       placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
                       value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+                      onChange={(e) => {
+                        setNewMessage(e.target.value);
+                        handleTyping();
+                      }}
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handleSendMessage();
+                        }
+                      }}
                     />
                     <EmojiPicker onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)} />
                     <Button onClick={handleSendMessage} size="icon">
@@ -967,13 +1125,22 @@ const Chat = () => {
                     {/* Chat Header */}
                     <div className="p-4 border-b bg-card flex items-center justify-between">
                       <h3 className="text-xl font-bold">{currentThread.title}</h3>
-                      <Dialog open={addMembersDialogOpen} onOpenChange={setAddMembersDialogOpen}>
-                        <DialogTrigger asChild>
-                          <Button size="sm" variant="outline" onClick={() => setSelectedMembers([])}>
-                            <UserPlus className="w-4 h-4 mr-2" />
-                            Add Members
-                          </Button>
-                        </DialogTrigger>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          onClick={() => setSearchDialogOpen(true)}
+                          title="Search messages (Ctrl+K)"
+                        >
+                          <SearchIcon className="w-4 h-4" />
+                        </Button>
+                        <Dialog open={addMembersDialogOpen} onOpenChange={setAddMembersDialogOpen}>
+                          <DialogTrigger asChild>
+                            <Button size="sm" variant="outline" onClick={() => setSelectedMembers([])}>
+                              <UserPlus className="w-4 h-4 mr-2" />
+                              Add Members
+                            </Button>
+                          </DialogTrigger>
                         <DialogContent className="max-w-md">
                           <DialogHeader>
                             <DialogTitle>Add Members to Thread</DialogTitle>
@@ -1060,6 +1227,10 @@ const Chat = () => {
                           onCancel={() => setReplyingTo(null)}
                         />
                       )}
+
+                      {/* Typing Indicators */}
+                      <TypingIndicator typingUsers={typingUsers} />
+
                       <div className="flex gap-2">
                         <Dialog open={photoDialogOpen} onOpenChange={setPhotoDialogOpen}>
                           <DialogTrigger asChild>
@@ -1071,10 +1242,10 @@ const Chat = () => {
                             <DialogHeader>
                               <DialogTitle>Share a Photo</DialogTitle>
                             </DialogHeader>
-                            <ChatPhotoUpload 
+                            <ChatPhotoUpload
                               onPhotoSelected={async (file, caption) => {
                                 if (!user || !threadId) return;
-                                
+
                                 try {
                                   const fileName = `${threadId}/${user.id}/${Date.now()}.jpg`;
                                   const { data: uploadData, error: uploadError } = await supabase.storage
@@ -1111,11 +1282,28 @@ const Chat = () => {
                             />
                           </DialogContent>
                         </Dialog>
+
+                        <VoiceRecorder
+                          onVoiceRecorded={handleVoiceMessage}
+                          threadId={threadId || ''}
+                          userId={user?.id || ''}
+                        />
+
+                        <GifPicker onGifSelect={handleGifMessage} />
+
                         <Input
                           placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
                           value={newMessage}
-                          onChange={(e) => setNewMessage(e.target.value)}
-                          onKeyPress={(e) => e.key === "Enter" && !e.shiftKey && handleSendMessage()}
+                          onChange={(e) => {
+                            setNewMessage(e.target.value);
+                            handleTyping();
+                          }}
+                          onKeyPress={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSendMessage();
+                            }
+                          }}
                         />
                         <EmojiPicker onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)} />
                         <Button onClick={handleSendMessage} size="icon">
@@ -1137,6 +1325,30 @@ const Chat = () => {
           </ResizablePanelGroup>
         )}
       </div>
+
+      {/* Global Components */}
+      <MessageSearch
+        open={searchDialogOpen}
+        onOpenChange={setSearchDialogOpen}
+        circleId={circleId || ''}
+        onMessageClick={handleMessageSearch}
+      />
+
+      <MessageAnimations
+        effect={messageEffect}
+        onComplete={() => setMessageEffect(null)}
+      />
+
+      <style jsx global>{`
+        @keyframes highlight {
+          0%, 100% { background-color: transparent; }
+          50% { background-color: rgba(var(--primary), 0.2); }
+        }
+
+        .highlight-message {
+          animation: highlight 2s ease-in-out;
+        }
+      `}</style>
     </div>
   );
 };

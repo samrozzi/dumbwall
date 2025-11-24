@@ -27,7 +27,16 @@ export const CreateAudioDialog = ({ open, onOpenChange, onCreate }: CreateAudioD
   const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
+      
+      // Detect Safari-compatible MIME type
+      let mimeType = '';
+      if (MediaRecorder.isTypeSupported('audio/mp4')) {
+        mimeType = 'audio/mp4';
+      } else if (MediaRecorder.isTypeSupported('audio/webm')) {
+        mimeType = 'audio/webm';
+      }
+      
+      const mediaRecorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
 
@@ -36,7 +45,7 @@ export const CreateAudioDialog = ({ open, onOpenChange, onCreate }: CreateAudioD
       };
 
       mediaRecorder.onstop = () => {
-        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        const blob = new Blob(audioChunksRef.current, { type: mimeType || 'audio/mp4' });
         setAudioBlob(blob);
         stream.getTracks().forEach(track => track.stop());
       };

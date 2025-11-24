@@ -332,10 +332,10 @@ const Wall = () => {
     // Store for potential undo
     setPendingDelete({ id, item: itemToDelete });
 
-    // Show toast with undo option
+    // Show toast with undo option at top center
     toast({
       title: "Item deleted",
-      description: "Undo",
+      description: "Undo to restore",
       action: (
         <Button
           variant="outline"
@@ -345,6 +345,7 @@ const Wall = () => {
           Undo
         </Button>
       ),
+      className: "fixed top-4 left-1/2 -translate-x-1/2 z-[9999]",
     });
 
     // Perform actual deletion after 3 seconds
@@ -846,7 +847,10 @@ const Wall = () => {
 
         {viewMode === "wall" && isMobile ? (
           <div className="columns-2 gap-3 pb-24">
-            {items.filter(item => item.id !== pendingDelete?.id).map((item) => {
+            {items
+              .filter(item => item.id !== pendingDelete?.id)
+              .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+              .map((item) => {
               const itemWithCreator = item as any;
               return (
                 <div 

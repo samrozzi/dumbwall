@@ -246,7 +246,7 @@ export default function PublicProfile() {
               variant="ghost"
               size="icon"
               onClick={() => navigate(`/circle/${userCircleId}/people`)}
-              className="rounded-full hover:bg-muted"
+              className="rounded-full bg-primary/90 hover:bg-primary text-primary-foreground shadow-lg h-12 w-12"
               title="Back to My Friends"
             >
               <ArrowLeft className="h-5 w-5" />

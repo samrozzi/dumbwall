@@ -1,7 +1,8 @@
-import { NavLink, useLocation } from "react-router-dom";
-import { StickyNote, MessageCircle, Users, Settings, Gamepad2 } from "lucide-react";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
+import { StickyNote, MessageCircle, Users, Settings, Gamepad2, ArrowLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Button } from "@/components/ui/button";
 
 interface NavigationProps {
   circleId?: string;
@@ -10,6 +11,40 @@ interface NavigationProps {
 const Navigation = ({ circleId }: NavigationProps) => {
   const isMobile = useIsMobile();
   const location = useLocation();
+  const navigate = useNavigate();
+  
+  // If no circleId, show simple back navigation
+  if (!circleId) {
+    if (isMobile) {
+      return (
+        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-background/95 backdrop-blur-md supports-[backdrop-filter]:bg-background/60 border-t border-border">
+          <div className="flex items-center justify-center px-2 py-3">
+            <Button 
+              variant="ghost" 
+              onClick={() => navigate("/circles")}
+              className="gap-2"
+            >
+              <ArrowLeft className="w-5 h-5" />
+              Back to Circles
+            </Button>
+          </div>
+        </nav>
+      );
+    }
+    return (
+      <nav className="fixed left-4 top-1/2 -translate-y-1/2 z-[10000] bg-card/80 backdrop-blur-md border border-border rounded-full p-2 shadow-lg">
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => navigate("/circles")}
+          className="rounded-full"
+          title="Back to Circles"
+        >
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+      </nav>
+    );
+  }
   
   const navItems = [
     { icon: StickyNote, label: "Wall", path: `/circle/${circleId}/wall` },
@@ -18,8 +53,6 @@ const Navigation = ({ circleId }: NavigationProps) => {
     { icon: Users, label: "People", path: `/circle/${circleId}/people` },
     { icon: Settings, label: "Settings", path: `/circle/${circleId}/settings` },
   ];
-
-  if (!circleId) return null;
 
   if (isMobile) {
     return (

@@ -250,11 +250,12 @@ const Chat = () => {
     if (data?.linked_wall_item_id) {
       const { data: wallItem } = await supabase
         .from('wall_items')
-        .select('content, created_by')
+        .select('content, created_by, type')
         .eq('id', data.linked_wall_item_id)
         .single();
       
-      if (wallItem) {
+      // Only set threadPhoto if this is actually an image wall item
+      if (wallItem && wallItem.type === 'image') {
         const content = wallItem.content as { url: string; caption?: string };
         setThreadPhoto(content);
         
@@ -276,6 +277,8 @@ const Chat = () => {
               });
           }
         }
+      } else {
+        setThreadPhoto(null);
       }
     } else {
       setThreadPhoto(null);

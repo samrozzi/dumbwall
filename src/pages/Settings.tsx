@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Upload, LogOut, Trash2, Users, Plus, AlertTriangle, Settings2, Eye } from "lucide-react";
+import { Upload, LogOut, Trash2, Users, Plus, AlertTriangle, Settings2, Eye, ArrowLeft } from "lucide-react";
 import { CircleSettingsDialog } from "@/components/CircleSettingsDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
@@ -646,6 +646,22 @@ const Settings = () => {
 
           {/* Profile Tab */}
           <TabsContent value="profile" className="space-y-6">
+            {/* Back to People Button */}
+            {circleId && (
+              <div className="flex items-center gap-3 mb-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => navigate(`/circle/${circleId}/people`)}
+                  className="rounded-full"
+                  title="Back to My Friends"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </Button>
+                <h2 className="text-2xl font-bold">My Profile</h2>
+              </div>
+            )}
+            
             {/* Profile Preview */}
             <Card>
               {profile && (

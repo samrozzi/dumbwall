@@ -6,12 +6,18 @@ import { Button } from "@/components/ui/button";
 
 interface NavigationProps {
   circleId?: string;
+  hideBackButton?: boolean;
 }
 
-const Navigation = ({ circleId }: NavigationProps) => {
+const Navigation = ({ circleId, hideBackButton }: NavigationProps) => {
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
+  
+  // If no circleId and hideBackButton is true, don't render anything
+  if (!circleId && hideBackButton) {
+    return null;
+  }
   
   // If no circleId, show simple back navigation
   if (!circleId) {

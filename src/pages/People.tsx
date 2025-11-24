@@ -10,6 +10,7 @@ import { Users } from "lucide-react";
 import { toast } from "sonner";
 import { AddMemberDialog } from "@/components/AddMemberDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 interface Member {
   user_id: string;
@@ -190,33 +191,60 @@ const People = () => {
           )}
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {members.map((member) => (
-            <Card 
-              key={member.user_id}
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => navigate(`/u/${member.profile.username}`)}
-            >
-              <CardContent className="p-6">
-                <div className="flex items-start gap-4">
-                  <Avatar className="h-16 w-16">
-                    <AvatarImage src={member.profile.avatar_url || undefined} />
-                    <AvatarFallback className="text-lg">
-                      {getInitials(member)}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-semibold truncate">
-                      {getDisplayName(member)}
-                    </h3>
-                    <p className="text-sm text-muted-foreground truncate">
-                      @{member.profile.username}
-                    </p>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {members.map((member, index) => {
+            const rotation = (index % 2 === 0 ? 1 : -1) * (1 + (index % 3));
+            const gradients = [
+              'from-pink-400 via-purple-400 to-pink-500',
+              'from-yellow-400 via-orange-400 to-pink-500',
+              'from-cyan-400 via-blue-400 to-purple-500',
+              'from-green-400 via-teal-400 to-cyan-500',
+            ];
+            const gradient = gradients[index % gradients.length];
+            
+            return (
+              <Card 
+                key={member.user_id}
+                className={cn(
+                  "cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-300 relative",
+                  "bg-gradient-to-br from-background/95 to-background/90 backdrop-blur-sm",
+                  "border-4 p-1"
+                )}
+                style={{
+                  transform: `rotate(${rotation}deg)`,
+                  borderImage: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent))) 1`,
+                }}
+                onClick={() => navigate(`/u/${member.profile.username}`)}
+              >
+                {/* Decorative corner sticker */}
+                <div 
+                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full opacity-70 z-10"
+                  style={{
+                    background: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))`,
+                  }}
+                />
+                
+                <CardContent className="p-6 relative">
+                  <div className="flex flex-col items-center gap-3 text-center">
+                    <Avatar className="h-20 w-20 border-4 border-background shadow-lg ring-2 ring-primary/20">
+                      <AvatarImage src={member.profile.avatar_url || undefined} />
+                      <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-primary/20 to-accent/20">
+                        {getInitials(member)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0 w-full">
+                      <h3 className="font-bold text-lg truncate">
+                        {getDisplayName(member)}
+                      </h3>
+                      <p className="text-sm text-muted-foreground truncate">
+                        @{member.profile.username}
+                      </p>
+                    </div>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
 

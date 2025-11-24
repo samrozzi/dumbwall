@@ -172,7 +172,7 @@ const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubblePro
     <Card
       className={cn(
         "p-4 hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-200 relative flex flex-col",
-        fullWidth ? "w-full" : ""
+        fullWidth ? "w-full max-w-full" : ""
       )}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}

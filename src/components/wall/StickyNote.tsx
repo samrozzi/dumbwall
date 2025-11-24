@@ -67,7 +67,7 @@ const StickyNote = ({ content, onDelete, onUpdate, isCreator, creatorAvatar, cre
       <Card
         className={cn(
           "p-4 shadow-lg transition-all duration-300 cursor-move relative",
-          fullWidth ? "w-full" : "w-64",
+          fullWidth ? "w-full max-w-full" : "w-64",
           colorMap[content.color] || colorMap.yellow,
           "hover:shadow-2xl hover:scale-105",
           "transform rotate-1 hover:rotate-0"

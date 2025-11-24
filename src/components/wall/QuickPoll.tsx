@@ -84,7 +84,7 @@ export const QuickPoll = ({ content, itemId, currentUserId, onDelete, isCreator 
               onClick={() => handleVote(option.id)}
               disabled={voting}
               variant="outline"
-              className="w-full relative overflow-hidden h-auto py-3 px-4 text-left justify-start"
+              className="w-full relative overflow-hidden h-auto py-3 px-4 text-left justify-start bg-white/90 dark:bg-gray-800/90 border-pink-300 dark:border-pink-700"
             >
               {hasVoted && (
                 <div

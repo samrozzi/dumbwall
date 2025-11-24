@@ -50,7 +50,7 @@ export const MusicDrop = ({ content, onDelete, isCreator }: MusicDropProps) => {
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <h4 className="font-bold text-sm truncate text-foreground">{content.songTitle}</h4>
+          <h4 className="font-bold text-sm truncate text-gray-900 dark:text-white">{content.songTitle}</h4>
           <p className="text-xs text-gray-700 dark:text-gray-300 truncate">{content.artist}</p>
           {musicUrl && (
             <Button

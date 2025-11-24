@@ -101,15 +101,17 @@ const ImageCard = ({
           {/* Cleaner single border */}
           <div className="relative border-4 border-amber-500/80 rounded-lg overflow-hidden h-full flex flex-col max-h-[90vh] shadow-xl">
             
-            {/* Image & Caption Section - Scrollable */}
-            <div className="bg-black overflow-y-auto max-h-[35vh] sm:max-h-[45vh] flex-shrink-0">
-              <img
-                src={content.url}
-                alt={content.caption || "Wall image"}
-                className="w-full h-auto object-contain"
-              />
+            {/* Image & Caption Section - Fit to viewport */}
+            <div className="bg-black flex-shrink-0 flex flex-col max-h-[60vh]">
+              <div className="flex-1 flex items-center justify-center overflow-hidden">
+                <img
+                  src={content.url}
+                  alt={content.caption || "Wall image"}
+                  className="max-w-full max-h-full object-contain"
+                />
+              </div>
               {content.caption && (
-                <div className="bg-muted p-4 border-t-2 border-amber-500">
+                <div className="bg-muted p-4 border-t-2 border-amber-500 flex-shrink-0">
                   <p className="text-foreground font-semibold">{content.caption}</p>
                 </div>
               )}

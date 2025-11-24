@@ -81,7 +81,7 @@ export const MusicDrop = ({ content, onDelete, isCreator }: MusicDropProps) => {
               <iframe
                 src={embedUrl}
                 width="100%"
-                height="152"
+                height="232"
                 frameBorder="0"
                 allow="encrypted-media"
                 className="rounded"

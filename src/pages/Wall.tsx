@@ -172,34 +172,45 @@ const Wall = () => {
   const getSmartPosition = () => {
     const canvasWidth = canvasRef.current?.offsetWidth || 1200;
     const itemWidth = 280;
+    const itemHeight = 320;
     const padding = 40;
+    const maxY = 600; // Keep items in visible area
     
-    // Start at different positions based on item count
-    let x = 100 + ((items.length * 80) % 500);
-    let y = 100 + ((items.length * 80) % 400);
+    // Random starting position with some variation
+    let x = 60 + Math.floor(Math.random() * 200);
+    let y = 60 + Math.floor(Math.random() * 150);
     let attempts = 0;
     
-    while (attempts < 20) {
+    while (attempts < 25) {
       const hasOverlap = items.some(item => {
         const distX = Math.abs(item.x - x);
         const distY = Math.abs(item.y - y);
-        return distX < 250 && distY < 250;
+        return distX < 200 && distY < 200;
       });
       
       if (!hasOverlap) break;
       
-      x += 100;
-      y += 100;
+      // Move to next position
+      x += 90;
       
+      // Wrap x if needed
       if (x + itemWidth > canvasWidth - padding) {
-        x = 100;
-        y += 320;
+        x = 60 + Math.floor(Math.random() * 100);
+        y += 100;
+      }
+      
+      // CRITICAL: Wrap y back to top if too far down
+      if (y > maxY) {
+        y = 60 + Math.floor(Math.random() * 100);
+        x += 150; // Shift right when wrapping back up
       }
       
       attempts++;
     }
     
-    x = Math.min(x, canvasWidth - itemWidth - padding);
+    // Final bounds check
+    x = Math.max(padding, Math.min(x, canvasWidth - itemWidth - padding));
+    y = Math.max(padding, Math.min(y, maxY));
     
     return { x, y };
   };

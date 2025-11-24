@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Music, ExternalLink, X } from "lucide-react";
+import { Music, ExternalLink, X, Play } from "lucide-react";
 
 interface MusicDropProps {
   content: {
@@ -89,26 +89,40 @@ export const MusicDrop = ({ content, onDelete, isCreator }: MusicDropProps) => {
               />
               <Button
                 onClick={() => setShowEmbed(false)}
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="w-full mt-2 text-gray-900 dark:text-white"
+                className="w-full mt-2 border-indigo-300 dark:border-indigo-700 text-gray-900 dark:text-white"
               >
                 Hide Player
               </Button>
             </>
           ) : (
-            <Button
-              onClick={() => setShowEmbed(true)}
-              size="sm"
-              className="w-full bg-indigo-500 hover:bg-indigo-600 text-white"
-            >
-              Show Player
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={() => setShowEmbed(true)}
+                size="icon"
+                className="flex-1 bg-indigo-500 hover:bg-indigo-600 text-white"
+                title="Show Player"
+              >
+                <Play className="w-4 h-4" />
+              </Button>
+              {musicUrl && (
+                <Button
+                  onClick={() => window.open(musicUrl, "_blank")}
+                  size="icon"
+                  variant="outline"
+                  className="flex-1 border-indigo-300 dark:border-indigo-700"
+                  title={`Open in ${content.spotifyUrl ? "Spotify" : content.youtubeUrl ? "YouTube" : "Music App"}`}
+                >
+                  <ExternalLink className="w-4 h-4" />
+                </Button>
+              )}
+            </div>
           )}
         </div>
       )}
 
-      {musicUrl && (
+      {musicUrl && showEmbed && (
         <Button
           onClick={() => window.open(musicUrl, "_blank")}
           size="sm"

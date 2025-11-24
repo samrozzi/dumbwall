@@ -53,6 +53,7 @@ export default function PublicProfile() {
   const [interests, setInterests] = useState<string[]>([]);
   const [socialLinks, setSocialLinks] = useState<SocialLink[]>([]);
   const [mutualCircles, setMutualCircles] = useState<Circle[]>([]);
+  const [userCircleId, setUserCircleId] = useState<string | null>(null);
   const isOwnProfile = user && profile && user.id === profile.id;
 
   useEffect(() => {
@@ -127,6 +128,13 @@ export default function PublicProfile() {
             .filter(mc => theirCircleIds.includes(mc.circle_id))
             .map(mc => ({ id: mc.circles.id, name: mc.circles.name }));
           setMutualCircles(mutual);
+          
+          // Set the first mutual circle as context, or user's first circle
+          if (mutual.length > 0) {
+            setUserCircleId(mutual[0].id);
+          } else if (myCircles.length > 0) {
+            setUserCircleId(myCircles[0].circle_id);
+          }
         }
       }
     } catch (error) {
@@ -208,8 +216,8 @@ export default function PublicProfile() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation hideBackButton={true} />
-      <div className="container max-w-4xl mx-auto px-4 py-8">
+      <Navigation circleId={userCircleId || undefined} />
+      <div className="container max-w-4xl mx-auto px-4 py-8 md:pl-24">{/* Add left padding on desktop for nav */}
         <Card>
           <ProfileHeader
             userId={profile.id}

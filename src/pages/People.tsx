@@ -177,10 +177,10 @@ const People = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-24 md:pb-8">
       <Navigation circleId={circleId} />
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl">
+      <div className="container mx-auto px-4 py-8 max-w-6xl md:pl-24">{/* Add left padding on desktop for nav */}
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">{circleName}</h1>
           {canAddMembers && (
@@ -194,13 +194,13 @@ const People = () => {
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {members.map((member, index) => {
             const rotation = (index % 2 === 0 ? 1 : -1) * (1 + (index % 3));
-            const gradients = [
-              'from-pink-400 via-purple-400 to-pink-500',
-              'from-yellow-400 via-orange-400 to-pink-500',
-              'from-cyan-400 via-blue-400 to-purple-500',
-              'from-green-400 via-teal-400 to-cyan-500',
+            const borderRadii = [
+              '50% 60% 70% 40%',
+              '60% 40% 60% 40%',
+              '55% 45% 60% 40%',
+              '45% 55% 50% 50%',
             ];
-            const gradient = gradients[index % gradients.length];
+            const borderRadius = borderRadii[index % borderRadii.length];
             
             return (
               <Card 
@@ -208,22 +208,15 @@ const People = () => {
                 className={cn(
                   "cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-300 relative",
                   "bg-gradient-to-br from-background/95 to-background/90 backdrop-blur-sm",
-                  "border-4 p-1"
+                  "border-[6px] p-1 overflow-hidden"
                 )}
                 style={{
                   transform: `rotate(${rotation}deg)`,
                   borderImage: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent))) 1`,
+                  borderRadius: borderRadius,
                 }}
                 onClick={() => navigate(`/u/${member.profile.username}`)}
               >
-                {/* Decorative corner sticker */}
-                <div 
-                  className="absolute -top-2 -right-2 w-6 h-6 rounded-full opacity-70 z-10"
-                  style={{
-                    background: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent)))`,
-                  }}
-                />
-                
                 <CardContent className="p-6 relative">
                   <div className="flex flex-col items-center gap-3 text-center">
                     <Avatar className="h-20 w-20 border-4 border-background shadow-lg ring-2 ring-primary/20">

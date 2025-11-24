@@ -1162,6 +1162,7 @@ const Chat = () => {
                         </DialogContent>
                       </Dialog>
                     </div>
+                  </div>
 
                     {/* Messages */}
                     <ScrollArea className="flex-1 p-4">

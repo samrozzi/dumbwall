@@ -6,6 +6,7 @@ import { Database } from "@/integrations/supabase/types";
 import { z } from "zod";
 import Navigation from "@/components/Navigation";
 import { NotificationCenter } from "@/components/NotificationCenter";
+import { CircleMembersBar } from "@/components/CircleMembersBar";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import StickyNote from "@/components/wall/StickyNote";
 import ImageCard from "@/components/wall/ImageCard";
@@ -25,6 +26,7 @@ import { CreateDoodleDialog } from "@/components/wall/CreateDoodleDialog";
 import { CreateMusicDialog } from "@/components/wall/CreateMusicDialog";
 import { CreateChallengeDialog } from "@/components/wall/CreateChallengeDialog";
 import { WallItemViewerDialog } from "@/components/wall/WallItemViewerDialog";
+import { AddMemberDialog } from "@/components/AddMemberDialog";
 import { notify } from "@/components/ui/custom-notification";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -132,6 +134,7 @@ const Wall = () => {
   const [deleteThreadDialog, setDeleteThreadDialog] = useState(false);
   const [confirmDeleteDialog, setConfirmDeleteDialog] = useState(false);
   const [threadToDelete, setThreadToDelete] = useState<{ itemId: string; threadId: string } | null>(null);
+  const [showAddMemberDialog, setShowAddMemberDialog] = useState(false);
   
   // Wall item viewer dialog states
   const [viewerDialogOpen, setViewerDialogOpen] = useState(false);
@@ -766,29 +769,73 @@ const Wall = () => {
       <Navigation circleId={circleId} />
 
       <div className={`${isMobile ? 'px-2 pt-4 pb-24' : 'pl-24 pr-8 pt-8'}`}>
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">The Wall</h1>
+        {/* Desktop Header */}
+        <div className="hidden sm:flex justify-between items-center mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold">The Wall</h1>
+          
+          <div className="flex-1 flex justify-center px-8">
+            <CircleMembersBar 
+              circleId={circleId!} 
+              onAddMember={() => setShowAddMemberDialog(true)}
+            />
+          </div>
+          
           <div className="flex gap-3 items-center">
             <NotificationCenter />
-            <div className="flex gap-2">
+            <div className="flex gap-1">
               <Button
                 variant={viewMode === "wall" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setViewMode("wall")}
               >
-                <LayoutGrid className="w-4 h-4 mr-2" />
-                Wall
+                <LayoutGrid className="w-4 h-4" />
+                <span className="hidden lg:inline ml-2">Wall</span>
               </Button>
               <Button
                 variant={viewMode === "list" ? "default" : "outline"}
                 size="sm"
                 onClick={() => setViewMode("list")}
               >
-                <List className="w-4 h-4 mr-2" />
-                List
+                <List className="w-4 h-4" />
+                <span className="hidden lg:inline ml-2">List</span>
               </Button>
             </div>
           </div>
+        </div>
+
+        {/* Mobile Header */}
+        <div className="sm:hidden space-y-3 mb-4">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold">The Wall</h1>
+            
+            <div className="flex gap-2 items-center">
+              <NotificationCenter />
+              <div className="flex gap-1">
+                <Button
+                  variant={viewMode === "wall" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewMode("wall")}
+                  className="px-2"
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                </Button>
+                <Button
+                  variant={viewMode === "list" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setViewMode("list")}
+                  className="px-2"
+                >
+                  <List className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+          
+          <CircleMembersBar 
+            circleId={circleId!} 
+            onAddMember={() => setShowAddMemberDialog(true)}
+            compact
+          />
         </div>
 
         {viewMode === "wall" && isMobile ? (
@@ -1373,6 +1420,16 @@ const Wall = () => {
         isCreator={selectedItem?.created_by === user?.id}
         creatorAvatar={(selectedItem as any)?.creator_profile?.avatar_url}
         creatorUsername={(selectedItem as any)?.creator_profile?.username}
+      />
+
+      <AddMemberDialog
+        open={showAddMemberDialog}
+        onOpenChange={setShowAddMemberDialog}
+        circleId={circleId!}
+        circleName="Circle"
+        isOwner={true}
+        invitePermission="anyone"
+        onSuccess={() => {}}
       />
     </div>
   );

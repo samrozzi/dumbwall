@@ -1,4 +1,5 @@
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogClose } from "@/components/ui/dialog";
+import { Minus } from "lucide-react";
 import StickyNote from "./StickyNote";
 import ImageCard from "./ImageCard";
 import ThreadBubble from "./ThreadBubble";
@@ -9,7 +10,6 @@ import { AudioClip } from "./AudioClip";
 import { DoodleCanvas } from "./DoodleCanvas";
 import { MusicDrop } from "./MusicDrop";
 import { ChallengeCard } from "./ChallengeCard";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface WallItem {
   id: string;
@@ -84,7 +84,6 @@ export const WallItemViewerDialog = ({
             onUpdate={(content) => onUpdate?.(item.id, content)}
             creatorAvatar={creatorAvatar}
             creatorUsername={creatorUsername}
-            fullWidth={false}
           />
         );
 
@@ -96,7 +95,6 @@ export const WallItemViewerDialog = ({
             onDelete={isCreator && onDelete ? () => onDelete(item.id) : undefined}
             creatorAvatar={creatorAvatar}
             creatorUsername={creatorUsername}
-            fullWidth={false}
           />
         );
 
@@ -105,7 +103,6 @@ export const WallItemViewerDialog = ({
           <ThreadBubble
             content={item.content}
             onDelete={isCreator && onDelete ? () => onDelete(item.id) : undefined}
-            fullWidth={false}
           />
         );
 
@@ -133,7 +130,6 @@ export const WallItemViewerDialog = ({
             onDelete={isCreator && onDelete ? () => onDelete(item.id) : undefined}
             creatorAvatar={creatorAvatar}
             creatorUsername={creatorUsername}
-            fullWidth={false}
           />
         );
 
@@ -144,7 +140,6 @@ export const WallItemViewerDialog = ({
             itemId={item.id}
             onDelete={isCreator && onDelete ? () => onDelete(item.id) : undefined}
             isCreator={isCreator}
-            fullWidth={false}
           />
         );
 
@@ -154,7 +149,6 @@ export const WallItemViewerDialog = ({
             content={item.content}
             onDelete={isCreator && onDelete ? () => onDelete(item.id) : undefined}
             isCreator={isCreator}
-            fullWidth={false}
           />
         );
 
@@ -164,7 +158,6 @@ export const WallItemViewerDialog = ({
             content={item.content}
             onDelete={isCreator && onDelete ? () => onDelete(item.id) : undefined}
             isCreator={isCreator}
-            fullWidth={false}
           />
         );
 
@@ -174,7 +167,6 @@ export const WallItemViewerDialog = ({
             content={item.content}
             onDelete={isCreator && onDelete ? () => onDelete(item.id) : undefined}
             isCreator={isCreator}
-            fullWidth={false}
           />
         );
 
@@ -185,7 +177,6 @@ export const WallItemViewerDialog = ({
             itemId={item.id}
             onDelete={isCreator && onDelete ? () => onDelete(item.id) : undefined}
             isCreator={isCreator}
-            fullWidth={false}
           />
         );
 
@@ -196,7 +187,16 @@ export const WallItemViewerDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="p-0 gap-0 bg-transparent border-none shadow-none max-w-fit max-h-[95vh] overflow-auto">
+      <DialogContent className="p-4 gap-0 bg-background/95 border max-w-[90vw] sm:max-w-[600px] max-h-[95vh] overflow-auto backdrop-blur-sm [&>button]:hidden">
+        <DialogClose asChild>
+          <button
+            className="absolute top-2 left-2 z-10 rounded-full bg-yellow-500 hover:bg-yellow-600 text-black p-2 shadow-lg transition-all hover:scale-110"
+            aria-label="Minimize"
+          >
+            <Minus className="h-4 w-4" />
+          </button>
+        </DialogClose>
+        
         {renderItem()}
       </DialogContent>
     </Dialog>

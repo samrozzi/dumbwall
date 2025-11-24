@@ -19,6 +19,7 @@ import { DoodleCanvas } from "@/components/wall/DoodleCanvas";
 import { MusicDrop } from "@/components/wall/MusicDrop";
 import { ChallengeCard } from "@/components/wall/ChallengeCard";
 import AddItemMenu from "@/components/wall/AddItemMenu";
+import { MasonryGrid } from "@/components/wall/MasonryGrid";
 import CameraCapture from "@/components/wall/CameraCapture";
 import { CreatePollDialog } from "@/components/wall/CreatePollDialog";
 import { CreateAudioDialog } from "@/components/wall/CreateAudioDialog";
@@ -839,7 +840,13 @@ const Wall = () => {
         </div>
 
         {viewMode === "wall" && isMobile ? (
-          <div className="space-y-4 pb-24 flex flex-col items-center max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden px-0">
+          <MasonryGrid 
+            itemIds={items.filter(item => item.id !== pendingDelete?.id).map(item => item.id)}
+            onReorder={(itemId, newOrder) => {
+              // Optional: Update item order in database
+              console.log('Reordered:', itemId, 'to position', newOrder);
+            }}
+          >
             {items.filter(item => item.id !== pendingDelete?.id).map((item) => {
               const itemWithCreator = item as any;
               return (
@@ -966,7 +973,7 @@ const Wall = () => {
                 </div>
               );
             })}
-          </div>
+          </MasonryGrid>
         ) : viewMode === "wall" ? (
           // Desktop canvas view
           <div

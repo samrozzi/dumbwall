@@ -4,6 +4,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { X, ArrowUp, ArrowDown, Send } from "lucide-react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { CreatorBadge } from "@/components/CreatorBadge";
+import { CardPersonality } from "@/components/wall/CardPersonality";
 import { cn } from "@/lib/utils";
 import { usePhotoInteractions } from "@/hooks/usePhotoInteractions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -58,14 +59,15 @@ const ImageCard = ({
   };
 
   return (
-    <Card
-      className={cn(
-        "p-2 bg-card shadow-lg transition-all duration-300 cursor-move hover:shadow-2xl hover:scale-105 transform -rotate-1 hover:rotate-0 relative",
-        fullWidth ? "w-full max-w-full" : "w-64"
-      )}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
-    >
+    <CardPersonality type="image" className={fullWidth ? "w-full" : "w-64"}>
+      <Card
+        className={cn(
+          "p-2 bg-card shadow-lg transition-all duration-300 cursor-move hover:shadow-2xl hover:scale-105 relative",
+          fullWidth ? "w-full max-w-full" : "w-64"
+        )}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
       {!hideAvatar && <CreatorBadge avatarUrl={creatorAvatar} username={creatorUsername} />}
       
       {onDelete && (
@@ -270,6 +272,7 @@ const ImageCard = ({
         </AlertDialogContent>
       </AlertDialog>
     </Card>
+    </CardPersonality>
   );
 };
 

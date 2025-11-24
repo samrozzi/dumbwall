@@ -23,7 +23,9 @@ import { StatusSelector } from "@/components/profile/StatusSelector";
 import { PrivacyToggle } from "@/components/profile/PrivacyToggle";
 import { InterestTags } from "@/components/profile/InterestTags";
 import { SocialLinkIcon } from "@/components/profile/SocialLinkIcon";
+import { CircleProfileCard } from "@/components/profile/CircleProfileCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 
 interface UserProfile {
   id: string;
@@ -36,6 +38,8 @@ interface UserProfile {
   location: string | null;
   pronouns: string | null;
   status: string;
+  status_mode: string;
+  show_presence: boolean;
   last_username_change_at: string | null;
   bio_public: boolean;
   tagline_public: boolean;
@@ -70,7 +74,8 @@ const Settings = () => {
   const [tagline, setTagline] = useState("");
   const [location, setLocation] = useState("");
   const [pronouns, setPronouns] = useState("");
-  const [status, setStatus] = useState("available");
+  const [status, setStatus] = useState("auto");
+  const [showPresence, setShowPresence] = useState(true);
   const [interests, setInterests] = useState<string[]>([]);
   const [newInterest, setNewInterest] = useState("");
   const [socialLinks, setSocialLinks] = useState<any[]>([]);
@@ -122,7 +127,8 @@ const Settings = () => {
     setTagline(data.tagline || "");
     setLocation(data.location || "");
     setPronouns(data.pronouns || "");
-    setStatus(data.status || "available");
+    setStatus(data.status_mode || "auto");
+    setShowPresence(data.show_presence ?? true);
 
     // Load interests
     const { data: interestsData } = await supabase
@@ -277,7 +283,8 @@ const Settings = () => {
           tagline, 
           location, 
           pronouns, 
-          status: status as "available" | "busy" | "away" | "offline",
+          status_mode: status,
+          show_presence: showPresence,
           bio_public: profile?.bio_public ?? true,
           tagline_public: profile?.tagline_public ?? true,
           location_public: profile?.location_public ?? true,
@@ -658,17 +665,38 @@ const Settings = () => {
               )}
             </Card>
 
-            {/* Status */}
+            {/* Status & Presence */}
             <Card id="about-section">
               <CardHeader>
-                <CardTitle>Status</CardTitle>
-                <CardDescription>Let people know your availability</CardDescription>
+                <CardTitle>Status & Presence</CardTitle>
+                <CardDescription>Manage your availability and online status</CardDescription>
               </CardHeader>
-              <CardContent>
-                <StatusSelector value={status} onChange={setStatus} />
-                <Button onClick={handleSaveProfile} className="mt-4">Save Status</Button>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Status Mode</Label>
+                  <StatusSelector value={status} onChange={setStatus} />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <Label>Show my online status</Label>
+                    <p className="text-sm text-muted-foreground">
+                      When off, you'll always appear offline to others
+                    </p>
+                  </div>
+                  <Switch checked={showPresence} onCheckedChange={setShowPresence} />
+                </div>
+                <Button onClick={handleSaveProfile}>Save Status</Button>
               </CardContent>
             </Card>
+
+            {/* Circle Profile - Only show when inside a circle */}
+            {circleId && (
+              <CircleProfileCard
+                circleId={circleId}
+                circleName={circles.find(c => c.id === circleId)?.name || "Circle"}
+                userId={user?.id || ""}
+              />
+            )}
 
             {/* About Me */}
             <Card>
@@ -877,9 +905,9 @@ const Settings = () => {
                       circle.isActive ? "bg-primary/10 border-primary" : "bg-card"
                     }`}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap gap-2 items-center justify-between sm:flex-nowrap">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
                           <h3 className="font-semibold text-lg">{circle.name}</h3>
                           {circle.isActive && (
                             <Badge variant="default">Active</Badge>
@@ -893,7 +921,7 @@ const Settings = () => {
                           {circle.memberCount} {circle.memberCount === 1 ? "member" : "members"}
                         </p>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex flex-wrap gap-2 sm:justify-end w-full sm:w-auto">
                         {!circle.isActive && (
                           <Button
                             variant="outline"
@@ -906,7 +934,7 @@ const Settings = () => {
                           <>
                             <Button
                               variant="ghost"
-                              size="icon"
+                              size={isMobile ? "sm" : "icon"}
                               onClick={() => {
                                 setSettingsCircleId(circle.id);
                                 setSettingsCircleName(circle.name);
@@ -914,21 +942,25 @@ const Settings = () => {
                               title="Circle Settings"
                             >
                               <Settings2 className="w-4 h-4" />
+                              {isMobile && <span className="ml-2 sm:hidden">Settings</span>}
                             </Button>
                             <Button
                               variant="outline"
+                              size={isMobile ? "sm" : "default"}
                               onClick={() => {
                                 setRenameCircleId(circle.id);
                                 setRenameValue(circle.name);
                               }}
                             >
-                              Rename
+                              {isMobile ? "Rename" : "Rename"}
                             </Button>
                             <Button
                               variant="destructive"
+                              size={isMobile ? "icon" : "default"}
                               onClick={() => setDeleteCircleId(circle.id)}
                             >
                               <Trash2 className="w-4 h-4" />
+                              {!isMobile && <span className="ml-2">Delete</span>}
                             </Button>
                           </>
                         )}

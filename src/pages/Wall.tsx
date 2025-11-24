@@ -889,7 +889,7 @@ const Wall = () => {
         </div>
 
         {viewMode === "wall" && isMobile ? (
-          <div className="space-y-4 pb-24 flex flex-col items-center px-4 max-h-[calc(100vh-200px)] overflow-y-auto">
+          <div className="space-y-4 pb-24 flex flex-col items-center max-h-[calc(100vh-200px)] overflow-y-auto">
             {items.map((item) => {
               const itemWithCreator = item as any;
               return (
@@ -1071,6 +1071,24 @@ const Wall = () => {
                 <div
                   key={item.id}
                   className="p-4 bg-card border border-border rounded-lg flex items-center gap-4 hover:bg-muted/50 cursor-pointer"
+                  onClick={() => {
+                    if (isMobile) {
+                      // Mobile: items don't have x,y positioning, just stay in list
+                      return;
+                    }
+                    // Desktop: switch to wall and highlight
+                    setViewMode("wall");
+                    setTimeout(() => {
+                      const el = document.querySelector(`[data-item-id="${item.id}"]`);
+                      if (el) {
+                        el.scrollIntoView({ behavior: "smooth", block: "center" });
+                        el.classList.add('ring-4', 'ring-primary', 'ring-offset-2');
+                        setTimeout(() => {
+                          el.classList.remove('ring-4', 'ring-primary', 'ring-offset-2');
+                        }, 2000);
+                      }
+                    }, 100);
+                  }}
                 >
                   <span className="text-2xl">{getItemIcon(item.type)}</span>
                   <div className="flex-1">
@@ -1083,13 +1101,13 @@ const Wall = () => {
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => {
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setViewMode("wall");
                         setTimeout(() => {
                           const el = document.querySelector(`[data-item-id="${item.id}"]`);
                           if (el) {
                             el.scrollIntoView({ behavior: "smooth", block: "center" });
-                            // Add temporary highlight
                             el.classList.add('ring-4', 'ring-primary', 'ring-offset-2');
                             setTimeout(() => {
                               el.classList.remove('ring-4', 'ring-primary', 'ring-offset-2');

@@ -89,9 +89,8 @@ export const MusicDrop = ({ content, onDelete, isCreator }: MusicDropProps) => {
               />
               <Button
                 onClick={() => setShowEmbed(false)}
-                variant="outline"
                 size="sm"
-                className="w-full mt-2 border-indigo-300 dark:border-indigo-700 text-gray-900 dark:text-white"
+                className="w-full mt-2 bg-indigo-500 hover:bg-indigo-600 text-white"
               >
                 Hide Player
               </Button>

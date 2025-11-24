@@ -82,6 +82,10 @@ const Chat = () => {
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [replyingTo, setReplyingTo] = useState<ChatMessageType | null>(null);
+  const [sidebarSize, setSidebarSize] = useState<number>(() => {
+    const saved = localStorage.getItem('chat-sidebar-width');
+    return saved ? parseFloat(saved) : 40;
+  });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -846,9 +850,16 @@ const Chat = () => {
           </>
         ) : (
           /* Desktop: Show threads sidebar and chat area with resizable panels */
-          <ResizablePanelGroup direction="horizontal">
+          <ResizablePanelGroup 
+            direction="horizontal"
+            onLayout={(sizes) => {
+              if (sizes[0]) {
+                localStorage.setItem('chat-sidebar-width', sizes[0].toString());
+              }
+            }}
+          >
             {/* Threads Sidebar Panel */}
-            <ResizablePanel defaultSize={40} minSize={25} maxSize={50}>
+            <ResizablePanel defaultSize={sidebarSize} minSize={25} maxSize={50}>
               <div className="flex flex-col gap-4 h-full pr-2">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold">Threads</h2>

@@ -764,7 +764,7 @@ const Wall = () => {
         .getPublicUrl(filePath);
 
       createItem("doodle", { imageUrl: publicUrl });
-      notify("Doodle posted!", "success");
+      // Notification is already shown in createItem function, so removed duplicate here
     } catch (error: any) {
       notify(error.message, "error");
     } finally {

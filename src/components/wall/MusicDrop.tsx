@@ -46,17 +46,19 @@ export const MusicDrop = ({ content, onDelete, isCreator, fullWidth }: MusicDrop
     ? getYouTubeEmbedUrl(content.youtubeUrl)
     : null;
 
+  const artistLabel = content.artist || 'Unknown Artist';
+
   return (
-    <Card className={`p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border-2 border-indigo-200 dark:border-indigo-800 ${fullWidth ? 'w-full' : 'w-[380px]'} max-w-full relative`}>
+    <Card className={`group p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border-2 border-indigo-200 dark:border-indigo-800 ${fullWidth ? 'w-full' : 'w-[380px]'} max-w-full relative`}>
       {onDelete && (
         <button
           onClick={(e) => {
             e.stopPropagation();
             setShowDeleteConfirm(true);
           }}
-          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white dark:bg-black hover:bg-white/90 dark:hover:bg-black/90 flex items-center justify-center transition-colors z-10 shadow-md"
+          className="absolute -top-3 -right-3 bg-destructive text-destructive-foreground rounded-full w-8 h-8 shadow-md hover:scale-110 transition-all z-10 flex items-center justify-center opacity-0 group-hover:opacity-100"
         >
-          <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+          <X className="w-5 h-5" />
         </button>
       )}
       <div className="flex gap-3">
@@ -73,7 +75,7 @@ export const MusicDrop = ({ content, onDelete, isCreator, fullWidth }: MusicDrop
         )}
         <div className="flex-1 min-w-0">
           <h4 className="font-bold text-sm truncate text-gray-900 dark:text-white">{content.songTitle}</h4>
-          <p className="text-xs text-gray-700 dark:text-gray-300 truncate">{content.artist}</p>
+          <p className="text-xs text-gray-700 dark:text-gray-300 truncate">{artistLabel}</p>
         </div>
       </div>
       

@@ -175,7 +175,7 @@ const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubblePro
     <CardPersonality type="thread" className={fullWidth ? "w-full" : ""}>
       <Card
         className={cn(
-          "p-4 hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-200 relative flex flex-col",
+          "group p-4 hover:shadow-lg transition-all duration-200 bg-gradient-to-br from-purple-100 to-pink-100 border-2 border-purple-200 relative flex flex-col",
           fullWidth ? "w-full max-w-full" : ""
         )}
         onMouseEnter={() => setIsHovered(true)}
@@ -188,7 +188,7 @@ const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubblePro
             e.stopPropagation();
             setShowDeleteConfirm(true);
           }}
-          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-8 h-8 hover:bg-red-600 transition-colors z-10 flex items-center justify-center shadow-md"
+          className="absolute -top-3 -right-3 bg-destructive text-destructive-foreground rounded-full w-8 h-8 shadow-md hover:scale-110 transition-all z-10 flex items-center justify-center opacity-0 group-hover:opacity-100"
         >
           <X className="w-5 h-5" />
         </button>

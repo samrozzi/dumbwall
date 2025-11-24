@@ -76,7 +76,7 @@ export const CircleMembersBar = ({ circleId, onAddMember, compact = false }: Cir
         .select(`
           user_id,
           role,
-          profiles!inner (
+          profiles:user_id (
             username,
             display_name,
             avatar_url,
@@ -91,7 +91,12 @@ export const CircleMembersBar = ({ circleId, onAddMember, compact = false }: Cir
         `)
         .eq('circle_id', circleId);
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error loading members:', error);
+        throw error;
+      }
+
+      console.log('Members data:', data);
 
       const formattedMembers: Member[] = (data || []).map((item: any) => ({
         user_id: item.user_id,

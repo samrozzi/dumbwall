@@ -24,6 +24,7 @@ import { CreateAudioDialog } from "@/components/wall/CreateAudioDialog";
 import { CreateDoodleDialog } from "@/components/wall/CreateDoodleDialog";
 import { CreateMusicDialog } from "@/components/wall/CreateMusicDialog";
 import { CreateChallengeDialog } from "@/components/wall/CreateChallengeDialog";
+import { WallItemViewerDialog } from "@/components/wall/WallItemViewerDialog";
 import { notify } from "@/components/ui/custom-notification";
 import { Button } from "@/components/ui/button";
 import { LayoutGrid, List, Camera } from "lucide-react";
@@ -127,6 +128,10 @@ const Wall = () => {
   const [deleteThreadDialog, setDeleteThreadDialog] = useState(false);
   const [confirmDeleteDialog, setConfirmDeleteDialog] = useState(false);
   const [threadToDelete, setThreadToDelete] = useState<{ itemId: string; threadId: string } | null>(null);
+  
+  // Wall item viewer dialog states
+  const [viewerDialogOpen, setViewerDialogOpen] = useState(false);
+  const [selectedItem, setSelectedItem] = useState<WallItem | null>(null);
   
   const [noteTitle, setNoteTitle] = useState("");
   const [noteBody, setNoteBody] = useState("");
@@ -859,10 +864,10 @@ const Wall = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background overflow-x-hidden">
       <Navigation circleId={circleId} />
 
-      <div className={`${isMobile ? 'px-4 pt-4 pb-24' : 'pl-24 pr-8 pt-8'}`}>
+      <div className={`${isMobile ? 'px-2 pt-4 pb-24' : 'pl-24 pr-8 pt-8'}`}>
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-3xl font-bold">The Wall</h1>
           <div className="flex gap-3 items-center">
@@ -889,11 +894,11 @@ const Wall = () => {
         </div>
 
         {viewMode === "wall" && isMobile ? (
-          <div className="space-y-4 pb-24 flex flex-col items-center max-h-[calc(100vh-200px)] overflow-y-auto overflow-x-hidden">
+          <div className="space-y-4 pb-24 flex flex-col items-center max-h-[calc(100vh-200px)] overflow-y-auto px-2">
             {items.map((item) => {
               const itemWithCreator = item as any;
               return (
-                <div key={item.id} className="w-full max-w-full">
+                <div key={item.id} data-item-id={item.id} className="w-full max-w-full">
                   {item.type === "note" && (
                     <StickyNote
                       content={item.content as any}
@@ -1072,28 +1077,8 @@ const Wall = () => {
                   key={item.id}
                   className="p-4 bg-card border border-border rounded-lg flex items-center gap-4 hover:bg-muted/50 cursor-pointer"
                   onClick={() => {
-                    setViewMode("wall");
-                    if (isMobile) {
-                      // On mobile, switch to wall view and scroll to item in the vertical list
-                      setTimeout(() => {
-                        const el = document.querySelector(`[data-item-id="${item.id}"]`);
-                        if (el) {
-                          el.scrollIntoView({ behavior: "smooth", block: "center" });
-                        }
-                      }, 100);
-                    } else {
-                      // Desktop: switch to wall and highlight
-                      setTimeout(() => {
-                        const el = document.querySelector(`[data-item-id="${item.id}"]`);
-                        if (el) {
-                          el.scrollIntoView({ behavior: "smooth", block: "center" });
-                          el.classList.add('ring-4', 'ring-primary', 'ring-offset-2');
-                          setTimeout(() => {
-                            el.classList.remove('ring-4', 'ring-primary', 'ring-offset-2');
-                          }, 2000);
-                        }
-                      }, 100);
-                    }
+                    setSelectedItem(item);
+                    setViewerDialogOpen(true);
                   }}
                 >
                   <span className="text-2xl">{getItemIcon(item.type)}</span>
@@ -1103,28 +1088,6 @@ const Wall = () => {
                     </h3>
                     <p className="text-sm text-muted-foreground capitalize">{item.type.replace(/_/g, ' ')}</p>
                   </div>
-                  {!isMobile && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setViewMode("wall");
-                        setTimeout(() => {
-                          const el = document.querySelector(`[data-item-id="${item.id}"]`);
-                          if (el) {
-                            el.scrollIntoView({ behavior: "smooth", block: "center" });
-                            el.classList.add('ring-4', 'ring-primary', 'ring-offset-2');
-                            setTimeout(() => {
-                              el.classList.remove('ring-4', 'ring-primary', 'ring-offset-2');
-                            }, 2000);
-                          }
-                        }, 100);
-                      }}
-                    >
-                      View
-                    </Button>
-                  )}
                 </div>
               );
             })}
@@ -1489,6 +1452,29 @@ const Wall = () => {
         open={challengeDialog}
         onOpenChange={setChallengeDialog}
         onCreate={handleCreateChallenge}
+      />
+
+      <WallItemViewerDialog
+        isOpen={viewerDialogOpen}
+        onClose={() => {
+          setViewerDialogOpen(false);
+          setSelectedItem(null);
+        }}
+        item={selectedItem}
+        onDelete={(id) => {
+          deleteItem(id);
+          setViewerDialogOpen(false);
+          setSelectedItem(null);
+        }}
+        onUpdate={(id, content) => {
+          const updated: Partial<Omit<WallItem, "circle_id" | "created_at" | "created_by" | "id">> = {
+            content,
+          };
+          updateItem(id, updated);
+        }}
+        isCreator={selectedItem?.created_by === user?.id}
+        creatorAvatar={(selectedItem as any)?.creator_profile?.avatar_url}
+        creatorUsername={(selectedItem as any)?.creator_profile?.username}
       />
     </div>
   );

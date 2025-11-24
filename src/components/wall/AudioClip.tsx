@@ -80,7 +80,11 @@ export const AudioClip = ({ content, onDelete, isCreator, fullWidth }: AudioClip
         onEnded={handleEnded}
         onError={handleError}
         preload="auto"
-      />
+        controls
+        className="hidden"
+      >
+        Your browser does not support audio playback.
+      </audio>
       <div className="flex items-center gap-3">
         <Button
           onClick={togglePlay}

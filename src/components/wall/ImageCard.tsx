@@ -64,7 +64,7 @@ const ImageCard = ({
     <CardPersonality type="image" className={fullWidth ? "w-full" : "w-64"}>
       <Card
         className={cn(
-          "group relative bg-card shadow-lg transition-all duration-300 cursor-move hover:shadow-2xl hover:scale-105 overflow-hidden rounded-3xl",
+          "group relative bg-card shadow-lg transition-all duration-300 cursor-move hover:shadow-2xl hover:scale-105 overflow-visible rounded-3xl",
           fullWidth ? "w-full max-w-full" : "w-64"
         )}
         onMouseEnter={() => setIsHovered(true)}
@@ -122,7 +122,7 @@ const ImageCard = ({
             setIsOpen(true);
           }
         }}
-        className="cursor-pointer rounded-3xl overflow-hidden bg-transparent"
+        className="cursor-pointer overflow-hidden rounded-3xl bg-transparent"
       >
         <img
           src={content.url}

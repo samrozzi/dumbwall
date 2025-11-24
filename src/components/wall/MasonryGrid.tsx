@@ -22,11 +22,11 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
     const updateColumns = () => {
       const width = window.innerWidth;
       if (width < 640) {
-        setColumnCount(2);
+        setColumnCount(1); // Single column on mobile for clean stacking
       } else if (width < 1024) {
-        setColumnCount(3);
-      } else {
         setColumnCount(2);
+      } else {
+        setColumnCount(3);
       }
     };
 
@@ -109,6 +109,8 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
 
   // Generate stable random rotation for each item based on its ID
   const getRotation = (index: number) => {
+    // No rotation on mobile for clean stacking
+    if (columnCount === 1) return 0;
     const seed = itemIds[index]?.charCodeAt(0) || 0;
     const rotation = ((seed % 7) - 3);
     return rotation;
@@ -116,14 +118,17 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
 
   // Generate column span based on item type and random variation
   const getColumnSpan = (index: number) => {
+    // Always span 1 column on mobile for clean stacking
+    if (columnCount === 1) return 1;
+    
     const seed = itemIds[index]?.charCodeAt(0) || 0;
     const random = (seed % 100) / 100;
     
     if (columnCount === 2) {
-      // Mobile: 60% narrow (1 col), 40% wide (2 col)
+      // Tablet: 60% narrow (1 col), 40% wide (2 col)
       return random > 0.6 ? 2 : 1;
     } else {
-      // Tablet: 50% narrow, 35% medium, 15% wide
+      // Desktop: 50% narrow, 35% medium, 15% wide
       if (random > 0.85) return 3;
       if (random > 0.50) return 2;
       return 1;
@@ -132,6 +137,8 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
 
   // Generate random micro-offsets for chaos
   const getOffset = (index: number) => {
+    // No offset on mobile for clean stacking
+    if (columnCount === 1) return { x: 0, y: 0 };
     const seed = itemIds[index]?.charCodeAt(0) || 0;
     return {
       x: ((seed % 5) - 2), // -2px to +2px
@@ -151,11 +158,11 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
   return (
     <div 
       ref={containerRef}
-      className="pb-24 px-2"
+      className="pb-24 px-2 max-w-full overflow-x-hidden"
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
-        gap: '1rem',
+        gap: columnCount === 1 ? '0.75rem' : '1rem',
         gridAutoRows: '10px',
         gridAutoFlow: 'dense',
       }}

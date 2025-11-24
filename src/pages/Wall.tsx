@@ -174,32 +174,31 @@ const Wall = () => {
     const itemWidth = 280;
     const padding = 40;
     
-    let x = 100;
-    let y = 100;
+    // Start at different positions based on item count
+    let x = 100 + ((items.length * 80) % 500);
+    let y = 100 + ((items.length * 80) % 400);
     let attempts = 0;
     
-    while (attempts < 10) {
+    while (attempts < 20) {
       const hasOverlap = items.some(item => {
         const distX = Math.abs(item.x - x);
         const distY = Math.abs(item.y - y);
-        return distX < 200 && distY < 200;
+        return distX < 250 && distY < 250;
       });
       
       if (!hasOverlap) break;
       
-      x += 80;
-      y += 80;
+      x += 100;
+      y += 100;
       
-      // Wrap to next row if exceeding canvas width
       if (x + itemWidth > canvasWidth - padding) {
         x = 100;
-        y += 300;
+        y += 320;
       }
       
       attempts++;
     }
     
-    // Only ensure horizontal position is within bounds
     x = Math.min(x, canvasWidth - itemWidth - padding);
     
     return { x, y };
@@ -881,6 +880,29 @@ const Wall = () => {
                       creatorUsername={itemWithCreator.creator_profile?.username}
                       hideAvatar={true}
                       fullWidth={true}
+                    />
+                  )}
+                  {item.type === "poll" && (
+                    <QuickPoll
+                      content={item.content as any}
+                      itemId={item.id}
+                      currentUserId={user?.id}
+                    />
+                  )}
+                  {item.type === "audio" && (
+                    <AudioClip content={item.content as any} />
+                  )}
+                  {item.type === "doodle" && (
+                    <DoodleCanvas content={item.content as any} />
+                  )}
+                  {item.type === "music" && (
+                    <MusicDrop content={item.content as any} />
+                  )}
+                  {item.type === "challenge" && (
+                    <ChallengeCard
+                      content={item.content as any}
+                      itemId={item.id}
+                      currentUserId={user?.id}
                     />
                   )}
                 </div>

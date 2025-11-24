@@ -208,7 +208,7 @@ export default function PublicProfile() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
+      <Navigation hideBackButton={true} />
       <div className="container max-w-4xl mx-auto px-4 py-8">
         <Card>
           <ProfileHeader

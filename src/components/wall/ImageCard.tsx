@@ -41,6 +41,8 @@ const ImageCard = ({
   const [isOpen, setIsOpen] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [wasDragged, setWasDragged] = useState(false);
+  const [dragStartPos, setDragStartPos] = useState({ x: 0, y: 0 });
   
   const {
     comments,
@@ -62,13 +64,13 @@ const ImageCard = ({
     <CardPersonality type="image" className={fullWidth ? "w-full" : "w-64"}>
       <Card
         className={cn(
-          "p-2 bg-card shadow-lg transition-all duration-300 cursor-move hover:shadow-2xl hover:scale-105 relative",
+          "p-0 bg-card shadow-lg transition-all duration-300 cursor-move hover:shadow-2xl hover:scale-105 relative overflow-hidden",
           fullWidth ? "w-full max-w-full" : "w-64"
         )}
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
       >
-      {!hideAvatar && <CreatorBadge avatarUrl={creatorAvatar} username={creatorUsername} />}
+      {!hideAvatar && <CreatorBadge avatarUrl={creatorAvatar} username={creatorUsername} className="absolute top-2 left-2 z-10" />}
       
       {onDelete && (
         <button
@@ -76,22 +78,62 @@ const ImageCard = ({
             e.stopPropagation();
             setShowDeleteConfirm(true);
           }}
-          className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-8 h-8 shadow-md hover:scale-110 transition-transform z-10 flex items-center justify-center"
+          className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full w-8 h-8 shadow-md hover:scale-110 transition-transform z-10 flex items-center justify-center"
         >
           <X className="w-5 h-5" />
         </button>
       )}
-      <div onClick={() => setIsOpen(true)} className="cursor-pointer">
+      <div 
+        onMouseDown={(e) => {
+          setDragStartPos({ x: e.clientX, y: e.clientY });
+          setWasDragged(false);
+        }}
+        onMouseMove={(e) => {
+          const distMoved = Math.sqrt(
+            Math.pow(e.clientX - dragStartPos.x, 2) + 
+            Math.pow(e.clientY - dragStartPos.y, 2)
+          );
+          if (distMoved > 5) {
+            setWasDragged(true);
+          }
+        }}
+        onMouseUp={() => {
+          if (!wasDragged) {
+            setIsOpen(true);
+          }
+        }}
+        onTouchStart={(e) => {
+          const touch = e.touches[0];
+          setDragStartPos({ x: touch.clientX, y: touch.clientY });
+          setWasDragged(false);
+        }}
+        onTouchMove={(e) => {
+          const touch = e.touches[0];
+          const distMoved = Math.sqrt(
+            Math.pow(touch.clientX - dragStartPos.x, 2) + 
+            Math.pow(touch.clientY - dragStartPos.y, 2)
+          );
+          if (distMoved > 5) {
+            setWasDragged(true);
+          }
+        }}
+        onTouchEnd={() => {
+          if (!wasDragged) {
+            setIsOpen(true);
+          }
+        }}
+        className="cursor-pointer"
+      >
         <img
           src={content.url}
           alt={content.caption || "Wall image"}
-          className="w-full h-64 sm:h-48 object-cover rounded-md mb-2"
+          className="w-full h-64 sm:h-48 object-cover"
           draggable="false"
           onDragStart={(e) => e.preventDefault()}
         />
       </div>
       {content.caption && (
-        <p className="text-sm text-foreground px-2 pb-2">{content.caption}</p>
+        <p className="text-sm text-foreground p-3">{content.caption}</p>
       )}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>

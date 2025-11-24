@@ -196,15 +196,8 @@ export const WallItemViewerDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh]">
-        <DialogHeader>
-          <DialogTitle>{getItemTitle()}</DialogTitle>
-        </DialogHeader>
-        <ScrollArea className="max-h-[calc(90vh-80px)] pr-4">
-          <div className="flex justify-center py-4">
-            {renderItem()}
-          </div>
-        </ScrollArea>
+      <DialogContent className="p-0 gap-0 bg-transparent border-none shadow-none max-w-fit max-h-[95vh] overflow-auto">
+        {renderItem()}
       </DialogContent>
     </Dialog>
   );

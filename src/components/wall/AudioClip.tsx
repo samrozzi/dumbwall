@@ -59,7 +59,7 @@ export const AudioClip = ({ content, onDelete, isCreator, fullWidth }: AudioClip
   const progress = content.duration > 0 ? (currentTime / content.duration) * 100 : 0;
 
   return (
-    <Card className={`p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-2 border-orange-200 dark:border-orange-800 ${fullWidth ? 'w-full max-w-full' : 'w-[280px]'} relative`}>
+    <Card className={`p-4 bg-gradient-to-br from-orange-50 to-amber-50 dark:from-orange-950/20 dark:to-amber-950/20 border-2 border-orange-200 dark:border-orange-800 ${fullWidth ? 'w-full max-w-full' : 'w-[280px] max-w-full'} relative`}>
       {onDelete && (
         <button
           onClick={(e) => {

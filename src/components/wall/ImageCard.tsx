@@ -64,7 +64,7 @@ const ImageCard = ({
     <CardPersonality type="image" className={fullWidth ? "w-full" : "w-64"}>
       <Card
         className={cn(
-          "p-0 bg-card shadow-lg transition-all duration-300 cursor-move hover:shadow-2xl hover:scale-105 relative overflow-hidden",
+          "group relative bg-card shadow-lg transition-all duration-300 cursor-move hover:shadow-2xl hover:scale-105 overflow-hidden",
           fullWidth ? "w-full max-w-full" : "w-64"
         )}
         onMouseEnter={() => setIsHovered(true)}
@@ -78,7 +78,7 @@ const ImageCard = ({
             e.stopPropagation();
             setShowDeleteConfirm(true);
           }}
-          className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full w-8 h-8 shadow-md hover:scale-110 transition-transform z-10 flex items-center justify-center"
+          className="absolute top-2 right-2 bg-destructive text-destructive-foreground rounded-full w-8 h-8 shadow-md hover:scale-110 transition-all z-10 flex items-center justify-center opacity-0 group-hover:opacity-100"
         >
           <X className="w-5 h-5" />
         </button>
@@ -122,12 +122,12 @@ const ImageCard = ({
             setIsOpen(true);
           }
         }}
-        className="cursor-pointer"
+        className="cursor-pointer rounded-3xl overflow-hidden bg-transparent"
       >
         <img
           src={content.url}
           alt={content.caption || "Wall image"}
-          className="w-full h-64 sm:h-48 object-cover"
+          className="w-full h-full object-cover"
           draggable="false"
           onDragStart={(e) => e.preventDefault()}
         />

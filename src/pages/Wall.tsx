@@ -12,8 +12,18 @@ import ImageCard from "@/components/wall/ImageCard";
 import ThreadBubble from "@/components/wall/ThreadBubble";
 import TicTacToe from "@/components/wall/TicTacToe";
 import AnnouncementBubble from "@/components/wall/AnnouncementBubble";
+import { QuickPoll } from "@/components/wall/QuickPoll";
+import { AudioClip } from "@/components/wall/AudioClip";
+import { DoodleCanvas } from "@/components/wall/DoodleCanvas";
+import { MusicDrop } from "@/components/wall/MusicDrop";
+import { ChallengeCard } from "@/components/wall/ChallengeCard";
 import AddItemMenu from "@/components/wall/AddItemMenu";
 import CameraCapture from "@/components/wall/CameraCapture";
+import { CreatePollDialog } from "@/components/wall/CreatePollDialog";
+import { CreateAudioDialog } from "@/components/wall/CreateAudioDialog";
+import { CreateDoodleDialog } from "@/components/wall/CreateDoodleDialog";
+import { CreateMusicDialog } from "@/components/wall/CreateMusicDialog";
+import { CreateChallengeDialog } from "@/components/wall/CreateChallengeDialog";
 import { notify } from "@/components/ui/custom-notification";
 import { Button } from "@/components/ui/button";
 import { LayoutGrid, List, Camera } from "lucide-react";
@@ -56,6 +66,11 @@ const Wall = () => {
   const [imageDialog, setImageDialog] = useState(false);
   const [threadDialog, setThreadDialog] = useState(false);
   const [announcementDialog, setAnnouncementDialog] = useState(false);
+  const [pollDialog, setPollDialog] = useState(false);
+  const [audioDialog, setAudioDialog] = useState(false);
+  const [doodleDialog, setDoodleDialog] = useState(false);
+  const [musicDialog, setMusicDialog] = useState(false);
+  const [challengeDialog, setChallengeDialog] = useState(false);
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
@@ -453,6 +468,30 @@ const Wall = () => {
             onClick={() => navigate(`/circle/${circleId}/chat?threadId=${threadContent.threadId}`)}
           />
         );
+      case "poll":
+        return (
+          <QuickPoll
+            content={content}
+            itemId={item.id}
+            currentUserId={user?.id}
+          />
+        );
+      case "audio":
+        return <AudioClip content={content} />;
+      case "doodle":
+        return <DoodleCanvas content={content} />;
+      case "music":
+        return <MusicDrop content={content} />;
+      case "challenge":
+        return (
+          <ChallengeCard
+            content={content}
+            onRespond={() => {
+              // TODO: Implement challenge response dialog
+              notify("Challenge response coming soon!", "info");
+            }}
+          />
+        );
       case "game_tictactoe":
         return (
           <TicTacToe
@@ -640,6 +679,97 @@ const Wall = () => {
         playerO: null,
       });
     }
+  };
+
+  const handleCreatePoll = (question: string, options: string[]) => {
+    createItem("poll", {
+      question,
+      options: options.map((text, i) => ({
+        id: `option-${i}`,
+        text,
+        votes: [],
+      })),
+    });
+  };
+
+  const handleCreateAudio = async (audioBlob: Blob, duration: number, caption: string) => {
+    try {
+      setUploading(true);
+      const fileName = `${Math.random().toString(36).substring(2)}.webm`;
+      const filePath = `${circleId}/${user?.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("wall-audio")
+        .upload(filePath, audioBlob);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("wall-audio")
+        .getPublicUrl(filePath);
+
+      createItem("audio", { audioUrl: publicUrl, duration, caption });
+      notify("Audio posted!", "success");
+    } catch (error: any) {
+      notify(error.message, "error");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleCreateDoodle = async (imageBlob: Blob) => {
+    try {
+      setUploading(true);
+      const fileName = `${Math.random().toString(36).substring(2)}.png`;
+      const filePath = `${circleId}/${user?.id}/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("wall-doodles")
+        .upload(filePath, imageBlob);
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("wall-doodles")
+        .getPublicUrl(filePath);
+
+      createItem("doodle", { imageUrl: publicUrl });
+      notify("Doodle posted!", "success");
+    } catch (error: any) {
+      notify(error.message, "error");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleCreateMusic = (songTitle: string, artist: string, musicUrl: string, albumArt?: string) => {
+    const content: any = { songTitle, artist };
+    
+    if (musicUrl.includes("spotify.com")) {
+      content.spotifyUrl = musicUrl;
+    } else if (musicUrl.includes("youtube.com") || musicUrl.includes("youtu.be")) {
+      content.youtubeUrl = musicUrl;
+    } else if (musicUrl.includes("apple.com")) {
+      content.appleUrl = musicUrl;
+    }
+
+    if (albumArt) {
+      content.albumArt = albumArt;
+    }
+
+    createItem("music", content);
+  };
+
+  const handleCreateChallenge = (prompt: string, category: "photo" | "text" | "activity") => {
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+
+    createItem("challenge", {
+      prompt,
+      category,
+      responses: [],
+      expiresAt: expiresAt.toISOString(),
+    });
   };
 
   return (
@@ -846,6 +976,11 @@ const Wall = () => {
         onAddThread={() => setThreadDialog(true)}
         onAddGame={handleAddGame}
         onAddAnnouncement={() => setAnnouncementDialog(true)}
+        onAddPoll={() => setPollDialog(true)}
+        onAddAudio={() => setAudioDialog(true)}
+        onAddDoodle={() => setDoodleDialog(true)}
+        onAddMusic={() => setMusicDialog(true)}
+        onAddChallenge={() => setChallengeDialog(true)}
       />
 
       {/* Note Dialog */}
@@ -1162,6 +1297,37 @@ const Wall = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* New Feature Dialogs */}
+      <CreatePollDialog
+        open={pollDialog}
+        onOpenChange={setPollDialog}
+        onCreate={handleCreatePoll}
+      />
+
+      <CreateAudioDialog
+        open={audioDialog}
+        onOpenChange={setAudioDialog}
+        onCreate={handleCreateAudio}
+      />
+
+      <CreateDoodleDialog
+        open={doodleDialog}
+        onOpenChange={setDoodleDialog}
+        onCreate={handleCreateDoodle}
+      />
+
+      <CreateMusicDialog
+        open={musicDialog}
+        onOpenChange={setMusicDialog}
+        onCreate={handleCreateMusic}
+      />
+
+      <CreateChallengeDialog
+        open={challengeDialog}
+        onOpenChange={setChallengeDialog}
+        onCreate={handleCreateChallenge}
+      />
     </div>
   );
 };

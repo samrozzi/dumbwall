@@ -72,7 +72,7 @@ export const QuickPoll = ({ content, itemId, currentUserId, onDelete, isCreator 
           <X className="w-4 h-4 text-gray-600 dark:text-gray-400" />
         </button>
       )}
-      <h3 className="font-bold text-lg mb-3 text-foreground">{content.question}</h3>
+      <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-white">{content.question}</h3>
       <div className="space-y-2">
         {content.options.map((option) => {
           const percentage = totalVotes > 0 ? (option.votes.length / totalVotes) * 100 : 0;

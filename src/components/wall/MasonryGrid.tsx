@@ -1,5 +1,4 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useLongPress } from "@/hooks/useLongPress";
 import { cn } from "@/lib/utils";
 
 interface MasonryGridProps {
@@ -10,21 +9,22 @@ interface MasonryGridProps {
 
 export const MasonryGrid = ({ children, onReorder, itemIds }: MasonryGridProps) => {
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dragPosition, setDragPosition] = useState({ x: 0, y: 0 });
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [columnCount, setColumnCount] = useState(2);
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const dragStartPos = useRef({ x: 0, y: 0 });
 
   // Responsive column count
   useEffect(() => {
     const updateColumns = () => {
       const width = window.innerWidth;
       if (width < 640) {
-        setColumnCount(2); // Mobile
+        setColumnCount(2);
       } else if (width < 1024) {
-        setColumnCount(3); // Tablet
+        setColumnCount(3);
       } else {
-        setColumnCount(2); // Keep masonry even on larger screens
+        setColumnCount(2);
       }
     };
 
@@ -33,35 +33,36 @@ export const MasonryGrid = ({ children, onReorder, itemIds }: MasonryGridProps) 
     return () => window.removeEventListener('resize', updateColumns);
   }, []);
 
-  const handleDragStart = useCallback((index: number, e: React.TouchEvent | React.MouseEvent) => {
-    const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
-    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    
+  const handleDragStart = useCallback((index: number, clientX: number, clientY: number) => {
     setDraggedIndex(index);
-    setDragPosition({ x: clientX, y: clientY });
+    dragStartPos.current = { x: clientX, y: clientY };
+    setDragOffset({ x: 0, y: 0 });
   }, []);
 
   const handleDragMove = useCallback((e: TouchEvent | MouseEvent) => {
     if (draggedIndex === null) return;
     
+    e.preventDefault();
     const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
     const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
     
-    setDragPosition({ x: clientX, y: clientY });
+    setDragOffset({
+      x: clientX - dragStartPos.current.x,
+      y: clientY - dragStartPos.current.y,
+    });
   }, [draggedIndex]);
 
   const handleDragEnd = useCallback(() => {
     if (draggedIndex !== null && onReorder) {
-      // Calculate new position based on drop location
-      // For now, we'll keep it in the same masonry flow
       onReorder(itemIds[draggedIndex], draggedIndex);
     }
     setDraggedIndex(null);
+    setDragOffset({ x: 0, y: 0 });
   }, [draggedIndex, onReorder, itemIds]);
 
   useEffect(() => {
     if (draggedIndex !== null) {
-      window.addEventListener('touchmove', handleDragMove);
+      window.addEventListener('touchmove', handleDragMove, { passive: false });
       window.addEventListener('mousemove', handleDragMove);
       window.addEventListener('touchend', handleDragEnd);
       window.addEventListener('mouseup', handleDragEnd);
@@ -78,8 +79,17 @@ export const MasonryGrid = ({ children, onReorder, itemIds }: MasonryGridProps) 
   // Generate stable random rotation for each item based on its ID
   const getRotation = (index: number) => {
     const seed = itemIds[index]?.charCodeAt(0) || 0;
-    const rotation = ((seed % 7) - 3); // Range: -3 to +3 degrees
+    const rotation = ((seed % 7) - 3);
     return rotation;
+  };
+
+  const handleTouchStart = (index: number, e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    handleDragStart(index, touch.clientX, touch.clientY);
+  };
+
+  const handleMouseDown = (index: number, e: React.MouseEvent) => {
+    handleDragStart(index, e.clientX, e.clientY);
   };
 
   return (
@@ -90,15 +100,10 @@ export const MasonryGrid = ({ children, onReorder, itemIds }: MasonryGridProps) 
         display: 'grid',
         gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
         gap: '1rem',
-        gridAutoRows: '10px', // Fine-grained row control
+        gridAutoRows: '10px',
       }}
     >
       {children.map((child, index) => {
-        const longPressHandlers = useLongPress({
-          onLongPress: () => handleDragStart(index, event as any),
-          ms: 500,
-        });
-
         const rotation = getRotation(index);
         const isDragging = draggedIndex === index;
 
@@ -107,19 +112,34 @@ export const MasonryGrid = ({ children, onReorder, itemIds }: MasonryGridProps) 
             key={itemIds[index]}
             ref={el => itemRefs.current[index] = el}
             className={cn(
-              "transition-all duration-300",
-              isDragging && "opacity-50 scale-95"
+              "transition-all duration-300 touch-none",
+              isDragging && "opacity-50 scale-95 z-[9999]"
             )}
             style={{
               gridColumn: 'span 1',
               transform: isDragging 
-                ? `translate(${dragPosition.x - (itemRefs.current[index]?.getBoundingClientRect().left || 0)}px, ${dragPosition.y - (itemRefs.current[index]?.getBoundingClientRect().top || 0)}px) rotate(${rotation}deg) scale(1.05)`
+                ? `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg) scale(1.05)`
                 : `rotate(${rotation}deg)`,
-              position: isDragging ? 'fixed' : 'relative',
-              zIndex: isDragging ? 9999 : 1,
               transition: isDragging ? 'none' : 'transform 0.3s ease-out',
             }}
-            {...longPressHandlers}
+            onTouchStart={(e) => {
+              const timeout = setTimeout(() => {
+                handleTouchStart(index, e);
+              }, 500);
+              
+              const cleanup = () => clearTimeout(timeout);
+              e.currentTarget.addEventListener('touchend', cleanup, { once: true });
+              e.currentTarget.addEventListener('touchmove', cleanup, { once: true });
+            }}
+            onMouseDown={(e) => {
+              const timeout = setTimeout(() => {
+                handleMouseDown(index, e);
+              }, 500);
+              
+              const cleanup = () => clearTimeout(timeout);
+              window.addEventListener('mouseup', cleanup, { once: true });
+              window.addEventListener('mousemove', cleanup, { once: true });
+            }}
           >
             {child}
           </div>

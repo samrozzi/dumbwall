@@ -485,10 +485,8 @@ const Wall = () => {
         return (
           <ChallengeCard
             content={content}
-            onRespond={() => {
-              // TODO: Implement challenge response dialog
-              notify("Challenge response coming soon!", "info");
-            }}
+            itemId={item.id}
+            currentUserId={user?.id}
           />
         );
       case "game_tictactoe":

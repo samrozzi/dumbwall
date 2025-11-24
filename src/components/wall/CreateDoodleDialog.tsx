@@ -30,25 +30,50 @@ export const CreateDoodleDialog = ({ open, onOpenChange, onCreate }: CreateDoodl
     }
   }, [open]);
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    
+    const rect = canvas.getBoundingClientRect();
+    
+    if ('touches' in e) {
+      const touch = e.touches[0] || e.changedTouches[0];
+      return {
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top
+      };
+    } else {
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top
+      };
+    }
+  };
+
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
     setIsDrawing(true);
     draw(e);
   };
 
   const stopDrawing = () => {
     setIsDrawing(false);
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext("2d");
+    if (ctx) {
+      ctx.beginPath();
+    }
   };
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing && e.type !== "mousedown") return;
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const isStartEvent = e.type === "mousedown" || e.type === "touchstart";
+    if (!isDrawing && !isStartEvent) return;
 
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
     if (!canvas || !ctx) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const { x, y } = getCoordinates(e);
 
     ctx.strokeStyle = isEraser ? "#FFFFFF" : color;
     ctx.lineWidth = isEraser ? brushSize * 2 : brushSize;
@@ -97,11 +122,15 @@ export const CreateDoodleDialog = ({ open, onOpenChange, onCreate }: CreateDoodl
             ref={canvasRef}
             width={400}
             height={400}
-            className="border-2 border-teal-200 dark:border-teal-800 rounded cursor-crosshair bg-white"
+            className="border-2 border-teal-200 dark:border-teal-800 rounded cursor-crosshair bg-white touch-none"
             onMouseDown={startDrawing}
             onMouseMove={draw}
             onMouseUp={stopDrawing}
             onMouseLeave={stopDrawing}
+            onTouchStart={startDrawing}
+            onTouchMove={draw}
+            onTouchEnd={stopDrawing}
+            style={{ touchAction: 'none' }}
           />
 
           <div className="flex gap-2 items-center justify-between">

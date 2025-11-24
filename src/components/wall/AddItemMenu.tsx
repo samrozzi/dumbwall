@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plus, StickyNote, ImageIcon, MessageSquare, Gamepad2, Grid3x3, Megaphone, ArrowLeft, BarChart3, Mic, Paintbrush, Music, Zap } from "lucide-react";
+import { Plus, StickyNote, ImageIcon, MessageSquare, Gamepad2, Grid3x3, Megaphone, ArrowLeft, BarChart3, Mic, Music, Zap, FileText } from "lucide-react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -19,19 +19,29 @@ interface AddItemMenuProps {
 const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnouncement, onAddPoll, onAddAudio, onAddDoodle, onAddMusic, onAddChallenge }: AddItemMenuProps) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showSubmenu, setShowSubmenu] = useState(false);
+  const [showPostSubmenu, setShowPostSubmenu] = useState(false);
+  const [showImageSubmenu, setShowImageSubmenu] = useState(false);
   const isMobile = useIsMobile();
 
   const menuItems = [
-    { icon: StickyNote, label: "Note", color: "bg-yellow-400 hover:bg-yellow-500", action: () => { onAddNote(); setIsOpen(false); } },
-    { icon: ImageIcon, label: "Image", color: "bg-blue-400 hover:bg-blue-500", action: () => { onAddImage(); setIsOpen(false); } },
-    { icon: MessageSquare, label: "Thread", color: "bg-purple-400 hover:bg-purple-500", action: () => { onAddThread(); setIsOpen(false); } },
+    { icon: FileText, label: "Post", color: "bg-yellow-400 hover:bg-yellow-500", action: () => { setShowPostSubmenu(true); } },
+    { icon: ImageIcon, label: "Image/Doodle", color: "bg-blue-400 hover:bg-blue-500", action: () => { setShowImageSubmenu(true); } },
     { icon: BarChart3, label: "Poll", color: "bg-pink-400 hover:bg-pink-500", action: () => { onAddPoll(); setIsOpen(false); } },
     { icon: Mic, label: "Audio", color: "bg-orange-400 hover:bg-orange-500", action: () => { onAddAudio(); setIsOpen(false); } },
-    { icon: Paintbrush, label: "Doodle", color: "bg-teal-400 hover:bg-teal-500", action: () => { onAddDoodle(); setIsOpen(false); } },
     { icon: Music, label: "Music", color: "bg-indigo-400 hover:bg-indigo-500", action: () => { onAddMusic(); setIsOpen(false); } },
     { icon: Zap, label: "Challenge", color: "bg-rose-400 hover:bg-rose-500", action: () => { onAddChallenge(); setIsOpen(false); } },
     { icon: Gamepad2, label: "Games", color: "bg-green-400 hover:bg-green-500", action: () => { setShowSubmenu(true); } },
-    { icon: Megaphone, label: "Announcement", color: "bg-red-400 hover:bg-red-500", action: () => { onAddAnnouncement(); setIsOpen(false); } },
+  ];
+
+  const postOptions = [
+    { icon: StickyNote, label: "Sticky Note", color: "bg-yellow-400 hover:bg-yellow-500", action: () => { onAddNote(); setShowPostSubmenu(false); setIsOpen(false); } },
+    { icon: Megaphone, label: "Announcement", color: "bg-red-400 hover:bg-red-500", action: () => { onAddAnnouncement(); setShowPostSubmenu(false); setIsOpen(false); } },
+    { icon: MessageSquare, label: "Start Thread", color: "bg-purple-400 hover:bg-purple-500", action: () => { onAddThread(); setShowPostSubmenu(false); setIsOpen(false); } },
+  ];
+
+  const imageOptions = [
+    { icon: ImageIcon, label: "Upload Image", color: "bg-blue-400 hover:bg-blue-500", action: () => { onAddImage(); setShowImageSubmenu(false); setIsOpen(false); } },
+    { icon: StickyNote, label: "Draw Doodle", color: "bg-teal-400 hover:bg-teal-500", action: () => { onAddDoodle(); setShowImageSubmenu(false); setIsOpen(false); } },
   ];
 
   const gameOptions = [
@@ -39,14 +49,20 @@ const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnou
   ];
 
   const handleBack = () => {
-    setShowSubmenu(false);
+    if (showPostSubmenu) {
+      setShowPostSubmenu(false);
+    } else if (showImageSubmenu) {
+      setShowImageSubmenu(false);
+    } else {
+      setShowSubmenu(false);
+    }
   };
 
   return (
     <TooltipProvider>
       <div className={`fixed z-[9999] ${isMobile ? 'bottom-24 right-8' : 'bottom-8 right-8'}`}>
         {/* Menu Items */}
-        {isOpen && !showSubmenu && (
+        {isOpen && !showSubmenu && !showPostSubmenu && !showImageSubmenu && (
           <div className="absolute bottom-20 right-0 flex flex-col-reverse gap-3 items-center">
             {menuItems.map((item, index) => (
               <TooltipProvider key={item.label}>
@@ -66,6 +82,74 @@ const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnou
                   <TooltipContent side="left">
                     <p>{item.label}</p>
                   </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ))}
+          </div>
+        )}
+
+        {/* Post Submenu */}
+        {isOpen && showPostSubmenu && (
+          <div className="absolute bottom-20 right-0 flex flex-col-reverse gap-3 items-center">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleBack}
+                    className="bg-gray-400 hover:bg-gray-500 text-white w-12 h-12 rounded-full shadow-lg hover:scale-110 transition-all duration-150 ease-in-out flex items-center justify-center"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left"><p>Back</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            {postOptions.map((opt, index) => (
+              <TooltipProvider key={opt.label}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={opt.action}
+                      className={`${opt.color} text-white w-14 h-14 rounded-full shadow-lg hover:scale-110 transition-all duration-150 ease-in-out flex items-center justify-center`}
+                    >
+                      <opt.icon className="w-6 h-6" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left"><p>{opt.label}</p></TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            ))}
+          </div>
+        )}
+
+        {/* Image/Doodle Submenu */}
+        {isOpen && showImageSubmenu && (
+          <div className="absolute bottom-20 right-0 flex flex-col-reverse gap-3 items-center">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={handleBack}
+                    className="bg-gray-400 hover:bg-gray-500 text-white w-12 h-12 rounded-full shadow-lg hover:scale-110 transition-all duration-150 ease-in-out flex items-center justify-center"
+                  >
+                    <ArrowLeft className="w-5 h-5" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent side="left"><p>Back</p></TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            {imageOptions.map((opt, index) => (
+              <TooltipProvider key={opt.label}>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button
+                      onClick={opt.action}
+                      className={`${opt.color} text-white w-14 h-14 rounded-full shadow-lg hover:scale-110 transition-all duration-150 ease-in-out flex items-center justify-center`}
+                    >
+                      <opt.icon className="w-6 h-6" />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="left"><p>{opt.label}</p></TooltipContent>
                 </Tooltip>
               </TooltipProvider>
             ))}
@@ -127,6 +211,8 @@ const AddItemMenu = ({ onAddNote, onAddImage, onAddThread, onAddGame, onAddAnnou
           onClick={() => {
             setIsOpen(!isOpen);
             setShowSubmenu(false);
+            setShowPostSubmenu(false);
+            setShowImageSubmenu(false);
           }}
           className={`bg-primary hover:bg-primary/90 text-primary-foreground p-5 rounded-full shadow-2xl transition-all duration-150 ease-in-out hover:scale-110 ${
             isOpen ? "rotate-45" : "rotate-0"

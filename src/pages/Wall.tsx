@@ -210,14 +210,19 @@ const Wall = () => {
     return () => window.removeEventListener('resize', checkOverflow);
   }, [items, contentHeight, isMobile, hasScrolled]);
 
-  // Hide scroll indicator when user scrolls down
+  // Show/hide scroll indicator based on scroll position
   useEffect(() => {
     if (!canvasRef.current || isMobile) return;
 
     const handleScroll = () => {
-      if (canvasRef.current && canvasRef.current.scrollTop > 50) {
-        setHasScrolled(true);
-        setShowScrollIndicator(false);
+      if (canvasRef.current) {
+        const scrollTop = canvasRef.current.scrollTop;
+        if (scrollTop > 50) {
+          setHasScrolled(true);
+        } else {
+          // Reappear when scrolled back to top
+          setHasScrolled(false);
+        }
       }
     };
 
@@ -885,7 +890,7 @@ const Wall = () => {
         </div>
 
         {viewMode === "wall" && isMobile ? (
-          <div className="flex flex-col gap-4 pb-24 max-w-full px-2">
+          <div className="flex flex-col gap-4 pb-24 w-full px-4">
             {items
               .filter(item => item.id !== pendingDelete?.id)
               .sort((a, b) => {
@@ -902,10 +907,10 @@ const Wall = () => {
               return (
                 <div
                   key={item.id}
-                  className="w-full max-w-full flex justify-center"
+                  className="w-full flex justify-center"
                 >
                   {item.type === "note" && (
-                    <div className="max-w-[280px] w-full">
+                    <div className="w-full max-w-[min(320px,90vw)]">
                       <StickyNote
                         content={item.content as any}
                         onDelete={() => deleteItem(item.id)}
@@ -923,7 +928,7 @@ const Wall = () => {
                     </div>
                   )}
                   {item.type === "image" && (
-                    <div className="max-w-[400px] w-full">
+                    <div className="w-full max-w-[min(420px,95vw)]">
                       <ImageCard
                         id={item.id}
                         content={item.content as any}
@@ -936,7 +941,7 @@ const Wall = () => {
                     </div>
                   )}
                   {item.type === "thread" && (
-                    <div className="max-w-[320px] w-full">
+                    <div className="w-full max-w-[min(360px,90vw)]">
                       <ThreadBubble
                         content={item.content as any}
                         onDelete={() => handleThreadDelete(item.id, (item.content as any).threadId)}
@@ -946,7 +951,7 @@ const Wall = () => {
                     </div>
                   )}
                   {item.type === "game_tictactoe" && (
-                    <div className="max-w-[280px] w-full">
+                    <div className="w-full max-w-[min(320px,90vw)]">
                       <TicTacToe
                       content={item.content as any}
                       createdBy={item.created_by}
@@ -974,7 +979,7 @@ const Wall = () => {
                     </div>
                   )}
                   {item.type === "announcement" && (
-                    <div className="max-w-[320px] w-full">
+                    <div className="w-full max-w-[min(360px,90vw)]">
                       <AnnouncementBubble
                         content={item.content as any}
                         onDelete={() => deleteItem(item.id)}
@@ -985,7 +990,7 @@ const Wall = () => {
                     </div>
                   )}
                   {item.type === "poll" && (
-                    <div className="max-w-[320px] w-full">
+                    <div className="w-full max-w-[min(360px,90vw)]">
                       <QuickPoll
                         content={item.content as any}
                         itemId={item.id}
@@ -996,7 +1001,7 @@ const Wall = () => {
                     </div>
                   )}
                   {item.type === "audio" && (
-                    <div className="max-w-[320px] w-full">
+                    <div className="w-full max-w-[min(360px,90vw)]">
                       <AudioClip
                         content={item.content as any}
                         onDelete={() => deleteItem(item.id)}
@@ -1005,7 +1010,7 @@ const Wall = () => {
                     </div>
                   )}
                   {item.type === "doodle" && (
-                    <div className="max-w-[300px] w-full">
+                    <div className="w-full max-w-[min(340px,90vw)]">
                       <DoodleCanvas
                         content={item.content as any}
                         onDelete={() => deleteItem(item.id)}
@@ -1014,7 +1019,7 @@ const Wall = () => {
                     </div>
                   )}
                   {item.type === "music" && (
-                    <div className="max-w-[320px] w-full">
+                    <div className="w-full max-w-[min(360px,90vw)]">
                       <MusicDrop
                         content={item.content as any}
                         onDelete={() => deleteItem(item.id)}
@@ -1023,7 +1028,7 @@ const Wall = () => {
                     </div>
                   )}
                   {item.type === "challenge" && (
-                    <div className="max-w-[320px] w-full">
+                    <div className="w-full max-w-[min(360px,90vw)]">
                       <ChallengeCard
                         content={item.content as any}
                         itemId={item.id}
@@ -1062,19 +1067,32 @@ const Wall = () => {
                 height: contentHeight > 0 ? `${contentHeight}px` : '100%'
               }}
             >
-              {/* Scroll indicator */}
+              {/* Scroll indicator - neon style */}
               {showScrollIndicator && (
-                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] pointer-events-none animate-bounce">
-                  <div className="flex flex-col items-center gap-1 bg-background/80 backdrop-blur-sm px-4 py-2 rounded-full border-2 border-primary shadow-lg">
+                <div
+                  className="fixed bottom-8 left-8 z-[9999] pointer-events-none"
+                  style={{
+                    animation: 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+                  }}
+                >
+                  <div className="flex items-center gap-2 bg-background/95 backdrop-blur-sm px-4 py-2 rounded-full border-2 border-primary shadow-[0_0_20px_hsl(var(--primary)/0.5)]">
                     <svg
-                      className="w-8 h-8 text-primary drop-shadow-[0_0_12px_hsl(var(--primary))]"
+                      className="w-6 h-6 text-primary"
                       fill="currentColor"
                       viewBox="0 0 20 20"
+                      style={{
+                        filter: 'drop-shadow(0 0 8px hsl(var(--primary)))'
+                      }}
                     >
                       <path fillRule="evenodd" d="M10 3a1 1 0 011 1v10.586l2.293-2.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V4a1 1 0 011-1z" clipRule="evenodd" />
                     </svg>
-                    <span className="text-sm text-primary font-bold drop-shadow-[0_0_8px_hsl(var(--primary))]">
-                      Scroll Down
+                    <span
+                      className="text-sm text-primary font-bold whitespace-nowrap"
+                      style={{
+                        textShadow: '0 0 8px hsl(var(--primary))'
+                      }}
+                    >
+                      More Below
                     </span>
                   </div>
                 </div>

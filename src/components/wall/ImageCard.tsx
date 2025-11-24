@@ -86,6 +86,8 @@ const ImageCard = ({
           src={content.url}
           alt={content.caption || "Wall image"}
           className="w-full h-64 sm:h-48 object-cover rounded-md mb-2"
+          draggable="false"
+          onDragStart={(e) => e.preventDefault()}
         />
       </div>
       {content.caption && (
@@ -112,6 +114,8 @@ const ImageCard = ({
                   src={content.url}
                   alt={content.caption || "Wall image"}
                   className="max-w-full max-h-full object-contain"
+                  draggable="false"
+                  onDragStart={(e) => e.preventDefault()}
                 />
               </div>
               {content.caption && (

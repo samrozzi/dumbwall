@@ -49,6 +49,52 @@ interface WallItem extends Omit<WallItemRow, "type"> {
 const GRID_SIZE = 20;
 const COLORS = ["yellow", "pink", "blue", "orange", "green", "purple", "cream"];
 
+// Helper to get meaningful display title for list view
+const getItemDisplayTitle = (item: WallItem) => {
+  const content = item.content as any;
+  switch (item.type) {
+    case "note":
+      return content.title || content.body?.substring(0, 30) || "Untitled Note";
+    case "image":
+      return content.caption || "Image";
+    case "thread":
+      return content.title || "Chat Thread";
+    case "poll":
+      return content.question || "Poll";
+    case "challenge":
+      return content.title || content.prompt?.substring(0, 40) || "Challenge";
+    case "announcement":
+      return content.text?.substring(0, 40) || "Announcement";
+    case "music":
+      return content.songTitle ? `${content.songTitle}${content.artist ? ` - ${content.artist}` : ''}` : "Music";
+    case "audio":
+      return content.caption || content.title || "Audio Clip";
+    case "doodle":
+      return "Doodle";
+    case "game_tictactoe":
+      return "Tic-Tac-Toe";
+    default:
+      return "Unknown Item";
+  }
+};
+
+// Helper to get appropriate icon for each item type
+const getItemIcon = (type: WallItemType) => {
+  switch (type) {
+    case "note": return "📝";
+    case "image": return "🖼️";
+    case "thread": return "💬";
+    case "poll": return "📊";
+    case "challenge": return "🎯";
+    case "announcement": return "📢";
+    case "music": return "🎵";
+    case "audio": return "🎤";
+    case "doodle": return "🎨";
+    case "game_tictactoe": return "❌⭕";
+    default: return "📄";
+  }
+};
+
 const Wall = () => {
   const { circleId } = useParams();
   const { user } = useAuth();
@@ -120,7 +166,15 @@ const Wall = () => {
   }, [user, circleId, navigate]);
 
   // Calculate dynamic canvas height based on items
-  const canvasHeight = 'calc(100vh - 120px)'; // Fixed height, no dynamic growth
+  const canvasHeight = useMemo(() => {
+    if (items.length === 0) return 'calc(100vh - 120px)';
+    
+    // Find the bottommost item (y position + estimated height)
+    const maxItemY = Math.max(...items.map(item => item.y + 400)); // +400 for item height
+    const minHeight = typeof window !== 'undefined' ? window.innerHeight - 120 : 800;
+    
+    return Math.max(minHeight, maxItemY + 100) + 'px';
+  }, [items]);
 
   const loadItems = async () => {
     try {
@@ -174,7 +228,9 @@ const Wall = () => {
     const itemWidth = 280;
     const itemHeight = 320;
     const padding = 40;
-    const maxY = 600; // Keep items in visible area
+    // Use dynamic maxY based on current canvas height or items
+    const maxItemY = items.length > 0 ? Math.max(...items.map(item => item.y)) : 0;
+    const maxY = Math.max(600, maxItemY + 400); // Grow with content, min 600
     
     // Random starting position with some variation
     let x = 60 + Math.floor(Math.random() * 200);
@@ -833,7 +889,7 @@ const Wall = () => {
         </div>
 
         {viewMode === "wall" && isMobile ? (
-          <div className="space-y-4 pb-24 flex flex-col items-center px-4">
+          <div className="space-y-4 pb-24 flex flex-col items-center px-4 max-h-[calc(100vh-200px)] overflow-y-auto">
             {items.map((item) => {
               const itemWithCreator = item as any;
               return (
@@ -1011,32 +1067,40 @@ const Wall = () => {
         ) : (
           <div className="space-y-2">
             {items.map((item) => {
-              const content = item.content as any;
               return (
                 <div
                   key={item.id}
                   className="p-4 bg-card border border-border rounded-lg flex items-center gap-4 hover:bg-muted/50 cursor-pointer"
                 >
-                  <span className="text-2xl">{item.type === "note" ? "📝" : item.type === "image" ? "🖼️" : item.type === "thread" ? "💬" : "🎮"}</span>
+                  <span className="text-2xl">{getItemIcon(item.type)}</span>
                   <div className="flex-1">
                     <h3 className="font-semibold">
-                      {content?.title || "Untitled"}
+                      {getItemDisplayTitle(item)}
                     </h3>
-                    <p className="text-sm text-muted-foreground">{item.type}</p>
+                    <p className="text-sm text-muted-foreground capitalize">{item.type.replace(/_/g, ' ')}</p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                  onClick={() => {
-                    setViewMode("wall");
-                    setTimeout(() => {
-                      const el = document.querySelector(`[style*="left: ${item.x}"]`);
-                      el?.scrollIntoView({ behavior: "smooth", block: "center" });
-                    }, 100);
-                  }}
-                  >
-                    View
-                  </Button>
+                  {!isMobile && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setViewMode("wall");
+                        setTimeout(() => {
+                          const el = document.querySelector(`[data-item-id="${item.id}"]`);
+                          if (el) {
+                            el.scrollIntoView({ behavior: "smooth", block: "center" });
+                            // Add temporary highlight
+                            el.classList.add('ring-4', 'ring-primary', 'ring-offset-2');
+                            setTimeout(() => {
+                              el.classList.remove('ring-4', 'ring-primary', 'ring-offset-2');
+                            }, 2000);
+                          }
+                        }, 100);
+                      }}
+                    >
+                      View
+                    </Button>
+                  )}
                 </div>
               );
             })}

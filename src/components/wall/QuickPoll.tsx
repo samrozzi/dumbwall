@@ -61,7 +61,7 @@ export const QuickPoll = ({ content, itemId, currentUserId, onDelete, isCreator,
   };
 
   return (
-    <Card className={`p-4 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 border-2 border-pink-200 dark:border-pink-800 ${fullWidth ? 'w-full max-w-full' : 'w-[280px]'} relative`}>
+    <Card className={`p-4 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-950/20 dark:to-purple-950/20 border-2 border-pink-200 dark:border-pink-800 ${fullWidth ? 'w-full max-w-full' : 'w-[280px] max-w-full'} relative`}>
       {onDelete && (
         <button
           onClick={(e) => {

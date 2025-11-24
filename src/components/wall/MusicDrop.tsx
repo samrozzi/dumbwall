@@ -45,7 +45,7 @@ export const MusicDrop = ({ content, onDelete, isCreator, fullWidth }: MusicDrop
     : null;
 
   return (
-    <Card className={`p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border-2 border-indigo-200 dark:border-indigo-800 ${fullWidth ? 'w-full max-w-full' : 'w-[380px]'} relative`}>
+    <Card className={`p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border-2 border-indigo-200 dark:border-indigo-800 ${fullWidth ? 'w-full max-w-full' : 'w-[380px] max-w-full'} relative`}>
       {onDelete && (
         <button
           onClick={(e) => {

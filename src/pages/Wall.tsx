@@ -27,6 +27,7 @@ import { CreateChallengeDialog } from "@/components/wall/CreateChallengeDialog";
 import { WallItemViewerDialog } from "@/components/wall/WallItemViewerDialog";
 import { notify } from "@/components/ui/custom-notification";
 import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
 import { LayoutGrid, List, Camera } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
@@ -101,11 +102,14 @@ const Wall = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const isMobile = useIsMobile();
+  const { toast } = useToast();
   const [items, setItems] = useState<WallItem[]>([]);
   const [viewMode, setViewMode] = useState<"wall" | "list">("wall");
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; item: WallItem } | null>(null);
   const [maxZIndex, setMaxZIndex] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
 
   // Dialog states
@@ -277,88 +281,228 @@ const Wall = () => {
   };
 
   const createItem = async (type: WallItemType, content: any, x?: number, y?: number) => {
-    try {
-      // Validate content based on type
-      const StickyNoteSchema = z.object({
-        title: z.string().max(100, 'Title too long'),
-        body: z.string().max(500, 'Note too long'),
-        color: z.string().regex(/^[a-z]+$/)
+    if (!circleId || !user) return;
+
+    const pos = x !== undefined && y !== undefined ? { x, y } : getSmartPosition();
+    const newItem: Omit<WallItem, "id" | "created_at" | "updated_at"> = {
+      type,
+      content,
+      circle_id: circleId,
+      created_by: user.id,
+      x: pos.x,
+      y: pos.y,
+      z_index: maxZIndex + 1,
+    };
+
+    const { error } = await supabase.from("wall_items").insert(newItem);
+
+    if (error) {
+      console.error("Error creating item:", error);
+      toast({
+        title: "Error",
+        description: "Failed to create item",
+        variant: "destructive",
       });
-
-      const ImageContentSchema = z.object({
-        url: z.string().url('Invalid image URL'),
-        caption: z.string().max(200, 'Caption too long').optional()
-      });
-
-      const ThreadContentSchema = z.object({
-        title: z.string().max(100, 'Title too long'),
-        threadId: z.string().uuid('Invalid thread ID')
-      });
-
-      const AnnouncementSchema = z.object({
-        text: z.string().max(500, 'Announcement too long')
-      });
-
-      // Validate based on type
-      if (type === 'note') {
-        StickyNoteSchema.parse(content);
-      } else if (type === 'image') {
-        ImageContentSchema.parse(content);
-      } else if (type === 'thread') {
-        ThreadContentSchema.parse(content);
-      } else if (type === 'announcement') {
-        AnnouncementSchema.parse(content);
-      }
-
-      const position = (x !== undefined && y !== undefined) ? { x, y } : getSmartPosition();
-      
-      const { error } = await supabase.from("wall_items").insert({
-        circle_id: circleId!,
-        created_by: user?.id!,
-        type: type as any,
-        content,
-        x: position.x,
-        y: position.y,
-        z_index: maxZIndex + 1,
-      });
-
-      if (error) throw error;
-      setMaxZIndex(prev => prev + 1);
-      notify("Item added!", "success");
-    } catch (error: any) {
-      if (error instanceof z.ZodError) {
-        notify(error.issues[0].message, "error");
-      } else {
-        notify(error.message, "error");
-      }
+    } else {
+      setMaxZIndex(maxZIndex + 1);
     }
   };
 
-  const updateItem = async (id: string, updates: Partial<Omit<WallItem, "id" | "circle_id" | "created_by" | "created_at">>) => {
-    try {
-      const { error } = await supabase
-        .from("wall_items")
-        .update(updates as any)
-        .eq("id", id);
+  const updateItem = async (
+    id: string,
+    updates: Partial<Omit<WallItem, "circle_id" | "created_at" | "created_by" | "id">>
+  ) => {
+    const { error } = await supabase
+      .from("wall_items")
+      .update(updates)
+      .eq("id", id);
 
-      if (error) throw error;
-    } catch (error: any) {
-      notify(error.message, "error");
+    if (error) {
+      console.error("Error updating item:", error);
     }
   };
 
   const deleteItem = async (id: string) => {
-    try {
-      const { error } = await supabase.from("wall_items").delete().eq("id", id);
-      if (error) throw error;
-      
-      // Immediately update local state to remove the item
-      setItems((prev) => prev.filter((item) => item.id !== id));
-      
-      notify("Item deleted", "info");
-    } catch (error: any) {
-      notify(error.message, "error");
+    const itemToDelete = items.find(item => item.id === id);
+    if (!itemToDelete) return;
+
+    // Store for potential undo
+    setPendingDelete({ id, item: itemToDelete });
+
+    // Show toast with undo option
+    toast({
+      title: "Item deleted",
+      description: "Undo",
+      action: (
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() => undoDelete()}
+        >
+          Undo
+        </Button>
+      ),
+    });
+
+    // Perform actual deletion after 3 seconds
+    setTimeout(async () => {
+      setPendingDelete(current => {
+        if (current?.id === id) {
+          // Still pending, perform deletion
+          supabase
+            .from("wall_items")
+            .delete()
+            .eq("id", id)
+            .then(({ error }) => {
+              if (error) {
+                console.error("Error deleting item:", error);
+                toast({
+                  title: "Error",
+                  description: "Failed to delete item",
+                  variant: "destructive",
+                });
+              }
+            });
+          return null;
+        }
+        return current;
+      });
+    }, 3000);
+  };
+
+  const undoDelete = () => {
+    if (pendingDelete) {
+      setPendingDelete(null);
+      toast({
+        title: "Deletion cancelled",
+        description: "Item restored",
+      });
     }
+  };
+
+  const handleMouseDown = (e: React.MouseEvent, itemId: string) => {
+    const item = items.find(i => i.id === itemId);
+    if (!item) return;
+
+    setDraggedItem(itemId);
+    setIsDragging(true);
+    const canvasRect = canvasRef.current?.getBoundingClientRect();
+    if (canvasRect) {
+      setDragOffset({
+        x: e.clientX - canvasRect.left - item.x,
+        y: e.clientY - canvasRect.top - item.y,
+      });
+    }
+    
+    // Bring to front
+    updateItem(itemId, { z_index: maxZIndex + 1 });
+    setMaxZIndex(maxZIndex + 1);
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!draggedItem || !canvasRef.current) return;
+
+    const canvasRect = canvasRef.current.getBoundingClientRect();
+    const newX = Math.max(0, Math.min(e.clientX - canvasRect.left - dragOffset.x, canvasRect.width - 280));
+    const newY = Math.max(0, e.clientY - canvasRect.top - dragOffset.y);
+
+    setItems(items.map(item =>
+      item.id === draggedItem ? { ...item, x: newX, y: newY } : item
+    ));
+  };
+
+  const handleMouseUp = () => {
+    if (draggedItem && canvasRef.current) {
+      const item = items.find(i => i.id === draggedItem);
+      if (item) {
+        updateItem(draggedItem, { x: item.x, y: item.y });
+      }
+    }
+    setDraggedItem(null);
+    setIsDragging(false);
+  };
+
+  const handleAddNote = () => {
+    createItem("note", {
+      title: noteTitle,
+      body: noteBody,
+      color: noteColor,
+    });
+    setNoteDialog(false);
+    setNoteTitle("");
+    setNoteBody("");
+    setNoteColor("yellow");
+  };
+
+  const handleAddImage = async () => {
+    if (imageFile) {
+      setUploading(true);
+      const fileExt = imageFile.name.split(".").pop();
+      const filePath = `${user!.id}/${circleId}_${Date.now()}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(filePath, imageFile);
+
+      if (uploadError) {
+        notify(uploadError.message, "error");
+        setUploading(false);
+        return;
+      }
+
+      const {
+        data: { publicUrl },
+      } = supabase.storage.from("avatars").getPublicUrl(filePath);
+
+      createItem("image", { url: publicUrl, caption: imageCaption });
+      setImageDialog(false);
+      setImageFile(null);
+      setImageUrl("");
+      setImageCaption("");
+      setUploading(false);
+    } else if (imageUrl) {
+      createItem("image", { url: imageUrl, caption: imageCaption });
+      setImageDialog(false);
+      setImageUrl("");
+      setImageCaption("");
+    }
+  };
+
+  const handleAddThread = async () => {
+    const { data, error } = await supabase
+      .from("chat_threads")
+      .insert({
+        title: threadTitle,
+        circle_id: circleId!,
+        created_by: user!.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      notify(error.message, "error");
+      return;
+    }
+
+    createItem("thread", { title: threadTitle, threadId: data.id });
+    setThreadDialog(false);
+    setThreadTitle("");
+  };
+
+  const handleAddGame = () => {
+    const initialState = Array(9).fill("");
+    createItem("game_tictactoe", {
+      state: initialState,
+      turn: "X",
+      playerX: user?.id,
+      playerO: null,
+    });
+  };
+
+  const handleAddAnnouncement = () => {
+    createItem("announcement", { text: announcementText });
+    setAnnouncementDialog(false);
+    setAnnouncementText("");
   };
 
   const handleThreadDelete = (itemId: string, threadId: string) => {
@@ -369,143 +513,65 @@ const Wall = () => {
   const handleMoveToChat = async () => {
     if (!threadToDelete) return;
     
-    try {
-      // Remove the link from the thread to the wall item
-      const { error: unlinkError } = await supabase
-        .from("chat_threads")
-        .update({ linked_wall_item_id: null })
-        .eq("id", threadToDelete.threadId);
+    const { error } = await supabase
+      .from("wall_items")
+      .delete()
+      .eq("id", threadToDelete.itemId);
 
-      if (unlinkError) throw unlinkError;
-
-      // Delete the wall item
-      const { error } = await supabase
-        .from("wall_items")
-        .delete()
-        .eq("id", threadToDelete.itemId);
-
-      if (error) throw error;
-      notify("Thread moved to chat only", "success");
-      setDeleteThreadDialog(false);
-      setThreadToDelete(null);
-    } catch (error: any) {
+    if (error) {
       notify(error.message, "error");
+    } else {
+      notify("Thread moved to chat!", "success");
     }
+    
+    setDeleteThreadDialog(false);
+    setThreadToDelete(null);
   };
 
   const handleDeleteCompletely = async () => {
     if (!threadToDelete) return;
-    
-    try {
-      // Delete all messages first
-      const { error: messagesError } = await supabase
-        .from("chat_messages")
-        .delete()
-        .eq("thread_id", threadToDelete.threadId);
 
-      if (messagesError) throw messagesError;
+    const { error: threadError } = await supabase
+      .from("chat_threads")
+      .delete()
+      .eq("id", threadToDelete.threadId);
 
-      // Delete the thread
-      const { error: threadError } = await supabase
-        .from("chat_threads")
-        .delete()
-        .eq("id", threadToDelete.threadId);
-
-      if (threadError) throw threadError;
-
-      // Delete the wall item
-      const { error: wallError } = await supabase
-        .from("wall_items")
-        .delete()
-        .eq("id", threadToDelete.itemId);
-
-      if (wallError) throw wallError;
-
-      notify("Thread deleted completely", "info");
-      setConfirmDeleteDialog(false);
-      setDeleteThreadDialog(false);
-      setThreadToDelete(null);
-    } catch (error: any) {
-      notify(error.message, "error");
+    if (threadError) {
+      notify(threadError.message, "error");
+      return;
     }
-  };
 
-  const handleMouseDown = (e: React.MouseEvent, itemId: string) => {
-    e.preventDefault(); // Prevent text selection
-    const item = items.find((i) => i.id === itemId);
-    if (!item) return;
+    const { error: itemError } = await supabase
+      .from("wall_items")
+      .delete()
+      .eq("id", threadToDelete.itemId);
 
-    setDraggedItem(itemId);
-    setDragOffset({
-      x: e.clientX - item.x,
-      y: e.clientY - item.y,
-    });
+    if (itemError) {
+      notify(itemError.message, "error");
+    } else {
+      notify("Thread deleted completely!", "success");
+    }
 
-    updateItem(itemId, { z_index: maxZIndex + 1 });
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (!draggedItem || !canvasRef.current) return;
-
-    const canvas = canvasRef.current;
-    const canvasRect = canvas.getBoundingClientRect();
-    const actualCanvasHeight = canvasRect.height;
-    const actualCanvasWidth = canvasRect.width;
-    
-    // Get the actual dragged element to measure its real dimensions
-    const draggedElement = document.querySelector(`[data-item-id="${draggedItem}"]`);
-    const itemWidth = draggedElement?.getBoundingClientRect().width || 280;
-    const itemHeight = draggedElement?.getBoundingClientRect().height || 280;
-    
-    const padding = 20;
-
-    const newX = e.clientX - dragOffset.x;
-    const newY = e.clientY - dragOffset.y;
-
-    // Clamp horizontally
-    const maxX = actualCanvasWidth - itemWidth - padding;
-    const clampedX = Math.max(0, Math.min(maxX, newX));
-    
-    // Clamp vertically - allow items to reach bottom edge with minimal padding
-    const bottomPadding = 4;
-    const maxY = actualCanvasHeight - itemHeight - bottomPadding;
-    const clampedY = Math.max(0, Math.min(maxY, newY));
-
-    // Snap to grid
-    const snappedX = Math.round(clampedX / GRID_SIZE) * GRID_SIZE;
-    const snappedY = Math.round(clampedY / GRID_SIZE) * GRID_SIZE;
-
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === draggedItem ? { ...item, x: snappedX, y: snappedY } : item
-      )
-    );
-  };
-
-  const handleMouseUp = () => {
-    if (!draggedItem) return;
-
-    const item = items.find((i) => i.id === draggedItem);
-    if (!item) return;
-
-    updateItem(draggedItem, { x: item.x, y: item.y });
-    
-    setDraggedItem(null);
+    setConfirmDeleteDialog(false);
+    setThreadToDelete(null);
   };
 
   const renderItem = (item: WallItem) => {
-    const content = item.content as any;
     const itemWithCreator = item as any;
-    const isCreator = user?.id === item.created_by;
-    
+
     switch (item.type) {
       case "note":
         return (
           <StickyNote
-            content={content}
+            content={item.content as any}
             onDelete={() => deleteItem(item.id)}
-            onUpdate={(newContent) => updateItem(item.id, { content: newContent as any })}
-            isCreator={isCreator}
+            onUpdate={(newContent) => {
+              const updated: Partial<Omit<WallItem, "circle_id" | "created_at" | "created_by" | "id">> = {
+                content: newContent,
+              };
+              updateItem(item.id, updated);
+            }}
+            isCreator={item.created_by === user?.id}
             creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
             creatorUsername={itemWithCreator.creator_profile?.username}
           />
@@ -514,261 +580,94 @@ const Wall = () => {
         return (
           <ImageCard
             id={item.id}
-            content={content}
+            content={item.content as any}
             onDelete={() => deleteItem(item.id)}
             creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
             creatorUsername={itemWithCreator.creator_profile?.username}
-            currentUserId={user?.id}
           />
         );
       case "thread":
-        const threadContent = content as { title: string; threadId?: string };
-        if (!threadContent.threadId) {
-          return (
-            <ThreadBubble
-              content={{ title: threadContent.title, threadId: "" }}
-              onDelete={() => deleteItem(item.id)}
-              onClick={() => notify("Thread data is missing", "error")}
-            />
-          );
-        }
         return (
           <ThreadBubble
-            content={{ title: threadContent.title, threadId: threadContent.threadId }}
-            onDelete={() => handleThreadDelete(item.id, threadContent.threadId)}
-            onClick={() => navigate(`/circle/${circleId}/chat?threadId=${threadContent.threadId}`)}
-          />
-        );
-      case "poll":
-        return (
-          <QuickPoll
-            content={content}
-            itemId={item.id}
-            currentUserId={user?.id}
-            onDelete={() => deleteItem(item.id)}
-            isCreator={isCreator}
-          />
-        );
-      case "audio":
-        return (
-          <AudioClip
-            content={content}
-            onDelete={() => deleteItem(item.id)}
-            isCreator={isCreator}
-          />
-        );
-      case "doodle":
-        return (
-          <DoodleCanvas
-            content={content}
-            onDelete={() => deleteItem(item.id)}
-            isCreator={isCreator}
-          />
-        );
-      case "music":
-        return (
-          <MusicDrop
-            content={content}
-            onDelete={() => deleteItem(item.id)}
-            isCreator={isCreator}
-          />
-        );
-      case "challenge":
-        return (
-          <ChallengeCard
-            content={content}
-            itemId={item.id}
-            currentUserId={user?.id}
-            onDelete={() => deleteItem(item.id)}
-            isCreator={isCreator}
+            content={item.content as any}
+            onDelete={() => {
+              const threadId = (item.content as any).threadId;
+              handleThreadDelete(item.id, threadId);
+            }}
           />
         );
       case "game_tictactoe":
         return (
           <TicTacToe
-            content={content}
-            createdBy={item.created_by}
+            content={item.content as any}
+            onDelete={() => deleteItem(item.id)}
             currentUserId={user?.id}
-            onUpdate={(state, turn, winner, winningLine) => {
-              const currentContent = content as any;
-              let updatedContent = { ...currentContent };
-              
-              // Assign playerO on first O move
-              if (!currentContent.playerO && state.includes('O')) {
-                updatedContent.playerO = user?.id;
-              }
-              
-              updatedContent = {
-                ...updatedContent,
-                state,
-                turn,
+            onUpdate={(newState, newTurn, winner, winningLine) => {
+              const updatedContent = {
+                state: newState,
+                turn: newTurn,
                 winner,
                 winningLine,
               };
-              
-              updateItem(item.id, { content: updatedContent as any });
+              updateItem(item.id, { content: updatedContent });
             }}
-            onDelete={() => deleteItem(item.id)}
           />
         );
       case "announcement":
         return (
           <AnnouncementBubble
-            content={content}
+            content={item.content as any}
             onDelete={() => deleteItem(item.id)}
             creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
             creatorUsername={itemWithCreator.creator_profile?.username}
           />
         );
+      case "poll":
+        return (
+          <QuickPoll
+            content={item.content as any}
+            itemId={item.id}
+            currentUserId={user?.id}
+            onDelete={() => deleteItem(item.id)}
+            isCreator={item.created_by === user?.id}
+          />
+        );
+      case "audio":
+        return (
+          <AudioClip
+            content={item.content as any}
+            onDelete={() => deleteItem(item.id)}
+            isCreator={item.created_by === user?.id}
+          />
+        );
+      case "doodle":
+        return (
+          <DoodleCanvas
+            content={item.content as any}
+            onDelete={() => deleteItem(item.id)}
+            isCreator={item.created_by === user?.id}
+          />
+        );
+      case "music":
+        return (
+          <MusicDrop
+            content={item.content as any}
+            onDelete={() => deleteItem(item.id)}
+            isCreator={item.created_by === user?.id}
+          />
+        );
+      case "challenge":
+        return (
+          <ChallengeCard
+            content={item.content as any}
+            itemId={item.id}
+            currentUserId={user?.id}
+            onDelete={() => deleteItem(item.id)}
+            isCreator={item.created_by === user?.id}
+          />
+        );
       default:
         return null;
-    }
-  };
-
-  const handleAddNote = () => {
-    if (!noteTitle.trim()) {
-      notify("Please enter a title", "error");
-      return;
-    }
-    createItem("note", { title: noteTitle, body: noteBody, color: noteColor });
-    setNoteTitle("");
-    setNoteBody("");
-    setNoteColor("yellow");
-    setNoteDialog(false);
-  };
-
-  const handleImageUpload = async () => {
-    if (!imageFile) return "";
-
-    try {
-      setUploading(true);
-      const fileExt = imageFile.name.split(".").pop();
-      const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
-      const filePath = `${circleId}/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("wall-images")
-        .upload(filePath, imageFile);
-
-      if (uploadError) throw uploadError;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from("wall-images")
-        .getPublicUrl(filePath);
-
-      return publicUrl;
-    } catch (error: any) {
-      notify(error.message, "error");
-      return "";
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleAddImage = async () => {
-    let finalUrl = imageUrl;
-
-    if (imageFile) {
-      finalUrl = await handleImageUpload();
-      if (!finalUrl) return;
-    }
-
-    if (!finalUrl.trim()) {
-      notify("Please enter an image URL or upload a file", "error");
-      return;
-    }
-    
-    createItem("image", { url: finalUrl, caption: imageCaption });
-    setImageUrl("");
-    setImageCaption("");
-    setImageFile(null);
-    setImageDialog(false);
-    setShowCamera(false);
-  };
-
-  const handleAddThread = async () => {
-    if (!threadTitle.trim()) {
-      notify("Please enter a thread title", "error");
-      return;
-    }
-
-    try {
-      // Create the chat thread first
-      const { data: threadData, error: threadError } = await supabase
-        .from("chat_threads")
-        .insert({
-          circle_id: circleId!,
-          created_by: user!.id,
-          title: threadTitle,
-        })
-        .select()
-        .single();
-
-      if (threadError) throw threadError;
-
-      // Add the creator as a thread member
-      const { error: memberError } = await supabase
-        .from("thread_members")
-        .insert({
-          thread_id: threadData.id,
-          user_id: user!.id,
-        });
-
-      if (memberError) throw memberError;
-
-      // Create the wall item with the thread ID
-      const position = getSmartPosition();
-      const { data: wallItem, error: wallError } = await supabase
-        .from("wall_items")
-        .insert({
-          circle_id: circleId!,
-          created_by: user!.id,
-          type: "thread",
-          content: { title: threadTitle, threadId: threadData.id },
-          x: position.x,
-          y: position.y,
-          z_index: maxZIndex + 1,
-        })
-        .select()
-        .single();
-
-      if (wallError) throw wallError;
-
-      // Link the thread to the wall item
-      await supabase
-        .from("chat_threads")
-        .update({ linked_wall_item_id: wallItem.id })
-        .eq("id", threadData.id);
-
-      setMaxZIndex(prev => prev + 1);
-      notify("Thread added!", "success");
-      setThreadTitle("");
-      setThreadDialog(false);
-    } catch (error: any) {
-      notify(error.message, "error");
-    }
-  };
-
-  const handleAddAnnouncement = () => {
-    if (!announcementText.trim()) {
-      notify("Please enter announcement text", "error");
-      return;
-    }
-    createItem("announcement", { text: announcementText });
-    setAnnouncementText("");
-    setAnnouncementDialog(false);
-  };
-
-  const handleAddGame = (gameType: string) => {
-    if (gameType === "tictactoe") {
-      createItem("game_tictactoe", {
-        state: Array(9).fill(""),
-        turn: "X",
-        winner: null,
-        winningLine: null,
-        playerX: user?.id,
-        playerO: null,
-      });
     }
   };
 
@@ -825,7 +724,6 @@ const Wall = () => {
         .getPublicUrl(filePath);
 
       createItem("doodle", { imageUrl: publicUrl });
-      // Notification is already shown in createItem function, so removed duplicate here
     } catch (error: any) {
       notify(error.message, "error");
     } finally {
@@ -895,7 +793,7 @@ const Wall = () => {
 
         {viewMode === "wall" && isMobile ? (
           <div className="space-y-4 pb-24 flex flex-col items-center max-h-[calc(100vh-200px)] overflow-y-auto px-2">
-            {items.map((item) => {
+            {items.filter(item => item.id !== pendingDelete?.id).map((item) => {
               const itemWithCreator = item as any;
               return (
                 <div key={item.id} data-item-id={item.id} className="w-full max-w-full">
@@ -1071,7 +969,7 @@ const Wall = () => {
           </div>
         ) : (
           <div className="space-y-2">
-            {items.map((item) => {
+            {items.filter(item => item.id !== pendingDelete?.id).map((item) => {
               return (
                 <div
                   key={item.id}

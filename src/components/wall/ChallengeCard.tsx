@@ -108,7 +108,7 @@ export const ChallengeCard = ({ content, itemId, currentUserId, onDelete, isCrea
 
   return (
     <>
-      <Card className={`p-4 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20 border-2 border-rose-200 dark:border-rose-800 ${fullWidth ? 'w-full max-w-full' : 'w-[320px]'} relative`}>
+      <Card className={`p-4 bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-950/20 dark:to-pink-950/20 border-2 border-rose-200 dark:border-rose-800 ${fullWidth ? 'w-full max-w-full' : 'w-[320px] max-w-full'} relative`}>
         {onDelete && (
           <button
             onClick={(e) => {

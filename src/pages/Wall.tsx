@@ -177,45 +177,46 @@ const Wall = () => {
     };
   }, [user, circleId, navigate]);
 
-  // Calculate dynamic canvas height based on items (capped at 3x viewport)
+  // Desktop canvas height - fixed at viewport to enable scrolling
   const canvasHeight = useMemo(() => {
-    if (items.length === 0) return 'calc(100vh - 120px)';
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight - 120 : 800;
+    return viewportHeight + 'px';
+  }, []);
 
+  // Calculate content height for scroll detection
+  const contentHeight = useMemo(() => {
+    if (items.length === 0) return 0;
     // Find the bottommost item (y position + estimated height)
-    const maxItemY = Math.max(...items.map(item => item.y + 400)); // +400 for item height
-    const minHeight = typeof window !== 'undefined' ? window.innerHeight - 120 : 800;
-    const maxHeight = typeof window !== 'undefined' ? (window.innerHeight - 120) * 3 : 2400; // Cap at 3x viewport
-
-    const calculatedHeight = Math.max(minHeight, maxItemY + 100);
-    return Math.min(calculatedHeight, maxHeight) + 'px';
+    const maxItemY = Math.max(...items.map(item => item.y + 400));
+    return maxItemY + 100;
   }, [items]);
 
   // Check if wall content overflows vertically (for scroll indicator)
   const [showScrollIndicator, setShowScrollIndicator] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
 
   useEffect(() => {
-    if (!canvasRef.current || isMobile) return;
+    if (isMobile) return;
 
     const checkOverflow = () => {
-      const canvas = canvasRef.current;
-      if (!canvas) return;
-
-      const hasOverflow = canvas.scrollHeight > canvas.clientHeight;
-      setShowScrollIndicator(hasOverflow);
+      const viewportHeight = window.innerHeight - 120;
+      const hasOverflow = contentHeight > viewportHeight;
+      setShowScrollIndicator(hasOverflow && !hasScrolled);
     };
 
     checkOverflow();
     window.addEventListener('resize', checkOverflow);
 
     return () => window.removeEventListener('resize', checkOverflow);
-  }, [items, canvasHeight, isMobile]);
+  }, [items, contentHeight, isMobile, hasScrolled]);
 
   // Hide scroll indicator when user scrolls down
   useEffect(() => {
     if (!canvasRef.current || isMobile) return;
 
     const handleScroll = () => {
-      if (canvasRef.current && canvasRef.current.scrollTop > 100) {
+      if (canvasRef.current && canvasRef.current.scrollTop > 50) {
+        setHasScrolled(true);
         setShowScrollIndicator(false);
       }
     };
@@ -884,54 +885,69 @@ const Wall = () => {
         </div>
 
         {viewMode === "wall" && isMobile ? (
-          <div className="grid grid-cols-2 gap-3 pb-24 auto-rows-max">
+          <div className="flex flex-col gap-4 pb-24 max-w-full px-2">
             {items
               .filter(item => item.id !== pendingDelete?.id)
-              .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+              .sort((a, b) => {
+                // Sort by desktop position: top-to-bottom (y), then left-to-right (x)
+                if (Math.abs(a.y - b.y) < 100) {
+                  // If items are roughly on same row (within 100px), sort by x
+                  return a.x - b.x;
+                }
+                // Otherwise sort by y (top to bottom)
+                return a.y - b.y;
+              })
               .map((item) => {
               const itemWithCreator = item as any;
               return (
                 <div
                   key={item.id}
-                  className="w-full"
+                  className="w-full max-w-full flex justify-center"
                 >
                   {item.type === "note" && (
-                    <StickyNote
-                      content={item.content as any}
-                      onDelete={() => deleteItem(item.id)}
-                      onUpdate={(newContent) => {
-                        const updated: Partial<Omit<WallItem, "circle_id" | "created_at" | "created_by" | "id">> = {
-                          content: newContent,
-                        };
-                        updateItem(item.id, updated);
-                      }}
-                      isCreator={item.created_by === user?.id}
-                      creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
-                      creatorUsername={itemWithCreator.creator_profile?.username}
-                      hideAvatar={true}
-                    />
+                    <div className="max-w-[280px] w-full">
+                      <StickyNote
+                        content={item.content as any}
+                        onDelete={() => deleteItem(item.id)}
+                        onUpdate={(newContent) => {
+                          const updated: Partial<Omit<WallItem, "circle_id" | "created_at" | "created_by" | "id">> = {
+                            content: newContent,
+                          };
+                          updateItem(item.id, updated);
+                        }}
+                        isCreator={item.created_by === user?.id}
+                        creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
+                        creatorUsername={itemWithCreator.creator_profile?.username}
+                        hideAvatar={true}
+                      />
+                    </div>
                   )}
                   {item.type === "image" && (
-                    <ImageCard
-                      id={item.id}
-                      content={item.content as any}
-                      onDelete={() => deleteItem(item.id)}
-                      creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
-                      creatorUsername={itemWithCreator.creator_profile?.username}
-                      hideAvatar={true}
-                      currentUserId={user?.id}
-                    />
+                    <div className="max-w-[400px] w-full">
+                      <ImageCard
+                        id={item.id}
+                        content={item.content as any}
+                        onDelete={() => deleteItem(item.id)}
+                        creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
+                        creatorUsername={itemWithCreator.creator_profile?.username}
+                        hideAvatar={true}
+                        currentUserId={user?.id}
+                      />
+                    </div>
                   )}
                   {item.type === "thread" && (
-                    <ThreadBubble
-                      content={item.content as any}
-                      onDelete={() => handleThreadDelete(item.id, (item.content as any).threadId)}
-                      onClick={() => navigate(`/circle/${circleId}/chat?threadId=${(item.content as any).threadId}`)}
-                      hideAvatar={true}
-                    />
+                    <div className="max-w-[320px] w-full">
+                      <ThreadBubble
+                        content={item.content as any}
+                        onDelete={() => handleThreadDelete(item.id, (item.content as any).threadId)}
+                        onClick={() => navigate(`/circle/${circleId}/chat?threadId=${(item.content as any).threadId}`)}
+                        hideAvatar={true}
+                      />
+                    </div>
                   )}
                   {item.type === "game_tictactoe" && (
-                    <TicTacToe 
+                    <div className="max-w-[280px] w-full">
+                      <TicTacToe
                       content={item.content as any}
                       createdBy={item.created_by}
                       currentUserId={user?.id}
@@ -953,56 +969,69 @@ const Wall = () => {
                         
                         updateItem(item.id, { content: updatedContent as any });
                       }}
-                      onDelete={() => deleteItem(item.id)} 
+                      onDelete={() => deleteItem(item.id)}
                     />
+                    </div>
                   )}
                   {item.type === "announcement" && (
-                    <AnnouncementBubble
-                      content={item.content as any}
-                      onDelete={() => deleteItem(item.id)}
-                      creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
-                      creatorUsername={itemWithCreator.creator_profile?.username}
-                      hideAvatar={true}
-                    />
+                    <div className="max-w-[320px] w-full">
+                      <AnnouncementBubble
+                        content={item.content as any}
+                        onDelete={() => deleteItem(item.id)}
+                        creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
+                        creatorUsername={itemWithCreator.creator_profile?.username}
+                        hideAvatar={true}
+                      />
+                    </div>
                   )}
                   {item.type === "poll" && (
-                    <QuickPoll
-                      content={item.content as any}
-                      itemId={item.id}
-                      currentUserId={user?.id}
-                      onDelete={() => deleteItem(item.id)}
-                      isCreator={item.created_by === user?.id}
-                    />
+                    <div className="max-w-[320px] w-full">
+                      <QuickPoll
+                        content={item.content as any}
+                        itemId={item.id}
+                        currentUserId={user?.id}
+                        onDelete={() => deleteItem(item.id)}
+                        isCreator={item.created_by === user?.id}
+                      />
+                    </div>
                   )}
                   {item.type === "audio" && (
-                    <AudioClip 
-                      content={item.content as any}
-                      onDelete={() => deleteItem(item.id)}
-                      isCreator={item.created_by === user?.id}
-                    />
+                    <div className="max-w-[320px] w-full">
+                      <AudioClip
+                        content={item.content as any}
+                        onDelete={() => deleteItem(item.id)}
+                        isCreator={item.created_by === user?.id}
+                      />
+                    </div>
                   )}
                   {item.type === "doodle" && (
-                    <DoodleCanvas 
-                      content={item.content as any}
-                      onDelete={() => deleteItem(item.id)}
-                      isCreator={item.created_by === user?.id}
-                    />
+                    <div className="max-w-[300px] w-full">
+                      <DoodleCanvas
+                        content={item.content as any}
+                        onDelete={() => deleteItem(item.id)}
+                        isCreator={item.created_by === user?.id}
+                      />
+                    </div>
                   )}
                   {item.type === "music" && (
-                    <MusicDrop 
-                      content={item.content as any}
-                      onDelete={() => deleteItem(item.id)}
-                      isCreator={item.created_by === user?.id}
-                    />
+                    <div className="max-w-[320px] w-full">
+                      <MusicDrop
+                        content={item.content as any}
+                        onDelete={() => deleteItem(item.id)}
+                        isCreator={item.created_by === user?.id}
+                      />
+                    </div>
                   )}
                   {item.type === "challenge" && (
-                    <ChallengeCard
-                      content={item.content as any}
-                      itemId={item.id}
-                      currentUserId={user?.id}
-                      onDelete={() => deleteItem(item.id)}
-                      isCreator={item.created_by === user?.id}
-                    />
+                    <div className="max-w-[320px] w-full">
+                      <ChallengeCard
+                        content={item.content as any}
+                        itemId={item.id}
+                        currentUserId={user?.id}
+                        onDelete={() => deleteItem(item.id)}
+                        isCreator={item.created_by === user?.id}
+                      />
+                    </div>
                   )}
                 </div>
               );
@@ -1012,7 +1041,7 @@ const Wall = () => {
           // Desktop canvas view
           <div
             ref={canvasRef}
-            className="relative w-full max-w-full bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border overflow-y-auto overflow-x-hidden pb-20"
+            className="relative w-full max-w-full bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border overflow-y-auto overflow-x-hidden"
             style={{
               height: canvasHeight,
               backgroundImage: `
@@ -1025,24 +1054,32 @@ const Wall = () => {
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
           >
-            {/* Scroll indicator */}
-            {showScrollIndicator && (
-              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-bounce">
-                <div className="flex flex-col items-center gap-1">
-                  <svg
-                    className="w-6 h-6 text-primary drop-shadow-[0_0_8px_hsl(var(--primary))]"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v10.586l2.293-2.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V4a1 1 0 011-1z" clipRule="evenodd" />
-                  </svg>
-                  <span className="text-xs text-primary font-bold drop-shadow-[0_0_8px_hsl(var(--primary))] opacity-80">
-                    Scroll
-                  </span>
+            {/* Inner container with proper height for content */}
+            <div
+              className="relative w-full pb-20"
+              style={{
+                minHeight: '100%',
+                height: contentHeight > 0 ? `${contentHeight}px` : '100%'
+              }}
+            >
+              {/* Scroll indicator */}
+              {showScrollIndicator && (
+                <div className="fixed bottom-24 left-1/2 -translate-x-1/2 z-[100] pointer-events-none animate-bounce">
+                  <div className="flex flex-col items-center gap-1 bg-background/80 backdrop-blur-sm px-4 py-2 rounded-full border-2 border-primary shadow-lg">
+                    <svg
+                      className="w-8 h-8 text-primary drop-shadow-[0_0_12px_hsl(var(--primary))]"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path fillRule="evenodd" d="M10 3a1 1 0 011 1v10.586l2.293-2.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V4a1 1 0 011-1z" clipRule="evenodd" />
+                    </svg>
+                    <span className="text-sm text-primary font-bold drop-shadow-[0_0_8px_hsl(var(--primary))]">
+                      Scroll Down
+                    </span>
+                  </div>
                 </div>
-              </div>
-            )}
-            {items.map((item) => (
+              )}
+              {items.map((item) => (
               <div
                 key={item.id}
                 data-item-id={item.id}
@@ -1071,6 +1108,7 @@ const Wall = () => {
                 {renderItem(item)}
               </div>
             ))}
+            </div>
           </div>
         ) : (
           <div className="space-y-2">

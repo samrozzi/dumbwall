@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useLayoutEffect } from "react";
 import { cn } from "@/lib/utils";
 
 interface MasonryGridProps {
@@ -12,6 +12,7 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [columnCount, setColumnCount] = useState(2);
+  const [rowSpans, setRowSpans] = useState<number[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
   const dragStartPos = useRef({ x: 0, y: 0 });
@@ -76,6 +77,27 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
       };
     }
   }, [draggedIndex, handleDragMove, handleDragEnd]);
+
+  // Calculate row spans based on item heights
+  useLayoutEffect(() => {
+    const calculateRowSpans = () => {
+      const newRowSpans = itemRefs.current.map((ref) => {
+        if (!ref) return 1;
+        const height = ref.offsetHeight;
+        // Each grid row is 10px, add 1 for gap spacing
+        return Math.ceil(height / 10) + 1;
+      });
+      setRowSpans(newRowSpans);
+    };
+
+    // Calculate on mount and when items change
+    calculateRowSpans();
+
+    // Recalculate on window resize
+    const handleResize = () => calculateRowSpans();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [children.length, columnCount]);
 
   // Generate stable random rotation for each item based on its ID
   const getRotation = (index: number) => {
@@ -145,6 +167,7 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
             )}
             style={{
               gridColumn: `span ${columnSpan}`,
+              gridRowEnd: `span ${rowSpans[index] || 1}`,
               transform: isDragging 
                 ? `translate(${dragOffset.x}px, ${dragOffset.y}px) rotate(${rotation}deg) scale(1.05)`
                 : `translate(${offset.x}px, ${offset.y}px) rotate(${rotation}deg)`,

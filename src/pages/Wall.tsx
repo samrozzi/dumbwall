@@ -177,16 +177,54 @@ const Wall = () => {
     };
   }, [user, circleId, navigate]);
 
-  // Calculate dynamic canvas height based on items
+  // Calculate dynamic canvas height based on items (capped at 3x viewport)
   const canvasHeight = useMemo(() => {
     if (items.length === 0) return 'calc(100vh - 120px)';
-    
+
     // Find the bottommost item (y position + estimated height)
     const maxItemY = Math.max(...items.map(item => item.y + 400)); // +400 for item height
     const minHeight = typeof window !== 'undefined' ? window.innerHeight - 120 : 800;
-    
-    return Math.max(minHeight, maxItemY + 100) + 'px';
+    const maxHeight = typeof window !== 'undefined' ? (window.innerHeight - 120) * 3 : 2400; // Cap at 3x viewport
+
+    const calculatedHeight = Math.max(minHeight, maxItemY + 100);
+    return Math.min(calculatedHeight, maxHeight) + 'px';
   }, [items]);
+
+  // Check if wall content overflows vertically (for scroll indicator)
+  const [showScrollIndicator, setShowScrollIndicator] = useState(false);
+
+  useEffect(() => {
+    if (!canvasRef.current || isMobile) return;
+
+    const checkOverflow = () => {
+      const canvas = canvasRef.current;
+      if (!canvas) return;
+
+      const hasOverflow = canvas.scrollHeight > canvas.clientHeight;
+      setShowScrollIndicator(hasOverflow);
+    };
+
+    checkOverflow();
+    window.addEventListener('resize', checkOverflow);
+
+    return () => window.removeEventListener('resize', checkOverflow);
+  }, [items, canvasHeight, isMobile]);
+
+  // Hide scroll indicator when user scrolls down
+  useEffect(() => {
+    if (!canvasRef.current || isMobile) return;
+
+    const handleScroll = () => {
+      if (canvasRef.current && canvasRef.current.scrollTop > 100) {
+        setShowScrollIndicator(false);
+      }
+    };
+
+    const canvas = canvasRef.current;
+    canvas.addEventListener('scroll', handleScroll);
+
+    return () => canvas.removeEventListener('scroll', handleScroll);
+  }, [isMobile]);
 
   const loadItems = async () => {
     try {
@@ -846,16 +884,16 @@ const Wall = () => {
         </div>
 
         {viewMode === "wall" && isMobile ? (
-          <div className="columns-2 gap-3 pb-24">
+          <div className="grid grid-cols-2 gap-3 pb-24 auto-rows-max">
             {items
               .filter(item => item.id !== pendingDelete?.id)
               .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
               .map((item) => {
               const itemWithCreator = item as any;
               return (
-                <div 
-                  key={item.id} 
-                  className="break-inside-avoid mb-3"
+                <div
+                  key={item.id}
+                  className="w-full"
                 >
                   {item.type === "note" && (
                     <StickyNote
@@ -974,7 +1012,7 @@ const Wall = () => {
           // Desktop canvas view
           <div
             ref={canvasRef}
-            className="relative w-full max-w-full bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border overflow-hidden pb-20"
+            className="relative w-full max-w-full bg-gradient-to-br from-background to-muted/20 rounded-lg border border-border overflow-y-auto overflow-x-hidden pb-20"
             style={{
               height: canvasHeight,
               backgroundImage: `
@@ -987,6 +1025,23 @@ const Wall = () => {
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
           >
+            {/* Scroll indicator */}
+            {showScrollIndicator && (
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-bounce">
+                <div className="flex flex-col items-center gap-1">
+                  <svg
+                    className="w-6 h-6 text-primary drop-shadow-[0_0_8px_hsl(var(--primary))]"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v10.586l2.293-2.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 14.586V4a1 1 0 011-1z" clipRule="evenodd" />
+                  </svg>
+                  <span className="text-xs text-primary font-bold drop-shadow-[0_0_8px_hsl(var(--primary))] opacity-80">
+                    Scroll
+                  </span>
+                </div>
+              </div>
+            )}
             {items.map((item) => (
               <div
                 key={item.id}

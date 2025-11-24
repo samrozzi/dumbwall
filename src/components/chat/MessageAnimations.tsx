@@ -78,18 +78,18 @@ export const MessageAnimations = ({ effect, onComplete }: MessageAnimationsProps
         </div>
       ))}
 
-      <style jsx>{`
+      <style dangerouslySetInnerHTML={{__html: `
         @keyframes float {
           0% {
-            transform: translateY(0) rotate(${Math.random() * 360}deg);
+            transform: translateY(0) rotate(0deg);
             opacity: 1;
           }
           100% {
-            transform: translateY(110vh) rotate(${Math.random() * 720}deg);
+            transform: translateY(110vh) rotate(720deg);
             opacity: 0;
           }
         }
-      `}</style>
+      `}} />
     </div>
   );
 };

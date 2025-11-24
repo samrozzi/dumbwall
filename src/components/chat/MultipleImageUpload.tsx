@@ -32,8 +32,12 @@ export const MultipleImageUpload = ({ onImagesSelected, maxImages = 10 }: Multip
 
       try {
         const compressed = await compressImage(file);
-        const preview = URL.createObjectURL(compressed);
-        newImages.push({ file: compressed, preview, caption: '' });
+        const compressedFile = new File([compressed.blob], file.name, {
+          type: 'image/jpeg',
+          lastModified: Date.now()
+        });
+        const preview = URL.createObjectURL(compressed.blob);
+        newImages.push({ file: compressedFile, preview, caption: '' });
       } catch (error) {
         toast.error(`Failed to process ${file.name}`);
       }

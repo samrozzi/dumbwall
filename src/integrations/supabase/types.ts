@@ -503,6 +503,38 @@ export type Database = {
           },
         ]
       }
+      message_read_receipts: {
+        Row: {
+          created_at: string
+          id: string
+          message_id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_id: string
+          read_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_read_receipts_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           created_at: string
@@ -790,6 +822,38 @@ export type Database = {
           },
           {
             foreignKeyName: "thread_read_status_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      typing_indicators: {
+        Row: {
+          expires_at: string
+          id: string
+          started_at: string
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          id?: string
+          started_at?: string
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          id?: string
+          started_at?: string
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "typing_indicators_thread_id_fkey"
             columns: ["thread_id"]
             isOneToOne: false
             referencedRelation: "chat_threads"

@@ -9,8 +9,9 @@ import { InterestTags } from "@/components/profile/InterestTags";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { MessageSquare, Users, Loader2 } from "lucide-react";
+import { MessageSquare, Users, Loader2, ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface ProfileData {
   id: string;
@@ -48,6 +49,7 @@ export default function PublicProfile() {
   const { username } = useParams<{ username: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [interests, setInterests] = useState<string[]>([]);
@@ -215,9 +217,42 @@ export default function PublicProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-24 md:pb-8">
       <Navigation circleId={userCircleId || undefined} />
-      <div className="container max-w-4xl mx-auto px-4 py-8 md:pl-24">{/* Add left padding on desktop for nav */}
+      
+      {/* Back Arrow - Mobile: Floating Left, Desktop: Above Profile Card */}
+      {userCircleId && (
+        <>
+          {/* Mobile: Floating back button on left edge */}
+          {isMobile && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(`/circle/${userCircleId}/people`)}
+              className="fixed left-2 top-20 z-50 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground shadow-lg backdrop-blur-sm h-12 w-12"
+              title="Back to My Friends"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          )}
+        </>
+      )}
+      
+      <div className="container max-w-4xl mx-auto px-4 py-8 md:pl-24 relative">{/* Add left padding on desktop for nav */}
+        {/* Desktop: Back button left of profile card */}
+        {!isMobile && userCircleId && (
+          <div className="absolute -left-12 top-12">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => navigate(`/circle/${userCircleId}/people`)}
+              className="rounded-full hover:bg-muted"
+              title="Back to My Friends"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </div>
+        )}
         <Card>
           <ProfileHeader
             userId={profile.id}

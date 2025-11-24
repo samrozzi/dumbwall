@@ -14,9 +14,10 @@ interface MusicDropProps {
   };
   onDelete?: () => void;
   isCreator?: boolean;
+  fullWidth?: boolean;
 }
 
-export const MusicDrop = ({ content, onDelete, isCreator }: MusicDropProps) => {
+export const MusicDrop = ({ content, onDelete, isCreator, fullWidth }: MusicDropProps) => {
   const [showEmbed, setShowEmbed] = useState(false);
   const musicUrl = content.spotifyUrl || content.youtubeUrl || content.appleUrl;
 
@@ -44,16 +45,16 @@ export const MusicDrop = ({ content, onDelete, isCreator }: MusicDropProps) => {
     : null;
 
   return (
-    <Card className="p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border-2 border-indigo-200 dark:border-indigo-800 w-[380px] relative">
-      {isCreator && onDelete && (
+    <Card className={`p-4 bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-indigo-950/20 dark:to-purple-950/20 border-2 border-indigo-200 dark:border-indigo-800 ${fullWidth ? 'w-full max-w-full' : 'w-[380px]'} relative`}>
+      {onDelete && (
         <button
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
           }}
-          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/80 dark:bg-black/80 hover:bg-white dark:hover:bg-black flex items-center justify-center transition-colors z-10"
+          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white dark:bg-black hover:bg-white/90 dark:hover:bg-black/90 flex items-center justify-center transition-colors z-10 shadow-md"
         >
-          <X className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+          <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
         </button>
       )}
       <div className="flex gap-3">

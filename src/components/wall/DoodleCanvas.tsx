@@ -7,20 +7,21 @@ interface DoodleCanvasProps {
   };
   onDelete?: () => void;
   isCreator?: boolean;
+  fullWidth?: boolean;
 }
 
-export const DoodleCanvas = ({ content, onDelete, isCreator }: DoodleCanvasProps) => {
+export const DoodleCanvas = ({ content, onDelete, isCreator, fullWidth }: DoodleCanvasProps) => {
   return (
-    <Card className="p-2 bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/20 dark:to-cyan-950/20 border-2 border-teal-200 dark:border-teal-800 w-[320px] relative">
-      {isCreator && onDelete && (
+    <Card className={`p-2 bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/20 dark:to-cyan-950/20 border-2 border-teal-200 dark:border-teal-800 ${fullWidth ? 'w-full max-w-full' : 'w-[320px]'} relative`}>
+      {onDelete && (
         <button
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
           }}
-          className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white/80 dark:bg-black/80 hover:bg-white dark:hover:bg-black flex items-center justify-center transition-colors z-10"
+          className="absolute top-2 right-2 w-8 h-8 rounded-full bg-white dark:bg-black hover:bg-white/90 dark:hover:bg-black/90 flex items-center justify-center transition-colors z-10 shadow-md"
         >
-          <X className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+          <X className="w-5 h-5 text-gray-600 dark:text-gray-400" />
         </button>
       )}
       <img

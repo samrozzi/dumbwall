@@ -83,15 +83,15 @@ const StickyNote = ({ content, onDelete, onUpdate, isCreator, creatorAvatar, cre
       >
         {!hideAvatar && <CreatorBadge avatarUrl={creatorAvatar} username={creatorUsername} />}
         
-        {onDelete && isHovered && (
+        {onDelete && (
           <button
             onClick={(e) => {
               e.stopPropagation();
               onDelete();
             }}
-            className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 shadow-md hover:scale-110 transition-transform z-10"
+            className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full w-8 h-8 shadow-md hover:scale-110 transition-transform z-10 flex items-center justify-center"
           >
-            <X className="w-4 h-4" />
+            <X className="w-5 h-5" />
           </button>
         )}
         

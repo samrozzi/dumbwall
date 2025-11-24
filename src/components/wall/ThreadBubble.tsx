@@ -178,15 +178,15 @@ const ThreadBubble = ({ content, onDelete, onClick, fullWidth }: ThreadBubblePro
       onMouseLeave={() => setIsHovered(false)}
       style={{ minHeight: "200px", maxHeight: "280px", maxWidth: fullWidth ? "100%" : "400px" }}
     >
-      {onDelete && isHovered && (
+      {onDelete && (
         <button
           onClick={(e) => {
             e.stopPropagation();
             onDelete();
           }}
-          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors z-10"
+          className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-8 h-8 hover:bg-red-600 transition-colors z-10 flex items-center justify-center shadow-md"
         >
-          <X className="w-4 h-4" />
+          <X className="w-5 h-5" />
         </button>
       )}
       

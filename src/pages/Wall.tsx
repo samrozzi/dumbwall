@@ -833,7 +833,7 @@ const Wall = () => {
         </div>
 
         {viewMode === "wall" && isMobile ? (
-          <div className="space-y-4 pb-24">
+          <div className="space-y-4 pb-24 flex flex-col items-center px-4">
             {items.map((item) => {
               const itemWithCreator = item as any;
               return (
@@ -918,22 +918,43 @@ const Wall = () => {
                       content={item.content as any}
                       itemId={item.id}
                       currentUserId={user?.id}
+                      onDelete={() => deleteItem(item.id)}
+                      isCreator={item.created_by === user?.id}
+                      fullWidth={true}
                     />
                   )}
                   {item.type === "audio" && (
-                    <AudioClip content={item.content as any} />
+                    <AudioClip 
+                      content={item.content as any}
+                      onDelete={() => deleteItem(item.id)}
+                      isCreator={item.created_by === user?.id}
+                      fullWidth={true}
+                    />
                   )}
                   {item.type === "doodle" && (
-                    <DoodleCanvas content={item.content as any} />
+                    <DoodleCanvas 
+                      content={item.content as any}
+                      onDelete={() => deleteItem(item.id)}
+                      isCreator={item.created_by === user?.id}
+                      fullWidth={true}
+                    />
                   )}
                   {item.type === "music" && (
-                    <MusicDrop content={item.content as any} />
+                    <MusicDrop 
+                      content={item.content as any}
+                      onDelete={() => deleteItem(item.id)}
+                      isCreator={item.created_by === user?.id}
+                      fullWidth={true}
+                    />
                   )}
                   {item.type === "challenge" && (
                     <ChallengeCard
                       content={item.content as any}
                       itemId={item.id}
                       currentUserId={user?.id}
+                      onDelete={() => deleteItem(item.id)}
+                      isCreator={item.created_by === user?.id}
+                      fullWidth={true}
                     />
                   )}
                 </div>

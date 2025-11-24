@@ -1340,7 +1340,7 @@ const Chat = () => {
         onComplete={() => setMessageEffect(null)}
       />
 
-      <style jsx global>{`
+      <style dangerouslySetInnerHTML={{__html: `
         @keyframes highlight {
           0%, 100% { background-color: transparent; }
           50% { background-color: rgba(var(--primary), 0.2); }
@@ -1349,7 +1349,7 @@ const Chat = () => {
         .highlight-message {
           animation: highlight 2s ease-in-out;
         }
-      `}</style>
+      `}} />
     </div>
   );
 };

@@ -201,9 +201,7 @@ const GameDetail = () => {
           )}
 
           {/* Game content */}
-          <div className="bg-card border-2 border-border rounded-lg p-6">
-            <GameWrapper gameId={game.id} userId={user.id} />
-          </div>
+          <GameWrapper gameId={game.id} userId={user.id} />
         </div>
       </div>
 

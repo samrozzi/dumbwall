@@ -650,6 +650,7 @@ const Wall = () => {
             onDelete={() => deleteItem(item.id)}
             creatorAvatar={itemWithCreator.creator_profile?.avatar_url}
             creatorUsername={itemWithCreator.creator_profile?.username}
+            currentUserId={user?.id}
           />
         );
       case "thread":

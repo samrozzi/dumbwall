@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { X, Send } from "lucide-react";
 import { usePhotoInteractions } from "@/hooks/usePhotoInteractions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -51,7 +51,10 @@ export const PhotoViewDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[90vh] p-0 border-2 border-white/10 rounded-2xl overflow-hidden">
+      <DialogContent className="max-w-7xl max-h-[90vh] p-0 border-2 border-white/10 rounded-2xl overflow-hidden [&>button]:hidden">
+        <DialogTitle className="sr-only">
+          {type === 'image' ? 'View Photo' : 'View Doodle'}
+        </DialogTitle>
         {/* Close button - top right of dialog */}
         <button
           onClick={onClose}

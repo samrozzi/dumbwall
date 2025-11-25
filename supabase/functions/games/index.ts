@@ -255,7 +255,7 @@ async function gameAction(
 ): Promise<Response> {
   // Validate input
   const GameActionSchema = z.object({
-    event_type: z.enum(['move', 'vote', 'answer', 'submit', 'forfeit', 'start', 'join', 'leave']),
+    event_type: z.enum(['move', 'vote', 'answer', 'submit', 'forfeit', 'start', 'join', 'leave', 'drop']),
     payload: z.record(z.any()).refine(
       (val) => JSON.stringify(val).length < 10000,
       { message: 'Payload too large (max 10000 characters)' }

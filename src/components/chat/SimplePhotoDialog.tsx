@@ -1,38 +1,32 @@
 import {
   Dialog,
   DialogContent,
-  DialogHeader,
-  DialogTitle,
 } from "@/components/ui/dialog";
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-interface PhotoViewerDialogProps {
+interface SimplePhotoDialogProps {
   isOpen: boolean;
   onClose: () => void;
   imageUrl: string;
   caption?: string;
 }
 
-export const PhotoViewerDialog = ({
+export const SimplePhotoDialog = ({
   isOpen,
   onClose,
   imageUrl,
   caption,
-}: PhotoViewerDialogProps) => {
+}: SimplePhotoDialogProps) => {
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl p-0 bg-background border-2 border-primary">
-        <DialogHeader className="absolute right-2 top-2 z-10">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="rounded-full bg-background/80 hover:bg-background"
-          >
-            <X className="h-4 w-4" />
-          </Button>
-        </DialogHeader>
+      <DialogContent className="max-w-4xl p-0 bg-background border-2 border-primary [&>button]:hidden">
+        <button
+          onClick={onClose}
+          className="absolute top-4 right-4 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
+        >
+          <X className="h-6 w-6" />
+        </button>
         
         <div className="overflow-hidden rounded-lg">
           <img

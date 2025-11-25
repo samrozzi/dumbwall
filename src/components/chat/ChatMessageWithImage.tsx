@@ -4,7 +4,7 @@ import { Reply } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { EmojiPicker } from "./EmojiPicker";
-import { PhotoViewerDialog } from "@/components/wall/PhotoViewerDialog";
+import { SimplePhotoDialog } from "./SimplePhotoDialog";
 
 interface ChatMessageWithImageProps {
   id: string;
@@ -103,7 +103,7 @@ const ChatMessageWithImage = ({
       </div>
 
       {image_url && (
-        <PhotoViewerDialog
+        <SimplePhotoDialog
           isOpen={imageDialogOpen}
           onClose={() => setImageDialogOpen(false)}
           imageUrl={image_url}

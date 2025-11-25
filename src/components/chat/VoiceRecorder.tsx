@@ -117,39 +117,19 @@ export const VoiceRecorder = ({ onVoiceRecorded, threadId, userId }: VoiceRecord
   const sendVoiceMessage = async () => {
     if (!audioBlob) return;
 
-    try {
-      // Upload to Supabase storage
-      const fileName = `${userId}/${Date.now()}.webm`;
-      const { data, error } = await supabase.storage
-        .from('voice-messages')
-        .upload(fileName, audioBlob, {
-          contentType: 'audio/webm;codecs=opus',
-          cacheControl: '3600',
-        });
+    const file = new File([audioBlob], `voice-${Date.now()}.webm`, {
+      type: 'audio/webm;codecs=opus'
+    });
+    
+    onVoiceRecorded(file, recordingTime);
 
-      if (error) throw error;
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('voice-messages')
-        .getPublicUrl(fileName);
-
-      const file = new File([audioBlob], `voice-${Date.now()}.webm`, {
-        type: 'audio/webm;codecs=opus'
-      });
-      
-      onVoiceRecorded(file, recordingTime);
-
-      // Reset state
-      setAudioBlob(null);
-      if (audioUrl) {
-        URL.revokeObjectURL(audioUrl);
-        setAudioUrl(null);
-      }
-      setRecordingTime(0);
-    } catch (error) {
-      console.error('Error uploading voice message:', error);
-      toast.error('Failed to send voice message');
+    // Reset state
+    setAudioBlob(null);
+    if (audioUrl) {
+      URL.revokeObjectURL(audioUrl);
+      setAudioUrl(null);
     }
+    setRecordingTime(0);
   };
 
   const formatTime = (seconds: number) => {

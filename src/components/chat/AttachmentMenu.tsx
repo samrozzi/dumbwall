@@ -5,6 +5,7 @@ import { Plus, Image, Mic, Smile, Clapperboard } from 'lucide-react';
 import { EmojiPicker } from './EmojiPicker';
 import { GifPicker } from './GifPicker';
 import { toast } from 'sonner';
+import { compressImage } from '@/lib/imageCompression';
 
 interface AttachmentMenuProps {
   onPhotoSelect: (files: FileList) => void;
@@ -29,9 +30,35 @@ export const AttachmentMenu = ({
     setOpen(false);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
-      onPhotoSelect(e.target.files);
+      const files = Array.from(e.target.files);
+      const compressedFiles: File[] = [];
+      
+      try {
+        toast.loading('Compressing images...', { id: 'compress' });
+        
+        for (const file of files) {
+          if (file.type.startsWith('image/')) {
+            const { blob } = await compressImage(file, 1200, 0.8);
+            const compressedFile = new File([blob], file.name, { type: 'image/jpeg' });
+            compressedFiles.push(compressedFile);
+          } else {
+            compressedFiles.push(file);
+          }
+        }
+        
+        toast.dismiss('compress');
+        
+        // Create a new FileList-like object
+        const dataTransfer = new DataTransfer();
+        compressedFiles.forEach(file => dataTransfer.items.add(file));
+        onPhotoSelect(dataTransfer.files);
+      } catch (error) {
+        toast.dismiss('compress');
+        toast.error('Failed to process images');
+        console.error('Image compression error:', error);
+      }
     }
   };
 

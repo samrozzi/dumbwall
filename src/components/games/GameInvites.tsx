@@ -34,17 +34,28 @@ export const GameInvites = () => {
   const loadInvites = async () => {
     if (!user) return;
 
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("game_invites")
       .select(`
         id,
         game_id,
         invited_by,
-        games(title, type, circle_id),
-        profiles:invited_by(display_name)
+        invited_user_id,
+        status,
+        games!inner(
+          title,
+          type,
+          circle_id
+        ),
+        profiles!game_invites_invited_by_fkey(
+          display_name
+        )
       `)
       .eq("invited_user_id", user.id)
       .eq("status", "pending");
+
+    console.log('Loaded invites:', data);
+    if (error) console.error('Invite load error:', error);
 
     if (data) {
       setInvites(data as any);

@@ -79,6 +79,12 @@ export const useActivities = (circleId: string, limit: number = 20) => {
             .eq("id", activity.user_id)
             .single();
 
+          console.log("Activity profile data:", {
+            activity_id: activity.id,
+            user_id: activity.user_id,
+            profileData
+          });
+
           // Fetch wall item if applicable
           let wallItemData = null;
           if (activity.reference_type === 'wall_item' && activity.reference_id) {
@@ -97,6 +103,8 @@ export const useActivities = (circleId: string, limit: number = 20) => {
           };
         })
       );
+
+      console.log("Activities with data:", activitiesWithData);
 
       if (offset === 0) {
         setActivities(activitiesWithData || []);

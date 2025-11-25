@@ -66,10 +66,18 @@ export const useStories = (circleId: string) => {
             .select("username, display_name, avatar_url")
             .eq("id", story.user_id)
             .single();
+
+          console.log("Story profile data:", {
+            story_id: story.id,
+            user_id: story.user_id,
+            profileData
+          });
           
           return { ...story, profiles: profileData };
         })
       );
+
+      console.log("Stories with profiles:", storiesWithProfiles);
 
       setStories(storiesWithProfiles || []);
     } catch (error: any) {

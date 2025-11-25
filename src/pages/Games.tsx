@@ -27,7 +27,11 @@ import {
   Users,
   Trophy,
   MessageCircleQuestion,
-  Crown
+  Crown,
+  Play,
+  Clock,
+  UserPlus,
+  Trash2
 } from "lucide-react";
 import {
   Dialog,

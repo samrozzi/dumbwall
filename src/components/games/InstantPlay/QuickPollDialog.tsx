@@ -65,7 +65,7 @@ export const QuickPollDialog = ({ open, onOpenChange, circleId }: QuickPollDialo
       onOpenChange(false);
       setQuestion("");
       setOptions(["", ""]);
-      navigate(`/games/${circleId}`);
+      navigate(`/circle/${circleId}/games`);
     } catch (error) {
       console.error("Failed to create poll:", error);
       toast.error("Failed to create poll");

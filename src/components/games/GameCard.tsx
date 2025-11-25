@@ -69,7 +69,6 @@ export const GameCard = ({ game, userId, onDelete }: GameCardProps) => {
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (!confirm("Are you sure you want to delete this game?")) return;
     
     setIsDeleting(true);
     try {

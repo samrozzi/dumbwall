@@ -78,7 +78,7 @@ export const PollGame = ({
                 {metadata.options.map((option) => (
                   <div key={option.id} className="flex items-center space-x-2">
                     <RadioGroupItem value={option.id} id={option.id} />
-                    <Label htmlFor={option.id} className="cursor-pointer">
+                    <Label htmlFor={option.id} className="cursor-pointer text-foreground">
                       {option.label}
                     </Label>
                   </div>
@@ -103,10 +103,10 @@ export const PollGame = ({
               return (
                 <div key={option.id} className="space-y-1">
                   <div className="flex justify-between text-sm">
-                    <span className={userVotes.includes(option.id) ? "font-bold" : ""}>
+                    <span className={userVotes.includes(option.id) ? "font-bold text-foreground" : "text-foreground"}>
                       {option.label}
                     </span>
-                    <span className="text-muted-foreground">
+                    <span className="text-foreground/70 font-medium">
                       {option.voteCount} ({percentage.toFixed(0)}%)
                     </span>
                   </div>

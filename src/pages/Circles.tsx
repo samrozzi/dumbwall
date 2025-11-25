@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import { Plus, LogOut, Sparkles, Check, X, Mail } from "lucide-react";
+import { Plus, LogOut, Sparkles, Check, X, Mail, User } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -227,6 +227,15 @@ const Circles = () => {
           </div>
           <div className="flex items-center gap-2">
             <NotificationCenter />
+            <Button
+              onClick={() => navigate("/settings")}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <User className="w-4 h-4" />
+              Profile
+            </Button>
             <Button
               onClick={signOut}
               variant="outline"

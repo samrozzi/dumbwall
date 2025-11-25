@@ -31,6 +31,7 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [votes, setVotes] = useState<VoteCounts>({ upvotes: 0, downvotes: 0, user_vote: null });
   const [loading, setLoading] = useState(true);
+  const [optimisticCommentId, setOptimisticCommentId] = useState<string | null>(null);
 
   const loadComments = async () => {
     const { data, error } = await supabase
@@ -56,7 +57,28 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
       profiles: profilesData?.find(p => p.id === comment.user_id),
     })) || [];
 
-    setComments(commentsWithProfiles as Comment[]);
+    // Preserve optimistic comment if it hasn't been confirmed yet
+    setComments(prev => {
+      const optimistic = prev.find(c => c.id === optimisticCommentId);
+      if (optimistic && optimisticCommentId) {
+        // Check if real comment exists (matching user + text + recent timestamp)
+        const hasRealVersion = commentsWithProfiles.some(c => 
+          c.user_id === optimistic.user_id &&
+          c.comment_text === optimistic.comment_text &&
+          Math.abs(new Date(c.created_at).getTime() - new Date(optimistic.created_at).getTime()) < 5000
+        );
+        
+        if (hasRealVersion) {
+          // Real version exists, clear optimistic flag and use database comments
+          setOptimisticCommentId(null);
+          return commentsWithProfiles as Comment[];
+        } else {
+          // Real version not found yet, keep optimistic at end
+          return [...commentsWithProfiles.filter(c => c.id !== optimisticCommentId), optimistic] as Comment[];
+        }
+      }
+      return commentsWithProfiles as Comment[];
+    });
   };
 
   const loadReactions = async () => {
@@ -161,8 +183,9 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
     if (!currentUserId || !commentText.trim()) return;
 
     // Optimistic update - add comment immediately to UI
+    const tempId = `temp-${Date.now()}`;
     const optimisticComment = {
-      id: `temp-${Date.now()}`,
+      id: tempId,
       wall_item_id: wallItemId,
       user_id: currentUserId,
       comment_text: commentText,
@@ -173,6 +196,7 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
       }
     };
     
+    setOptimisticCommentId(tempId);
     setComments(prev => [...prev, optimisticComment]);
 
     try {

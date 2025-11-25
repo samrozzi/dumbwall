@@ -135,7 +135,7 @@ export const ActivityCard = ({ activity }: ActivityCardProps) => {
             <p className="text-sm text-foreground/70 mb-2">{getActionText()}</p>
             <div className="max-h-[280px] flex items-center justify-center bg-background/5 rounded-lg overflow-hidden cursor-pointer hover:bg-background/10 transition-colors">
               <img 
-                src={wallItem.content.imageUrl}
+                src={wallItem.content.url}
                 alt={wallItem.content.caption || "Wall image"}
                 className="max-h-[280px] w-auto object-contain"
               />
@@ -175,11 +175,10 @@ export const ActivityCard = ({ activity }: ActivityCardProps) => {
         return (
           <div className="mt-3">
             <p className="text-sm text-foreground/70 mb-2">{getActionText()}</p>
-            <div className="max-h-[280px] flex items-center justify-center bg-background/5 rounded-lg overflow-hidden">
-              <img 
-                src={wallItem.content.imageUrl}
-                alt="Doodle"
-                className="max-h-[280px] w-auto object-contain"
+            <div className="max-h-[280px] overflow-hidden rounded-lg">
+              <DoodleCanvas 
+                content={wallItem.content}
+                fullWidth
               />
             </div>
             <ActivityInteractions 

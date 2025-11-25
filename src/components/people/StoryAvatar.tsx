@@ -43,8 +43,13 @@ export const StoryAvatar = ({
       
       {/* Avatar with border overlay */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <Avatar className={cn("w-[85%] h-[85%]")}>
-          <AvatarImage src={src || undefined} alt={alt} />
+        <Avatar className={cn("w-[85%] h-[85%]")} key={src}>
+          <AvatarImage 
+            src={src || undefined} 
+            alt={alt}
+            onLoad={() => console.log("Avatar loaded:", src)}
+            onError={(e) => console.error("Avatar failed to load:", src, e)}
+          />
           <AvatarFallback className="bg-muted text-xs">
             {alt.slice(0, 2).toUpperCase()}
           </AvatarFallback>

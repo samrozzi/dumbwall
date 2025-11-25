@@ -89,16 +89,17 @@ export const GameCard = ({ game, userId, onDelete }: GameCardProps) => {
     <>
       <Card 
         className={cn(
-          "group relative overflow-hidden transition-all duration-300",
-          "hover:shadow-lg hover:scale-[1.02] border-2",
-          game.status === "in_progress" && "border-primary/50 shadow-primary/10",
-          game.status === "finished" && "opacity-75"
+          "group relative overflow-hidden transition-all duration-200",
+          "hover:shadow-lg border-2",
+          game.status === "in_progress" && "border-primary/30",
+          game.status === "finished" && "opacity-60",
+          "cursor-default"
         )}
       >
         {/* Header bar with game info */}
-        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 px-4 py-3 border-b flex items-center justify-between">
+        <div className="bg-gradient-to-r from-primary/10 to-secondary/10 px-4 py-2.5 border-b flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">{getGameIcon(game.type)}</span>
+            <span className="text-xl">{getGameIcon(game.type)}</span>
             <div>
               <h3 className="font-semibold text-sm line-clamp-1">
                 {game.title || getGameTypeName(game.type)}
@@ -114,9 +115,9 @@ export const GameCard = ({ game, userId, onDelete }: GameCardProps) => {
           </div>
         </div>
 
-        {/* Action buttons - shown on hover */}
-        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-10 flex gap-1">
-          {game.status !== "finished" && (
+        {/* Action buttons - only show on hover and for valid states */}
+        <div className="absolute top-3 right-3 flex gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 pointer-events-none group-hover:pointer-events-auto">
+          {game.status !== "finished" && game.status !== "cancelled" && (
             <Button
               size="sm"
               variant="secondary"
@@ -124,26 +125,26 @@ export const GameCard = ({ game, userId, onDelete }: GameCardProps) => {
                 e.stopPropagation();
                 setShowInviteDialog(true);
               }}
-              className="h-8 shadow-lg"
+              className="h-7 w-7 p-0 shadow-lg"
             >
-              <UserPlus className="w-3 h-3" />
+              <UserPlus className="w-3.5 h-3.5" />
             </Button>
           )}
-          {game.created_by === userId && (
+          {game.created_by === userId && game.status !== "finished" && game.status !== "cancelled" && (
             <Button
               size="sm"
               variant="destructive"
               onClick={handleDelete}
               disabled={isDeleting}
-              className="h-8 shadow-lg"
+              className="h-7 w-7 p-0 shadow-lg"
             >
-              <Trash2 className="w-3 h-3" />
+              <Trash2 className="w-3.5 h-3.5" />
             </Button>
           )}
         </div>
 
         {/* Game content */}
-        <div className="p-4">
+        <div className="p-4 pointer-events-auto">
           <GameWrapper gameId={game.id} userId={userId} />
         </div>
       </Card>

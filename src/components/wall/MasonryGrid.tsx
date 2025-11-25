@@ -166,13 +166,16 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
   return (
     <div 
       ref={containerRef}
-      className="pb-24 px-2 max-w-full overflow-x-hidden"
+      className={cn(
+        "pb-24 max-w-full overflow-x-hidden",
+        columnCount === 2 ? "px-4 max-w-[95%] mx-auto" : "px-2"
+      )}
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
-        gap: columnCount === 2 ? '1rem' : '1rem',
-        gridAutoRows: columnCount === 2 ? 'auto' : '10px', // Natural sizing on mobile
-        gridAutoFlow: columnCount === 2 ? 'row' : 'dense', // Predictable stacking on mobile
+        gap: columnCount === 2 ? '0.75rem' : '1rem',
+        gridAutoRows: columnCount === 2 ? 'auto' : '10px',
+        gridAutoFlow: columnCount === 2 ? 'row' : 'dense',
       }}
     >
       {children.map((child, index) => {

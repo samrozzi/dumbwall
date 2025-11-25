@@ -815,9 +815,9 @@ const Chat = () => {
               </div>
             ) : (
               /* Chat View - Fixed mobile app layout */
-              <div className="fixed inset-0 top-0 flex flex-col bg-background md:relative md:h-full md:border md:rounded-lg md:overflow-hidden">
+              <div className="flex flex-col h-[100dvh] bg-background md:relative md:h-full md:border md:rounded-lg md:overflow-hidden">
                 {/* Fixed Header */}
-                <div className="flex-shrink-0 px-4 py-3 border-b bg-card flex items-center gap-3 safe-area-inset-top">
+                <div className="flex-shrink-0 px-4 py-3 border-b bg-card flex items-center gap-3">
                   <Button
                     size="icon"
                     variant="ghost"
@@ -918,7 +918,7 @@ const Chat = () => {
                 </ScrollArea>
 
                 {/* Fixed Input Bar */}
-                <div className="flex-shrink-0 p-4 border-t bg-card safe-area-inset-bottom">
+                <div className="flex-shrink-0 p-4 pb-6 border-t bg-card">
                   {replyingTo && (
                     <ReplyPreview
                       username={replyingTo.profiles?.display_name || replyingTo.profiles?.username || "Unknown"}

@@ -11,6 +11,8 @@ interface ActivityFeedProps {
 export const ActivityFeed = ({ circleId }: ActivityFeedProps) => {
   const { activities, loading, hasMore, loadMore } = useActivities(circleId);
 
+  console.log("ActivityFeed - activities count:", activities.length, activities);
+
   if (loading && activities.length === 0) {
     return (
       <div className="space-y-4">
@@ -39,8 +41,8 @@ export const ActivityFeed = ({ circleId }: ActivityFeedProps) => {
   }
 
   return (
-    <ScrollArea className="flex-1">
-      <div className="space-y-3 pb-32">
+    <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex-1 overflow-y-auto space-y-3 pb-32">
         {activities.map((activity) => (
           <ActivityCard key={activity.id} activity={activity} />
         ))}
@@ -56,6 +58,6 @@ export const ActivityFeed = ({ circleId }: ActivityFeedProps) => {
           </Button>
         )}
       </div>
-    </ScrollArea>
+    </div>
   );
 };

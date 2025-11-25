@@ -60,10 +60,10 @@ const People = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navigation circleId={circleId} />
 
-      <div className={`flex-1 ${!isMobile ? 'pl-24 pr-8' : 'px-4'} pt-8`}>
+      <div className={`flex-1 flex flex-col ${!isMobile ? 'pl-24 pr-8' : 'px-4'} pt-8 min-h-0`}>
         {/* Header */}
         <CircleHeader
           circleId={circleId}
@@ -72,15 +72,15 @@ const People = () => {
         />
 
         {/* Stories Row */}
-        <div className="mb-4 pb-4 border-b border-white/[0.06]">
+        <div className="mb-4 pb-4 border-b border-white/[0.06] flex-shrink-0">
           <StoriesRow circleId={circleId} />
         </div>
 
-        {/* Two Column Layout */}
-        <div className={`flex ${isMobile ? 'flex-col' : 'gap-6'}`}>
+        {/* Two Column Layout - Now takes remaining height */}
+        <div className={`flex ${isMobile ? 'flex-col' : 'gap-6'} flex-1 min-h-0`}>
           {/* Activity Feed */}
-          <div className={`${isMobile ? 'mb-6' : 'flex-[2]'} min-w-0`}>
-            <h2 className="text-2xl font-bold mb-4">Activity</h2>
+          <div className={`${isMobile ? 'mb-6' : 'flex-[2]'} flex flex-col min-h-0`}>
+            <h2 className="text-2xl font-bold mb-4 flex-shrink-0">Activity</h2>
             <ActivityFeed circleId={circleId} />
           </div>
 

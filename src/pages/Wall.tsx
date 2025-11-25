@@ -829,21 +829,19 @@ const Wall = () => {
             <div className="flex gap-1">
               <Button
                 variant={viewMode === "wall" ? "default" : "outline"}
-                size={isMobile ? "sm" : "sm"}
+                size="sm"
                 onClick={() => setViewMode("wall")}
-                className={isMobile ? "px-2" : ""}
+                className="px-2"
               >
                 <LayoutGrid className="w-4 h-4" />
-                {!isMobile && <span className="hidden lg:inline ml-2">Wall</span>}
               </Button>
               <Button
                 variant={viewMode === "list" ? "default" : "outline"}
-                size={isMobile ? "sm" : "sm"}
+                size="sm"
                 onClick={() => setViewMode("list")}
-                className={isMobile ? "px-2" : ""}
+                className="px-2"
               >
                 <List className="w-4 h-4" />
-                {!isMobile && <span className="hidden lg:inline ml-2">List</span>}
               </Button>
             </div>
           }
@@ -1116,28 +1114,30 @@ const Wall = () => {
           </div>
         </div>
         ) : (
-          <div className="space-y-2">
-            {items.filter(item => item.id !== pendingDelete?.id).map((item) => {
-              return (
-                <div
-                  key={item.id}
-                  className="p-4 bg-card border border-border rounded-lg flex items-center gap-4 hover:bg-muted/50 cursor-pointer"
-                  onClick={() => {
-                    setSelectedItem(item);
-                    setViewerDialogOpen(true);
-                  }}
-                >
-                  <span className="text-2xl">{getItemIcon(item.type)}</span>
-                  <div className="flex-1">
-                    <h3 className="font-semibold">
-                      {getItemDisplayTitle(item)}
-                    </h3>
-                    <p className="text-sm text-muted-foreground capitalize">{item.type.replace(/_/g, ' ')}</p>
+          <ScrollArea className="flex-1 h-[calc(100vh-200px)]">
+            <div className="space-y-2 pb-24">
+              {items.filter(item => item.id !== pendingDelete?.id).map((item) => {
+                return (
+                  <div
+                    key={item.id}
+                    className="p-4 bg-card border border-border rounded-lg flex items-center gap-4 hover:bg-muted/50 cursor-pointer"
+                    onClick={() => {
+                      setSelectedItem(item);
+                      setViewerDialogOpen(true);
+                    }}
+                  >
+                    <span className="text-2xl">{getItemIcon(item.type)}</span>
+                    <div className="flex-1">
+                      <h3 className="font-semibold">
+                        {getItemDisplayTitle(item)}
+                      </h3>
+                      <p className="text-sm text-muted-foreground capitalize">{item.type.replace(/_/g, ' ')}</p>
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
         )}
       </div>
 

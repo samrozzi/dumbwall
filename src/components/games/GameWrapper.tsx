@@ -78,8 +78,10 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
 
                 const winner = checkWinner();
 
+                // Check for draw (all cells filled, no winner)
+                const isDraw = !winner && newBoard.every((row: any[]) => row.every((cell: any) => cell !== null));
                 // Update status from 'waiting' to 'in_progress' if needed
-                const aiStatus = winner ? 'finished' : (game.status === 'waiting' ? 'in_progress' : undefined);
+                const aiStatus = (winner || isDraw) ? 'finished' : (game.status === 'waiting' ? 'in_progress' : undefined);
 
                 await gameAction(gameId, 'move', { row: aiMove.row, col: aiMove.col }, aiStatus, {
                   ...game.metadata,
@@ -261,18 +263,75 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
     
     setIsCreatingRematch(true);
     try {
+      let metadata = {};
+      
+      if (game.type === 'tic_tac_toe') {
+        metadata = {
+          board: [[null, null, null], [null, null, null], [null, null, null]],
+          nextTurnUserId: userId,
+          winnerUserId: null,
+          // Carry over AI settings from original game
+          ...(game.metadata.isComputerOpponent && {
+            isComputerOpponent: true,
+            difficulty: game.metadata.difficulty || 'medium',
+            playerSymbol: game.metadata.playerSymbol || 'X',
+            computerSymbol: game.metadata.computerSymbol || 'O',
+          }),
+        };
+      } else if (game.type === 'connect_four') {
+        metadata = {
+          board: Array(6).fill(null).map(() => Array(7).fill(null)),
+          currentTurn: 'red',
+          redPlayer: userId,
+          yellowPlayer: '',
+          ...(game.metadata.isComputerOpponent && {
+            isComputerOpponent: true,
+            difficulty: game.metadata.difficulty || 'medium',
+          }),
+        };
+      } else if (game.type === 'checkers') {
+        const checkersBoard = Array(8).fill(null).map(() => Array(8).fill(null));
+        for (let row = 0; row < 3; row++) {
+          for (let col = 0; col < 8; col++) {
+            if ((row + col) % 2 === 1) checkersBoard[row][col] = 'B';
+          }
+        }
+        for (let row = 5; row < 8; row++) {
+          for (let col = 0; col < 8; col++) {
+            if ((row + col) % 2 === 1) checkersBoard[row][col] = 'R';
+          }
+        }
+        metadata = {
+          board: checkersBoard,
+          currentTurn: 'red',
+          redPlayer: userId,
+          blackPlayer: '',
+          ...(game.metadata.isComputerOpponent && {
+            isComputerOpponent: true,
+            difficulty: game.metadata.difficulty || 'medium',
+          }),
+        };
+      }
+      
+      const status = game.metadata.isComputerOpponent ? 'in_progress' : 'waiting';
+      
       const newGameId = await createGame(
         game.circle_id,
         game.type,
         game.title || `${game.type} Rematch`,
         game.description,
-        game.type === 'tic_tac_toe' 
-          ? { board: [[null, null, null], [null, null, null], [null, null, null]], nextTurnUserId: userId, winnerUserId: null }
-          : {}
+        metadata,
+        status
       );
       
       notify("Rematch created!");
-      navigate(`/circle/${game.circle_id}/games`);
+      
+      // For AI games, navigate directly to the new game
+      if (game.metadata.isComputerOpponent) {
+        navigate(`/circle/${game.circle_id}/game/${newGameId}`);
+      } else {
+        navigate(`/circle/${game.circle_id}/games`);
+      }
     } catch (error) {
       console.error("Error creating rematch:", error);
       notify("Error creating rematch");
@@ -351,7 +410,8 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
             });
 
             // Update status from 'waiting' to 'in_progress' on first move
-            const newStatus = winner ? 'finished' : (game.status === 'waiting' ? 'in_progress' : undefined);
+            const isDraw = !winner && newBoard.every((row: any[]) => row.every((cell: any) => cell !== null));
+            const newStatus = (winner || isDraw) ? 'finished' : (game.status === 'waiting' ? 'in_progress' : undefined);
 
             // Send to server - CRITICAL: spread ...game.metadata FIRST so new values override
             handleAction('move', { row, col }, newStatus, {

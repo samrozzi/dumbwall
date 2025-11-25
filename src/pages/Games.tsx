@@ -208,6 +208,11 @@ const Games = () => {
   };
 
   const myActiveGames = games.filter(g => g.status !== 'finished' && g.status !== 'cancelled');
+  
+  // Completed PvP games (not vs AI)
+  const myCompletedGames = games.filter(g => 
+    g.status === 'finished' && !g.metadata?.isComputerOpponent
+  );
 
   const filteredGameCatalog = selectedCategory === "all"
     ? GAME_CATALOG
@@ -477,6 +482,32 @@ const Games = () => {
                   : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
               )}>
                 {myActiveGames.map((game) => (
+                  <div
+                    key={game.id}
+                    className={cn(isMobile && "flex-shrink-0 w-64 snap-start")}
+                  >
+                    <GameSummaryCard game={game} userId={user.id} circleId={circleId!} />
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Completed Games Section */}
+          {myCompletedGames.length > 0 && (
+            <section>
+              <div className="mb-4">
+                <h2 className="text-2xl font-semibold mb-1">Completed Games</h2>
+                <p className="text-sm text-muted-foreground">
+                  {myCompletedGames.length} completed game{myCompletedGames.length !== 1 ? 's' : ''}
+                </p>
+              </div>
+              <div className={cn(
+                isMobile
+                  ? "flex overflow-x-auto gap-3 pb-2 snap-x snap-mandatory scrollbar-hide"
+                  : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+              )}>
+                {myCompletedGames.map((game) => (
                   <div
                     key={game.id}
                     className={cn(isMobile && "flex-shrink-0 w-64 snap-start")}

@@ -43,6 +43,11 @@ export const TicTacToeGame = ({
     onMove(row, col);
   };
 
+  const handleCellTouch = (row: number, col: number) => {
+    if (isFinished || !isMyTurn || metadata.board[row][col]) return;
+    onMove(row, col);
+  };
+
   return (
     <Card className="w-full">
       <CardHeader>
@@ -84,8 +89,12 @@ export const TicTacToeGame = ({
               <Button
                 key={`${rowIdx}-${colIdx}`}
                 variant="outline"
-                className="h-20 text-3xl font-bold"
+                className="h-20 text-3xl font-bold touch-manipulation focus:ring-0 focus:ring-offset-0 active:scale-95 transition-transform"
                 onClick={() => handleCellClick(rowIdx, colIdx)}
+                onTouchEnd={(e) => {
+                  e.preventDefault();
+                  handleCellTouch(rowIdx, colIdx);
+                }}
                 disabled={isFinished || !isMyTurn || cell !== null}
               >
                 {cell}

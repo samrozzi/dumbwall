@@ -117,13 +117,15 @@ export const ActivityCard = ({ activity }: ActivityCardProps) => {
         return (
           <div className="mt-3">
             <p className="text-sm text-foreground/70 mb-2">{getActionText()}</p>
-            <ImageCard 
-              id={wallItem.id}
-              content={wallItem.content}
-              fullWidth
-              hideAvatar
-              currentUserId={currentUserId || undefined}
-            />
+            <div className="max-h-[400px] overflow-hidden rounded-lg">
+              <ImageCard 
+                id={wallItem.id}
+                content={wallItem.content}
+                fullWidth
+                hideAvatar
+                currentUserId={currentUserId || undefined}
+              />
+            </div>
           </div>
         );
         

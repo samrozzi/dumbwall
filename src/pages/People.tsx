@@ -79,7 +79,7 @@ const People = () => {
         {/* Two Column Layout - Now takes remaining height */}
         <div className={`flex ${isMobile ? 'flex-col' : 'gap-6'} flex-1 min-h-0`}>
           {/* Activity Feed */}
-          <div className={`${isMobile ? 'mb-6' : 'flex-[2]'} flex flex-col min-h-0`}>
+          <div className={`${isMobile ? 'mb-6' : 'flex-[3]'} flex flex-col min-h-0`}>
             <h2 className="text-2xl font-bold mb-4 flex-shrink-0">Activity</h2>
             <ActivityFeed circleId={circleId} />
           </div>

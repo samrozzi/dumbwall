@@ -41,9 +41,9 @@ export const StoryAvatar = ({
         </div>
       )}
       
-      {/* Avatar with border overlay */}
+      {/* Avatar */}
       <div className="absolute inset-0 flex items-center justify-center">
-        <Avatar className={cn("w-[85%] h-[85%]")} key={src}>
+        <Avatar className={cn("w-full h-full")} key={src}>
           <AvatarImage 
             src={src || undefined} 
             alt={alt}
@@ -55,13 +55,6 @@ export const StoryAvatar = ({
           </AvatarFallback>
         </Avatar>
       </div>
-      
-      {/* Border frame overlay */}
-      <img
-        src={avatarBorder}
-        alt=""
-        className="absolute inset-0 w-full h-full pointer-events-none"
-      />
     </div>
   );
 };

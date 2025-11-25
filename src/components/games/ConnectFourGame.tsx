@@ -8,7 +8,9 @@ interface ConnectFourGameProps {
   metadata: ConnectFourMetadata;
   userId: string;
   onDrop: (col: number) => void;
+  onRematch: () => void;
   isFinished: boolean;
+  isCreatingRematch: boolean;
 }
 
 export const ConnectFourGame = ({
@@ -16,11 +18,16 @@ export const ConnectFourGame = ({
   metadata,
   userId,
   onDrop,
+  onRematch,
   isFinished,
+  isCreatingRematch,
 }: ConnectFourGameProps) => {
   const myColor = metadata.redPlayer === userId ? 'red' : 'yellow';
   const isMyTurn = metadata.currentTurn === myColor;
   const winner = metadata.winnerUserId;
+  
+  // Check for draw (board full, no winner)
+  const isDraw = !winner && metadata.board[0].every(cell => cell !== null);
 
   const getPieceColor = (piece: 'R' | 'Y' | null) => {
     if (!piece) return "bg-background";
@@ -33,14 +40,33 @@ export const ConnectFourGame = ({
         <CardTitle>{title || "Connect Four"}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        {winner && (
-          <div className="text-center text-lg font-semibold text-primary">
-            {winner === userId ? "You won! 🎉" : "You lost"}
+        {/* Winner/Draw Display */}
+        {(winner || isDraw) && (
+          <div className="text-center space-y-2 pb-4 border-b">
+            {winner && (
+              <div className="text-lg font-semibold">
+                <span className="text-primary text-xl">
+                  {winner === userId ? "You won! 🎉" : winner === 'computer' ? "Computer wins!" : "Opponent wins!"}
+                </span>
+              </div>
+            )}
+            {isDraw && (
+              <div className="text-lg font-semibold text-muted-foreground">
+                Draw! Board is full.
+              </div>
+            )}
           </div>
         )}
-        {!isFinished && (
-          <div className="text-center text-sm text-muted-foreground">
-            You are {myColor} - {isMyTurn ? "Your turn" : "Opponent's turn"}
+        
+        {/* Turn Indicator */}
+        {!isFinished && !isDraw && (
+          <div className="text-center text-sm">
+            <div className="font-medium">
+              You are <span className={myColor === 'red' ? 'text-red-500' : 'text-yellow-500'}>{myColor}</span>
+            </div>
+            <div className="text-muted-foreground">
+              {isMyTurn ? "Your turn ⬇️" : metadata.yellowPlayer === 'computer' ? "Computer's turn..." : "Opponent's turn"}
+            </div>
           </div>
         )}
         
@@ -72,6 +98,17 @@ export const ConnectFourGame = ({
             )}
           </div>
         </div>
+        
+        {/* Rematch Button */}
+        {(isFinished || isDraw) && (
+          <Button 
+            onClick={onRematch} 
+            disabled={isCreatingRematch}
+            className="w-full"
+          >
+            {isCreatingRematch ? "Creating..." : "Play Again"}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

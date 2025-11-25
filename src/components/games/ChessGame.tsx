@@ -24,6 +24,7 @@ interface ChessGameProps {
   onMove: (from: string, to: string, promotion?: string) => void;
   onRematch: () => void;
   isFinished: boolean;
+  isCreatingRematch: boolean;
 }
 
 // Chess piece Unicode symbols
@@ -43,6 +44,7 @@ export const ChessGame = ({
   onMove,
   onRematch,
   isFinished,
+  isCreatingRematch,
 }: ChessGameProps) => {
   const [chess] = useState(() => new Chess(metadata.fen));
   const [selectedSquare, setSelectedSquare] = useState<string | null>(null);
@@ -360,8 +362,12 @@ export const ChessGame = ({
 
         {/* Rematch Button */}
         {(isFinished || gameOver) && (
-          <Button onClick={onRematch} className="w-full">
-            Play Again
+          <Button 
+            onClick={onRematch} 
+            disabled={isCreatingRematch}
+            className="w-full"
+          >
+            {isCreatingRematch ? "Creating..." : "Play Again"}
           </Button>
         )}
       </CardContent>

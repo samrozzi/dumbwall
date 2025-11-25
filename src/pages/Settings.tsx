@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import Navigation from "@/components/Navigation";
 import { CircleHeader } from "@/components/CircleHeader";
+import { BackButton } from "@/components/BackButton";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -1193,6 +1194,7 @@ const Settings = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <BackButton />
     </div>
   );
 };

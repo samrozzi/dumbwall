@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { StoryAvatar } from "./StoryAvatar";
 import { Input } from "@/components/ui/input";
-import { Search, Mail } from "lucide-react";
+import { Search, MessageSquare } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -223,13 +223,14 @@ export const MembersPanel = ({ circleId }: MembersPanelProps) => {
               <Button
                 variant="ghost"
                 size="icon"
-                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                className="opacity-0 group-hover:opacity-100 transition-opacity bg-blue-500/10 hover:bg-blue-500/20 text-blue-400"
                 onClick={(e) => {
                   e.stopPropagation();
                   handleStartChat(member.user_id);
                 }}
+                title="Send Direct Message"
               >
-                <Mail className="w-4 h-4" />
+                <MessageSquare className="w-4 h-4" />
               </Button>
             </div>
           ))}

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import Navigation from "@/components/Navigation";
+import { BackButton } from "@/components/BackButton";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
 import { SocialLinkIcon } from "@/components/profile/SocialLinkIcon";
 import { InterestTags } from "@/components/profile/InterestTags";
@@ -359,6 +360,7 @@ export default function PublicProfile() {
           </Card>
         )}
       </div>
+      <BackButton />
     </div>
   );
 }

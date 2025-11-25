@@ -260,7 +260,7 @@ export const ChessGame = ({
         {/* Chess Board */}
         <div className="w-full max-w-[500px] mx-auto">
           <div className="aspect-square bg-gradient-to-br from-slate-800 to-slate-900 p-3 rounded-lg border-2 border-purple-500/20 shadow-xl">
-            <div className="grid grid-cols-8 gap-0 w-full h-full rounded-sm overflow-hidden shadow-lg">
+            <div className="grid grid-cols-8 gap-0 w-full h-full rounded-sm shadow-lg">
               {RANKS.map((rank, rankIdx) =>
                 FILES.map((file, fileIdx) => {
                   const square = `${file}${rank}`;
@@ -270,15 +270,11 @@ export const ChessGame = ({
                   const piece = getPieceAt(square);
 
                   return (
-                    <button
-                      key={square}
-                      onClick={() => handleSquareClick(square)}
-                      onTouchEnd={(e) => {
-                        e.preventDefault();
-                        handleSquareClick(square);
-                      }}
-                      disabled={!isMyTurn || isFinished || gameOver}
-                      className={cn(
+                <button
+                  key={square}
+                  onClick={() => handleSquareClick(square)}
+                  disabled={!isMyTurn || isFinished || gameOver}
+                  className={cn(
                         "relative flex items-center justify-center text-4xl font-bold transition-all touch-manipulation",
                         "active:scale-95 disabled:cursor-not-allowed min-h-[44px]",
                         isLight 

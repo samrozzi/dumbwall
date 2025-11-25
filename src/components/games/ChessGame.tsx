@@ -294,18 +294,18 @@ export const ChessGame = ({
                   const piece = getPieceAt(square);
 
                   return (
-                <button
-                  key={square}
-                  type="button"
-                  onPointerDown={(e) => {
-                    e.preventDefault();
-                    handleSquareClick(square);
-                  }}
-                  onContextMenu={(e) => e.preventDefault()}
-                  disabled={!isMyTurn || isFinished || gameOver}
-                  className={cn(
-                        "relative flex items-center justify-center text-4xl font-bold transition-all",
-                        "active:scale-95 disabled:cursor-not-allowed min-h-[44px] touch-manipulation select-none",
+            <button
+              key={square}
+              type="button"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                handleSquareClick(square);
+              }}
+              onContextMenu={(e) => e.preventDefault()}
+              className={cn(
+                "relative flex items-center justify-center text-4xl font-bold transition-all",
+                "active:scale-95 min-h-[44px] touch-manipulation select-none",
+                (!isMyTurn || isFinished || gameOver) && "cursor-not-allowed",
                         isLight
                           ? "bg-slate-600 hover:bg-slate-500" 
                           : "bg-slate-800 hover:bg-slate-700",

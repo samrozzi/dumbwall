@@ -231,12 +231,7 @@ const Games = () => {
     setTitle(`${gameDef.name} Game`);
     setOpponentType(gameDef.supportsAI ? "friend" : "friend");
     setSelectedPlayer("");
-    
-    // Load circle members for player selection
-    if (!gameDef.supportsAI) {
-      await loadCircleMembers();
-    }
-    
+    await loadCircleMembers();
     setCreateDialogOpen(true);
   };
 
@@ -282,8 +277,8 @@ const Games = () => {
       return;
     }
 
-    // Require player selection for non-AI games when playing with friend
-    if (opponentType === "friend" && !selectedGameDef.supportsAI && !selectedPlayer) {
+    // Require player selection for all friend games
+    if (opponentType === "friend" && !selectedPlayer) {
       notify("Please select a player to invite");
       return;
     }
@@ -737,8 +732,8 @@ const Games = () => {
               </div>
             )}
 
-            {/* Player Selection - For non-AI games when playing with friend */}
-            {opponentType === "friend" && !selectedGameDef?.supportsAI && (
+            {/* Player Selection - For all friend games */}
+            {opponentType === "friend" && (
               <div className="space-y-2">
                 <Label htmlFor="player-select">Select Player (Required)</Label>
                 <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>

@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Upload, LogOut, Trash2, Users, Plus, AlertTriangle, Settings2, Eye, ArrowLeft } from "lucide-react";
+import { Upload, LogOut, Trash2, Users, Plus, AlertTriangle, Settings2, Eye, ArrowLeft, User } from "lucide-react";
 import { CircleSettingsDialog } from "@/components/CircleSettingsDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
@@ -624,25 +624,36 @@ const Settings = () => {
 
   return (
     <div className="h-screen bg-background flex flex-col overflow-hidden">
-      <Navigation circleId={circleId} />
+      {circleId && <Navigation circleId={circleId} />}
 
-      <div className={`flex-1 overflow-y-auto ${isMobile ? 'pb-24' : 'pl-24 pr-8'} pt-8 ${isMobile ? 'max-w-full px-4' : 'max-w-5xl'} mx-auto relative`}>
+      <div className={`flex-1 overflow-y-auto ${circleId && !isMobile ? 'pl-24 pr-8' : 'px-4'} pt-8 ${isMobile ? 'max-w-full' : 'max-w-5xl'} mx-auto relative`}>
         {circleId ? (
           <CircleHeader
             circleId={circleId}
             pageTitle="Settings"
           />
         ) : (
-          <h1 className="text-3xl font-bold mb-6 flex items-center gap-2">
-            <Settings2 className="w-8 h-8" />
-            Settings
-          </h1>
+          <div className="mb-6">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => navigate("/circles")}
+              className="mb-4 gap-2"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Your Circles
+            </Button>
+            <div className="flex items-center gap-3">
+              <User className="w-8 h-8 text-primary" />
+              <h1 className="text-3xl font-bold">Profile Settings</h1>
+            </div>
+          </div>
         )}
 
         <Tabs defaultValue="profile" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-8">
+          <TabsList className={`grid w-full ${circleId ? 'grid-cols-3' : 'grid-cols-2'} mb-8`}>
             <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="circles">Circles</TabsTrigger>
+            {circleId && <TabsTrigger value="circles">Circles</TabsTrigger>}
             <TabsTrigger value="account">Account</TabsTrigger>
           </TabsList>
 

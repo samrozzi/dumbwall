@@ -48,7 +48,7 @@ export const RandomQuestionDialog = ({ open, onOpenChange, circleId }: RandomQue
       const gameId = await createGame(circleId, "question_of_the_day", currentQuestion, "Random question for the circle!", metadata, "in_progress");
       toast.success("Question posted!");
       onOpenChange(false);
-      navigate(`/games/${circleId}`);
+      navigate(`/circle/${circleId}/games`);
     } catch (error) {
       console.error("Failed to create question:", error);
       toast.error("Failed to create question");

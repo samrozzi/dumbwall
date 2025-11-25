@@ -31,7 +31,7 @@ export const CoinFlipDialog = ({ open, onOpenChange, circleId }: CoinFlipDialogP
       const gameId = await createGame(circleId, "poll", "Coin Flip", "Call it - heads or tails?", metadata, "in_progress");
       toast.success("Coin flip created!");
       onOpenChange(false);
-      navigate(`/games/${circleId}`);
+      navigate(`/circle/${circleId}/games`);
     } catch (error) {
       console.error("Failed to create coin flip:", error);
       toast.error("Failed to create coin flip");

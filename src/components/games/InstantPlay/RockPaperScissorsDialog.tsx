@@ -32,7 +32,7 @@ export const RockPaperScissorsDialog = ({ open, onOpenChange, circleId }: RockPa
       const gameId = await createGame(circleId, "poll", "Rock, Paper, Scissors!", "Quick game - make your choice!", metadata, "in_progress");
       toast.success("Game created!");
       onOpenChange(false);
-      navigate(`/games/${circleId}`);
+      navigate(`/circle/${circleId}/games`);
     } catch (error) {
       console.error("Failed to create game:", error);
       toast.error("Failed to create game");

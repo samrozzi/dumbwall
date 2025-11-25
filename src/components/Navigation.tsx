@@ -57,7 +57,8 @@ const Navigation = ({ circleId, hideBackButton }: NavigationProps) => {
           const { count } = await supabase
             .from('chat_messages')
             .select('*', { count: 'exact', head: true })
-            .eq('thread_id', thread.id);
+            .eq('thread_id', thread.id)
+            .neq('sender_id', user.id);
           
           if (count && count > 0) {
             hasUnread = true;
@@ -69,7 +70,8 @@ const Navigation = ({ circleId, hideBackButton }: NavigationProps) => {
             .from('chat_messages')
             .select('*', { count: 'exact', head: true })
             .eq('thread_id', thread.id)
-            .gt('created_at', readStatus.last_read_at);
+            .gt('created_at', readStatus.last_read_at)
+            .neq('sender_id', user.id);
           
           if (count && count > 0) {
             hasUnread = true;

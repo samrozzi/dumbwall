@@ -936,7 +936,7 @@ const Chat = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
-      <div className={`${isMobile ? 'pt-4 pb-20' : 'pl-24 pr-8 pt-8'} ${isMobile ? 'h-screen pb-20' : 'h-[calc(100vh-80px)]'}`}>
+      <div className={`${isMobile ? 'pt-4 pb-20' : 'pl-24 pr-8 pt-8'} ${isMobile ? 'h-screen' : 'h-[calc(100vh-80px)]'}`}>
         {isMobile ? (
           /* Mobile: Show either thread list OR chat view */
           <>

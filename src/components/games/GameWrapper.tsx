@@ -34,7 +34,8 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
 
   useEffect(() => {
     loadGame();
-    setupRealtime();
+    const cleanup = setupRealtime();
+    return cleanup;
   }, [gameId]);
 
   // Computer move triggering
@@ -82,6 +83,11 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
                   nextTurnUserId: userId,
                   winnerUserId: winner ? 'computer' : null,
                 });
+                
+                // Force refresh UI after AI move
+                setTimeout(() => {
+                  loadGame();
+                }, 100);
               }
             }
             break;
@@ -131,6 +137,11 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
                     currentTurn: 'red',
                     winnerUserId: winner ? 'computer' : null,
                   });
+                  
+                  // Force refresh UI after AI move
+                  setTimeout(() => {
+                    loadGame();
+                  }, 100);
                 }
               }
             }

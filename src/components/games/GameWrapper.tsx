@@ -178,7 +178,7 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
     };
 
     // Delay computer move for better UX (looks like it's "thinking")
-    computerMoveTimeoutRef.current = setTimeout(makeComputerMove, 1000);
+    computerMoveTimeoutRef.current = setTimeout(makeComputerMove, 400);
 
     return () => {
       if (computerMoveTimeoutRef.current) {
@@ -328,7 +328,7 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
       
       // For AI games, navigate directly to the new game
       if (game.metadata.isComputerOpponent) {
-        navigate(`/circle/${game.circle_id}/game/${newGameId}`);
+        navigate(`/circle/${game.circle_id}/games/${newGameId}`);
       } else {
         navigate(`/circle/${game.circle_id}/games`);
       }

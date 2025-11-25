@@ -144,16 +144,16 @@ export function getTicTacToeAIMove(
     }
   }
 
-  // Easy: Random moves most of the time, 30% optimal
+  // Easy: 75% random moves (player wins ~75% of time)
   if (difficulty === 'easy') {
-    if (Math.random() < 0.7) {
+    if (Math.random() < 0.75) {
       return emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
     }
   }
 
-  // Medium: After checking critical moves, 30% random for non-critical positions
+  // Medium: After checking critical moves, 55% random for non-critical positions (player wins ~45% of time)
   if (difficulty === 'medium') {
-    if (Math.random() < 0.3) {
+    if (Math.random() < 0.55) {
       return emptyPositions[Math.floor(Math.random() * emptyPositions.length)];
     }
   }

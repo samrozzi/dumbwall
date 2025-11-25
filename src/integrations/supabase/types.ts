@@ -1221,6 +1221,11 @@ export type Database = {
         | "question_of_the_day"
         | "story_chain"
         | "rate_this"
+        | "connect_four"
+        | "chess"
+        | "checkers"
+        | "hangman"
+        | "twenty_one_questions"
       invite_permission: "anyone" | "owner_only"
       invite_status: "pending" | "accepted" | "rejected" | "cancelled"
       invite_type: "direct" | "pending_approval"
@@ -1383,6 +1388,11 @@ export const Constants = {
         "question_of_the_day",
         "story_chain",
         "rate_this",
+        "connect_four",
+        "chess",
+        "checkers",
+        "hangman",
+        "twenty_one_questions",
       ],
       invite_permission: ["anyone", "owner_only"],
       invite_status: ["pending", "accepted", "rejected", "cancelled"],

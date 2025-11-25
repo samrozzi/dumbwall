@@ -41,9 +41,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { notify } from "@/components/ui/custom-notification";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
 
 // Game catalog with metadata
 type GameCategory = "quick" | "social" | "strategy" | "word" | "board";
@@ -184,6 +186,8 @@ const Games = () => {
   const [hangmanWord, setHangmanWord] = useState("");
   const [hangmanHint, setHangmanHint] = useState("");
   const [questionsSubject, setQuestionsSubject] = useState("");
+  const [selectedPlayer, setSelectedPlayer] = useState<string>("");
+  const [circleMembers, setCircleMembers] = useState<Array<{id: string, name: string}>>([]);
 
   useEffect(() => {
     if (!user) {
@@ -222,11 +226,40 @@ const Games = () => {
     ["tic_tac_toe", "chess", "would_you_rather", "poll"].includes(g.type)
   );
 
-  const handleGameSelect = (gameDef: GameDefinition) => {
+  const handleGameSelect = async (gameDef: GameDefinition) => {
     setSelectedGameDef(gameDef);
     setTitle(`${gameDef.name} Game`);
     setOpponentType(gameDef.supportsAI ? "friend" : "friend");
+    setSelectedPlayer("");
+    
+    // Load circle members for player selection
+    if (!gameDef.supportsAI) {
+      await loadCircleMembers();
+    }
+    
     setCreateDialogOpen(true);
+  };
+
+  const loadCircleMembers = async () => {
+    if (!circleId || !user) return;
+
+    const { data } = await supabase
+      .from('circle_members')
+      .select(`
+        user_id,
+        profiles!inner(id, display_name, username)
+      `)
+      .eq('circle_id', circleId);
+    
+    if (data) {
+      const members = data
+        .filter(m => m.user_id !== user.id)
+        .map(m => ({
+          id: m.user_id,
+          name: (m.profiles as any).display_name || (m.profiles as any).username || 'Unknown'
+        }));
+      setCircleMembers(members);
+    }
   };
 
   const handleCreateGame = async () => {
@@ -246,6 +279,12 @@ const Games = () => {
     }
     if (gameType === "twenty_one_questions" && !questionsSubject.trim()) {
       notify("Please enter what you're thinking of");
+      return;
+    }
+
+    // Require player selection for non-AI games when playing with friend
+    if (opponentType === "friend" && !selectedGameDef.supportsAI && !selectedPlayer) {
+      notify("Please select a player to invite");
       return;
     }
 
@@ -389,7 +428,7 @@ const Games = () => {
 
       const status = opponentType === "computer" ? "in_progress" : "waiting";
 
-      await createGame(
+      const gameId = await createGame(
         circleId!,
         gameType,
         title,
@@ -398,7 +437,28 @@ const Games = () => {
         status
       );
 
-      notify(opponentType === "computer" ? "Game started vs Computer!" : "Game created!");
+      // Send invite if player was selected
+      if (opponentType === "friend" && selectedPlayer) {
+        await supabase.from('game_invites').insert({
+          game_id: gameId,
+          invited_user_id: selectedPlayer,
+          invited_by: user!.id,
+          status: 'pending'
+        });
+
+        // Create notification
+        const selectedMember = circleMembers.find(m => m.id === selectedPlayer);
+        await supabase.from('notifications').insert({
+          user_id: selectedPlayer,
+          type: 'game_invite',
+          title: 'Game Invitation',
+          message: `${user!.email?.split('@')[0]} invited you to play ${title}`,
+          link: `/circle/${circleId}/games/${gameId}`,
+          metadata: { game_id: gameId, circle_id: circleId }
+        });
+      }
+
+      notify(opponentType === "computer" ? "Game started vs Computer!" : selectedPlayer ? "Game created and invite sent!" : "Game created!");
 
       // Reset form
       setTitle("");
@@ -408,6 +468,7 @@ const Games = () => {
       setHangmanWord("");
       setHangmanHint("");
       setQuestionsSubject("");
+      setSelectedPlayer("");
       setSelectedGameDef(null);
       loadGames();
     } catch (error: any) {
@@ -673,6 +734,28 @@ const Games = () => {
                     </label>
                   </div>
                 </RadioGroup>
+              </div>
+            )}
+
+            {/* Player Selection - For non-AI games when playing with friend */}
+            {opponentType === "friend" && !selectedGameDef?.supportsAI && (
+              <div className="space-y-2">
+                <Label htmlFor="player-select">Select Player (Required)</Label>
+                <Select value={selectedPlayer} onValueChange={setSelectedPlayer}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Choose a player..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {circleMembers.map(member => (
+                      <SelectItem key={member.id} value={member.id}>
+                        {member.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  They will receive an invitation to join this game
+                </p>
               </div>
             )}
 

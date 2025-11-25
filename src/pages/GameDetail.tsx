@@ -159,7 +159,7 @@ const GameDetail = () => {
           </div>
 
           {/* Action buttons */}
-          {game.status !== "finished" && game.status !== "cancelled" && (
+          {game.status === "waiting" && (
             <div className="flex items-center gap-2">
               <Button
                 variant="secondary"

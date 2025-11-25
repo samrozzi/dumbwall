@@ -301,6 +301,7 @@ export const ChessGame = ({
                     e.preventDefault();
                     handleSquareClick(square);
                   }}
+                  onContextMenu={(e) => e.preventDefault()}
                   disabled={!isMyTurn || isFinished || gameOver}
                   className={cn(
                         "relative flex items-center justify-center text-4xl font-bold transition-all",

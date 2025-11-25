@@ -27,7 +27,6 @@ import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { SwipeableMessage } from "@/components/chat/SwipeableMessage";
-import { SwipeableThreadItem } from "@/components/chat/SwipeableThreadItem";
 import { GifPicker } from "@/components/chat/GifPicker";
 import { VoiceRecorder } from "@/components/chat/VoiceRecorder";
 import { AttachmentMenu } from "@/components/chat/AttachmentMenu";
@@ -38,6 +37,8 @@ import { DateSeparator } from "@/components/chat/DateSeparator";
 import { UnreadJumpButton } from "@/components/chat/UnreadJumpButton";
 import { MessageAnimations } from "@/components/chat/MessageAnimations";
 import { isSameDay, parseISO } from "date-fns";
+import { Trash2 } from "lucide-react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface ChatThread {
   id: string;
@@ -118,6 +119,9 @@ const Chat = () => {
   const [showUnreadButton, setShowUnreadButton] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [editingMessage, setEditingMessage] = useState<ChatMessageType | null>(null);
+  const [deleteThreadDialogOpen, setDeleteThreadDialogOpen] = useState(false);
+  const [threadToDelete, setThreadToDelete] = useState<string | null>(null);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(false);
 
   // Typing indicators
   const { typingUsers, handleTyping, stopTypingIndicator } = useTypingIndicator(threadId, user?.id);
@@ -171,13 +175,18 @@ const Chat = () => {
     const urlThreadId = searchParams.get("thread");
     if (urlThreadId && threads.length > 0) {
       navigate(`/circle/${circleId}/chat?threadId=${urlThreadId}`);
-    } else if (threadId) {
+    } else if (threadId && user) {
+      // Clear old messages immediately when switching threads
+      setMessages([]);
+      setCurrentThread(null);
+      setIsLoadingMessages(true);
+      
       loadThread();
       loadMessages();
       subscribeToMessages();
       markThreadAsRead();
     }
-  }, [threadId, searchParams, threads]);
+  }, [threadId, searchParams, threads, user]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -370,12 +379,15 @@ const Chat = () => {
   const loadMessages = async () => {
     if (!user || !threadId) return;
     
-    // Get messages excluding those deleted by current user
-    const { data, error } = await supabase
-      .from("chat_messages")
-      .select("*")
-      .eq("thread_id", threadId!)
-      .order("created_at", { ascending: true });
+    setIsLoadingMessages(true);
+    
+    try {
+      // Get messages excluding those deleted by current user
+      const { data, error } = await supabase
+        .from("chat_messages")
+        .select("*")
+        .eq("thread_id", threadId!)
+        .order("created_at", { ascending: true });
 
     if (error) {
       toast.error("Error loading messages");
@@ -446,9 +458,12 @@ const Chat = () => {
         onConflict: "thread_id,user_id"
       });
     
-    // Only refresh thread list on mobile (desktop shows both views simultaneously)
-    if (isMobile) {
-      loadThreads();
+      // Only refresh thread list on mobile (desktop shows both views simultaneously)
+      if (isMobile) {
+        loadThreads();
+      }
+    } finally {
+      setIsLoadingMessages(false);
     }
   };
 
@@ -907,13 +922,13 @@ const Chat = () => {
             <ScrollArea className="flex-1 h-0">
                   <div className="space-y-1">
                     {filteredThreads.map((thread) => (
-                      <button
-                        key={thread.id}
-                        onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
-                        className={`w-full text-left p-3 rounded-lg transition-all hover:bg-card flex items-center gap-3 ${
-                          thread.unreadCount > 0 ? 'bg-accent border-l-4 border-primary' : 'bg-card/40'
-                        }`}
-                      >
+                      <div key={thread.id} className="relative group">
+                        <button
+                          onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
+                          className={`w-full text-left p-3 rounded-lg transition-all hover:bg-card flex items-center gap-3 ${
+                            thread.unreadCount > 0 ? 'bg-accent border-l-4 border-primary' : 'bg-card/40'
+                          }`}
+                        >
                         {thread.unreadCount > 0 && (
                           <div className="flex-shrink-0 bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
                             {thread.unreadCount > 9 ? "9+" : thread.unreadCount}
@@ -936,7 +951,20 @@ const Chat = () => {
                             Wall
                           </span>
                         )}
-                      </button>
+                        </button>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setThreadToDelete(thread.id);
+                            setDeleteThreadDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     ))}
                   </div>
                 </ScrollArea>
@@ -1271,10 +1299,7 @@ const Chat = () => {
                 <ScrollArea className="flex-1 border rounded-lg bg-card/50 backdrop-blur">
                   <div className="p-2 space-y-2">
                     {filteredThreads.map((thread) => (
-                      <SwipeableThreadItem
-                        key={thread.id}
-                        onSwipeDelete={() => handleDeleteThread(thread.id)}
-                      >
+                      <div key={thread.id} className="relative group">
                         <button
                           onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
                           className={`w-full text-left p-3 rounded-lg transition-all hover:bg-card flex items-center gap-3 ${
@@ -1304,7 +1329,19 @@ const Chat = () => {
                             </div>
                           </div>
                         </button>
-                      </SwipeableThreadItem>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setThreadToDelete(thread.id);
+                            setDeleteThreadDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     ))}
                   </div>
                 </ScrollArea>
@@ -1581,6 +1618,32 @@ const Chat = () => {
         effect={messageEffect}
         onComplete={() => setMessageEffect(null)}
       />
+
+      <AlertDialog open={deleteThreadDialogOpen} onOpenChange={setDeleteThreadDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Conversation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete this conversation and all its messages. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setThreadToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (threadToDelete) {
+                  handleDeleteThread(threadToDelete);
+                  setThreadToDelete(null);
+                  setDeleteThreadDialogOpen(false);
+                }
+              }}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <style dangerouslySetInnerHTML={{__html: `
         @keyframes highlight {

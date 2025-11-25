@@ -55,6 +55,7 @@ interface ThreadMember {
 interface ThreadWithMembers extends ChatThread {
   members: ThreadMember[];
   unreadCount: number;
+  lastMessageAt: string;
 }
 
 interface ChatMessageType {
@@ -234,7 +235,7 @@ const Chat = () => {
       .eq("user_id", user.id)
       .in("thread_id", threadIds);
 
-    // Calculate unread counts for each thread
+    // Calculate unread counts and get last message timestamp for each thread
     const threadsWithUnread = await Promise.all(
       threadsData.map(async (thread) => {
         const readStatus = readStatusData?.find(rs => rs.thread_id === thread.id);
@@ -247,15 +248,25 @@ const Chat = () => {
           .gt("created_at", lastReadAt)
           .neq("sender_id", user.id);
         
+        // Get the last message timestamp for sorting
+        const { data: lastMessage } = await supabase
+          .from('chat_messages')
+          .select('created_at')
+          .eq('thread_id', thread.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single();
+        
         return {
           thread,
-          unreadCount: count || 0
+          unreadCount: count || 0,
+          lastMessageAt: lastMessage?.created_at || thread.created_at
         };
       })
     );
 
     // Combine all data
-    const threadsWithMembers = threadsWithUnread.map(({ thread, unreadCount }) => {
+    const threadsWithMembers = threadsWithUnread.map(({ thread, unreadCount, lastMessageAt }) => {
       const threadMembers = membersData?.filter(m => m.thread_id === thread.id) || [];
       const members = threadMembers
         .map(tm => profilesData?.find(p => p.id === tm.user_id))
@@ -264,18 +275,19 @@ const Chat = () => {
       return {
         ...thread,
         members,
-        unreadCount
+        unreadCount,
+        lastMessageAt
       };
     });
 
-    // Sort threads: unread first, then by updated_at
+    // Sort threads: unread first, then by last message activity
     const sortedThreads = threadsWithMembers.sort((a, b) => {
       // First, sort by unread status (unread threads first)
       if (a.unreadCount > 0 && b.unreadCount === 0) return -1;
       if (a.unreadCount === 0 && b.unreadCount > 0) return 1;
       
-      // Then sort by most recent update
-      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      // Then sort by most recent message activity
+      return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime();
     });
 
     setThreads(sortedThreads);
@@ -819,7 +831,7 @@ const Chat = () => {
                             {thread.title}
                           </div>
                           <div className={`text-xs mt-1 ${thread.unreadCount > 0 ? 'text-white font-medium' : 'text-muted-foreground'}`}>
-                            {new Date(thread.updated_at).toLocaleDateString()}
+                            {new Date(thread.lastMessageAt).toLocaleDateString()}
                           </div>
                         </div>
                         {thread.linked_wall_item_id && (
@@ -882,7 +894,7 @@ const Chat = () => {
                 </div>
 
                 {/* Scrollable Messages Area - Account for fixed input bar */}
-                <ScrollArea className="flex-1 p-4 pb-40 overflow-y-auto md:pb-4">
+                <ScrollArea className="flex-1 p-4 pb-24 overflow-y-auto md:pb-4">
                   {threadPhoto && (
                     <div className="mb-4 rounded-lg overflow-hidden border-2 border-primary bg-black">
                       <img 
@@ -911,9 +923,8 @@ const Chat = () => {
                               <span className="text-sm font-semibold">{message.profiles?.display_name || message.profiles?.username}</span>
                               <span className="text-xs text-muted-foreground">{format(new Date(message.created_at), 'p')}</span>
                             </div>
-                            <div className={`rounded-lg overflow-hidden ${message.sender_id === user?.id ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                             <div className="rounded-lg overflow-hidden">
                               <img src={message.gif_url} alt={message.gif_title || 'GIF'} className="max-w-full h-auto" />
-                              {message.body && <p className="p-3 text-sm">{message.body}</p>}
                             </div>
                           </div>
                         </div>
@@ -986,7 +997,7 @@ const Chat = () => {
                 </ScrollArea>
 
                 {/* Fixed Input Bar - Positioned above mobile browser UI */}
-                <div className="fixed bottom-0 left-0 right-0 p-4 pb-32 border-t bg-card md:relative md:bottom-auto md:pb-4">
+                <div className="fixed bottom-0 left-0 right-0 p-4 pb-24 border-t bg-card md:relative md:bottom-auto md:pb-4">
                   {replyingTo && (
                     <ReplyPreview
                       username={replyingTo.profiles?.display_name || replyingTo.profiles?.username || "Unknown"}
@@ -999,17 +1010,6 @@ const Chat = () => {
                   <TypingIndicator typingUsers={typingUsers} />
 
                   <div className="flex gap-2 items-center">
-                    {!isRecordingVoice && (
-                      <Button
-                        size="icon"
-                        variant="outline"
-                        onClick={() => setIsRecordingVoice(true)}
-                        title="Record voice message"
-                      >
-                        <Mic className="w-4 h-4" />
-                      </Button>
-                    )}
-                    
                     <AttachmentMenu
                       onPhotoSelect={async (files) => {
                         if (!user || !threadId) return;
@@ -1191,7 +1191,7 @@ const Chat = () => {
                             <span className="truncate">{thread.title}</span>
                           </div>
                           <div className={`text-xs mt-1 ${thread.unreadCount > 0 ? 'text-white font-medium' : 'text-muted-foreground'}`}>
-                            {new Date(thread.updated_at).toLocaleDateString()}
+                            {new Date(thread.lastMessageAt).toLocaleDateString()}
                           </div>
                         </div>
                       </button>
@@ -1281,9 +1281,8 @@ const Chat = () => {
                                   <span className="text-sm font-semibold">{message.profiles?.display_name || message.profiles?.username}</span>
                                   <span className="text-xs text-muted-foreground">{format(new Date(message.created_at), 'p')}</span>
                                 </div>
-                                <div className={`rounded-lg overflow-hidden ${message.sender_id === user?.id ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                                <div className="rounded-lg overflow-hidden">
                                   <img src={message.gif_url} alt={message.gif_title || 'GIF'} className="max-w-full h-auto" />
-                                  {message.body && <p className="p-3 text-sm">{message.body}</p>}
                                 </div>
                               </div>
                             </div>

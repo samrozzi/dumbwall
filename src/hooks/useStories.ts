@@ -51,16 +51,27 @@ export const useStories = (circleId: string) => {
     try {
       const { data, error } = await supabase
         .from("circle_stories")
-        .select(`
-          *,
-          profiles!circle_stories_user_id_fkey(username, display_name, avatar_url)
-        `)
+        .select("*")
         .eq("circle_id", circleId)
         .gt("expires_at", new Date().toISOString())
         .order("created_at", { ascending: false });
 
       if (error) throw error;
-      setStories(data || []);
+
+      // Fetch profiles separately
+      const storiesWithProfiles = await Promise.all(
+        (data || []).map(async (story) => {
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("username, display_name, avatar_url")
+            .eq("id", story.user_id)
+            .single();
+          
+          return { ...story, profiles: profileData };
+        })
+      );
+
+      setStories(storiesWithProfiles || []);
     } catch (error: any) {
       console.error("Error loading stories:", error);
       toast({

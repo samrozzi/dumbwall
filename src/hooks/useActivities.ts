@@ -62,36 +62,46 @@ export const useActivities = (circleId: string, limit: number = 20) => {
     try {
       const { data, error } = await supabase
         .from("circle_activities")
-        .select(`
-          *,
-          profiles!circle_activities_user_id_fkey(username, display_name, avatar_url)
-        `)
+        .select("*")
         .eq("circle_id", circleId)
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
 
       if (error) throw error;
 
-      // Fetch wall items separately for activities that reference them
-      const activitiesWithWallItems = await Promise.all(
+      // Fetch profiles and wall items separately
+      const activitiesWithData = await Promise.all(
         (data || []).map(async (activity) => {
+          // Fetch profile
+          const { data: profileData } = await supabase
+            .from("profiles")
+            .select("username, display_name, avatar_url")
+            .eq("id", activity.user_id)
+            .single();
+
+          // Fetch wall item if applicable
+          let wallItemData = null;
           if (activity.reference_type === 'wall_item' && activity.reference_id) {
-            const { data: wallItemData } = await supabase
+            const { data: wallItem } = await supabase
               .from("wall_items")
               .select("id, type, content, created_by, x, y, z_index")
               .eq("id", activity.reference_id)
               .single();
-            
-            return { ...activity, wall_items: wallItemData };
+            wallItemData = wallItem;
           }
-          return activity;
+          
+          return { 
+            ...activity, 
+            profiles: profileData,
+            wall_items: wallItemData
+          };
         })
       );
 
       if (offset === 0) {
-        setActivities(activitiesWithWallItems || []);
+        setActivities(activitiesWithData || []);
       } else {
-        setActivities((prev) => [...prev, ...(activitiesWithWallItems || [])]);
+        setActivities((prev) => [...prev, ...(activitiesWithData || [])]);
       }
 
       setHasMore((data || []).length === limit);

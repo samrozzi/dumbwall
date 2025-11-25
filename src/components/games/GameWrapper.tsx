@@ -817,15 +817,18 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
           userId={userId}
           participants={participants}
           onMove={(from, to, promotion) => {
+            console.log('♟️ GameWrapper onMove called:', { from, to, promotion, currentFen: game.metadata.fen });
             const { Chess } = require('chess.js');
             const chess = new Chess(game.metadata.fen);
 
             const move = chess.move({ from, to, promotion });
             if (!move) {
+              console.log('❌ Invalid move!');
               notify("Invalid move!");
               return;
             }
 
+            console.log('✅ Move valid:', move.san);
             const newFen = chess.fen();
             const newMoveHistory = [...game.metadata.moveHistory, move.san];
 

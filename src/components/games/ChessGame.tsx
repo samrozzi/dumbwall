@@ -81,23 +81,40 @@ export const ChessGame = ({
   )?.profiles;
 
   const handleSquareClick = (square: string) => {
-    if (!isMyTurn || isFinished || gameOver) return;
+    console.log('🎯 Chess square clicked:', square);
+    console.log('📊 State:', { 
+      selectedSquare, 
+      legalMoves, 
+      isMyTurn, 
+      isFinished, 
+      gameOver,
+      currentTurn: metadata.currentTurn 
+    });
+    
+    if (!isMyTurn || isFinished || gameOver) {
+      console.log('❌ Move blocked:', { isMyTurn, isFinished, gameOver });
+      return;
+    }
 
     // If no square is selected, select this one if it has our piece
     if (!selectedSquare) {
       const piece = chess.get(square as Square);
+      console.log('🎲 No selection, checking piece:', piece);
       if (piece &&
         ((metadata.currentTurn === 'white' && piece.color === 'w') ||
          (metadata.currentTurn === 'black' && piece.color === 'b'))) {
+        console.log('✅ Selecting square:', square);
         setSelectedSquare(square);
         const moves = chess.moves({ square: square as Square, verbose: true });
         setLegalMoves(moves.map(m => m.to));
+        console.log('📍 Legal moves:', moves.map(m => m.to));
       }
       return;
     }
 
     // If clicking the same square, deselect
     if (selectedSquare === square) {
+      console.log('🔄 Deselecting square');
       setSelectedSquare(null);
       setLegalMoves([]);
       return;
@@ -105,16 +122,19 @@ export const ChessGame = ({
 
     // If clicking a legal move, make the move
     if (legalMoves.includes(square)) {
+      console.log('♟️ Legal move detected! From:', selectedSquare, 'To:', square);
       const piece = chess.get(selectedSquare as Square);
 
       // Check for pawn promotion
       if (piece?.type === 'p' &&
         ((piece.color === 'w' && square[1] === '8') ||
          (piece.color === 'b' && square[1] === '1'))) {
+        console.log('👑 Pawn promotion required');
         setPromotionDialog({ from: selectedSquare, to: square });
         return;
       }
 
+      console.log('🚀 Calling onMove:', selectedSquare, '->', square);
       onMove(selectedSquare, square);
       setSelectedSquare(null);
       setLegalMoves([]);
@@ -122,14 +142,18 @@ export const ChessGame = ({
     }
     
     // Try to select the new square
+    console.log('🔍 Trying to select new square:', square);
     const piece = chess.get(square as Square);
     if (piece &&
       ((metadata.currentTurn === 'white' && piece.color === 'w') ||
        (metadata.currentTurn === 'black' && piece.color === 'b'))) {
+      console.log('✅ Selecting new square:', square);
       setSelectedSquare(square);
       const moves = chess.moves({ square: square as Square, verbose: true });
       setLegalMoves(moves.map(m => m.to));
+      console.log('📍 Legal moves:', moves.map(m => m.to));
     } else {
+      console.log('❌ Invalid square selection');
       setSelectedSquare(null);
       setLegalMoves([]);
     }
@@ -272,12 +296,16 @@ export const ChessGame = ({
                   return (
                 <button
                   key={square}
-                  onClick={() => handleSquareClick(square)}
+                  type="button"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    handleSquareClick(square);
+                  }}
                   disabled={!isMyTurn || isFinished || gameOver}
                   className={cn(
-                        "relative flex items-center justify-center text-4xl font-bold transition-all touch-manipulation",
-                        "active:scale-95 disabled:cursor-not-allowed min-h-[44px]",
-                        isLight 
+                        "relative flex items-center justify-center text-4xl font-bold transition-all",
+                        "active:scale-95 disabled:cursor-not-allowed min-h-[44px] touch-none select-none",
+                        isLight
                           ? "bg-slate-600 hover:bg-slate-500" 
                           : "bg-slate-800 hover:bg-slate-700",
                         isSelected && "ring-4 ring-purple-500 ring-inset brightness-125",

@@ -1001,10 +1001,10 @@ const Chat = () => {
                     {sortedFilteredThreads.map((thread) => {
                       const isPinned = pinnedThreadIds.has(thread.id);
                       return (
-                      <div key={thread.id} className="relative group flex items-center gap-2">
+                      <div key={thread.id} className="relative group">
                         <button
                           onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
-                          className={`flex-1 text-left p-3 rounded-lg transition-all hover:bg-card flex items-center gap-3 ${
+                          className={`w-full text-left p-3 pr-20 rounded-lg transition-all hover:bg-card flex items-center gap-3 ${
                             thread.unreadCount > 0 ? 'bg-accent border-l-4 border-primary' : 'bg-card/40'
                           }`}
                         >
@@ -1031,7 +1031,7 @@ const Chat = () => {
                           </span>
                         )}
                         </button>
-                        <div className="flex gap-1">
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-1">
                           <Button
                             variant="ghost"
                             size="icon"

@@ -9,7 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import Navigation from "@/components/Navigation";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { toast } from "sonner";
-import { MessageSquare, Plus, Send, UserPlus, ArrowLeft, Camera, Search as SearchIcon, Sparkles } from "lucide-react";
+import { MessageSquare, Plus, Send, UserPlus, ArrowLeft, Camera, Search as SearchIcon, Sparkles, Mic } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MemberPicker from "@/components/chat/MemberPicker";
@@ -29,6 +29,8 @@ import { SwipeableMessage } from "@/components/chat/SwipeableMessage";
 import { GifPicker } from "@/components/chat/GifPicker";
 import { VoiceRecorder } from "@/components/chat/VoiceRecorder";
 import { AttachmentMenu } from "@/components/chat/AttachmentMenu";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { format } from "date-fns";
 import { MessageSearch } from "@/components/chat/MessageSearch";
 import { DateSeparator } from "@/components/chat/DateSeparator";
 import { UnreadJumpButton } from "@/components/chat/UnreadJumpButton";
@@ -60,6 +62,11 @@ interface ChatMessageType {
   body: string;
   image_url?: string | null;
   image_caption?: string | null;
+  gif_url?: string | null;
+  gif_title?: string | null;
+  voice_url?: string | null;
+  voice_duration?: number | null;
+  message_type?: string | null;
   created_at: string;
   sender_id: string;
   reply_to_id?: string | null;
@@ -550,12 +557,18 @@ const Chat = () => {
     if (!currentThread || !user || !threadId) return;
 
     try {
+      console.log('Uploading voice message...');
       const fileName = `${threadId}/${user.id}/${Date.now()}.webm`;
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('voice-messages')
         .upload(fileName, audioFile);
 
-      if (uploadError) throw uploadError;
+      if (uploadError) {
+        console.error('Voice upload error:', uploadError);
+        throw uploadError;
+      }
+      
+      console.log('Voice upload successful:', uploadData);
 
       const { data: { publicUrl } } = supabase.storage
         .from('voice-messages')
@@ -573,15 +586,18 @@ const Chat = () => {
           reply_to_id: replyingTo?.id
         });
 
-      if (messageError) throw messageError;
+      if (messageError) {
+        console.error('Voice message insert error:', messageError);
+        throw messageError;
+      }
 
       setReplyingTo(null);
       setIsRecordingVoice(false);
       toast.success('Voice message sent!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending voice message:', error);
       setIsRecordingVoice(false);
-      toast.error('Failed to send voice message');
+      toast.error(`Failed to send voice message: ${error.message || 'Unknown error'}`);
     }
   };
 
@@ -866,7 +882,7 @@ const Chat = () => {
                 </div>
 
                 {/* Scrollable Messages Area - Account for fixed input bar */}
-                <ScrollArea className="flex-1 p-4 pb-32 overflow-y-auto md:pb-4">
+                <ScrollArea className="flex-1 p-4 pb-40 overflow-y-auto md:pb-4">
                   {threadPhoto && (
                     <div className="mb-4 rounded-lg overflow-hidden border-2 border-primary bg-black">
                       <img 
@@ -881,26 +897,75 @@ const Chat = () => {
                       )}
                     </div>
                   )}
-                  {messages.map((message) => 
-                    message.image_url ? (
-                      <ChatMessageWithImage
-                        key={message.id}
-                        id={message.id}
-                        body={message.body}
-                        image_url={message.image_url}
-                        created_at={message.created_at}
-                        sender={{
-                          id: message.sender_id,
-                          username: message.profiles?.username || "Unknown",
-                          display_name: message.profiles?.display_name,
-                          avatar_url: message.profiles?.avatar_url,
-                        }}
-                        isOwn={message.sender_id === user?.id}
-                        onReply={() => setReplyingTo(message)}
-                        onReaction={() => {}}
-                        replyTo={message.replied_message}
-                      />
-                    ) : (
+                  {messages.map((message) => {
+                    // GIF Message
+                    if (message.gif_url && message.message_type === 'gif') {
+                      return (
+                        <div key={message.id} className={`flex gap-3 mb-4 ${message.sender_id === user?.id ? 'flex-row-reverse' : ''}`}>
+                          <Avatar className="w-8 h-8 flex-shrink-0">
+                            <AvatarImage src={message.profiles?.avatar_url || undefined} />
+                            <AvatarFallback>{(message.profiles?.display_name || message.profiles?.username || "U")[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className={`flex flex-col gap-1 max-w-[70%] ${message.sender_id === user?.id ? 'items-end' : ''}`}>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold">{message.profiles?.display_name || message.profiles?.username}</span>
+                              <span className="text-xs text-muted-foreground">{format(new Date(message.created_at), 'p')}</span>
+                            </div>
+                            <div className={`rounded-lg overflow-hidden ${message.sender_id === user?.id ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                              <img src={message.gif_url} alt={message.gif_title || 'GIF'} className="max-w-full h-auto" />
+                              {message.body && <p className="p-3 text-sm">{message.body}</p>}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    // Voice Message
+                    if (message.voice_url && message.message_type === 'voice') {
+                      return (
+                        <div key={message.id} className={`flex gap-3 mb-4 ${message.sender_id === user?.id ? 'flex-row-reverse' : ''}`}>
+                          <Avatar className="w-8 h-8 flex-shrink-0">
+                            <AvatarImage src={message.profiles?.avatar_url || undefined} />
+                            <AvatarFallback>{(message.profiles?.display_name || message.profiles?.username || "U")[0]}</AvatarFallback>
+                          </Avatar>
+                          <div className={`flex flex-col gap-1 max-w-[70%] ${message.sender_id === user?.id ? 'items-end' : ''}`}>
+                            <div className="flex items-center gap-2">
+                              <span className="text-sm font-semibold">{message.profiles?.display_name || message.profiles?.username}</span>
+                              <span className="text-xs text-muted-foreground">{format(new Date(message.created_at), 'p')}</span>
+                            </div>
+                            <div className={`rounded-lg p-3 ${message.sender_id === user?.id ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                              <audio controls src={message.voice_url} className="max-w-full" />
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    
+                    // Image Message
+                    if (message.image_url) {
+                      return (
+                        <ChatMessageWithImage
+                          key={message.id}
+                          id={message.id}
+                          body={message.body}
+                          image_url={message.image_url}
+                          created_at={message.created_at}
+                          sender={{
+                            id: message.sender_id,
+                            username: message.profiles?.username || "Unknown",
+                            display_name: message.profiles?.display_name,
+                            avatar_url: message.profiles?.avatar_url,
+                          }}
+                          isOwn={message.sender_id === user?.id}
+                          onReply={() => setReplyingTo(message)}
+                          onReaction={() => {}}
+                          replyTo={message.replied_message}
+                        />
+                      );
+                    }
+                    
+                    // Text Message
+                    return (
                       <ChatMessage
                         key={message.id}
                         id={message.id}
@@ -915,13 +980,13 @@ const Chat = () => {
                         isOwn={message.sender_id === user?.id}
                         onReply={() => setReplyingTo(message)}
                       />
-                    )
-                  )}
+                    );
+                  })}
                   <div ref={messagesEndRef} />
                 </ScrollArea>
 
                 {/* Fixed Input Bar - Positioned above mobile browser UI */}
-                <div className="fixed bottom-0 left-0 right-0 p-4 pb-24 border-t bg-card md:relative md:bottom-auto md:pb-4">
+                <div className="fixed bottom-0 left-0 right-0 p-4 pb-32 border-t bg-card md:relative md:bottom-auto md:pb-4">
                   {replyingTo && (
                     <ReplyPreview
                       username={replyingTo.profiles?.display_name || replyingTo.profiles?.username || "Unknown"}
@@ -934,6 +999,17 @@ const Chat = () => {
                   <TypingIndicator typingUsers={typingUsers} />
 
                   <div className="flex gap-2 items-center">
+                    {!isRecordingVoice && (
+                      <Button
+                        size="icon"
+                        variant="outline"
+                        onClick={() => setIsRecordingVoice(true)}
+                        title="Record voice message"
+                      >
+                        <Mic className="w-4 h-4" />
+                      </Button>
+                    )}
+                    
                     <AttachmentMenu
                       onPhotoSelect={async (files) => {
                         if (!user || !threadId) return;
@@ -941,12 +1017,16 @@ const Chat = () => {
                         if (!file) return;
 
                         try {
-                          const fileName = `${user.id}/${Date.now()}.jpg`;
+                          console.log('Uploading photo to chat-images...');
+                          const fileName = `${threadId}/${user.id}/${Date.now()}.jpg`;
                           const { data: uploadData, error: uploadError } = await supabase.storage
                             .from('chat-images')
                             .upload(fileName, file);
 
-                          if (uploadError) throw uploadError;
+                          if (uploadError) {
+                            console.error('Photo upload error:', uploadError);
+                            throw uploadError;
+                          }
 
                           const { data: { publicUrl } } = supabase.storage
                             .from('chat-images')
@@ -959,10 +1039,14 @@ const Chat = () => {
                               sender_id: user.id,
                               body: '',
                               image_url: publicUrl,
+                              message_type: 'image',
                               reply_to_id: replyingTo?.id,
                             });
 
-                          if (messageError) throw messageError;
+                          if (messageError) {
+                            console.error('Message insert error:', messageError);
+                            throw messageError;
+                          }
 
                           setReplyingTo(null);
                           toast.success('Photo sent!');
@@ -1183,26 +1267,75 @@ const Chat = () => {
                           )}
                         </div>
                       )}
-                      {messages.map((message) => 
-                        message.image_url ? (
-                          <ChatMessageWithImage
-                            key={message.id}
-                            id={message.id}
-                            body={message.body}
-                            image_url={message.image_url}
-                            created_at={message.created_at}
-                            sender={{
-                              id: message.sender_id,
-                              username: message.profiles?.username || "Unknown",
-                              display_name: message.profiles?.display_name,
-                              avatar_url: message.profiles?.avatar_url,
-                            }}
-                            isOwn={message.sender_id === user?.id}
-                            onReply={() => setReplyingTo(message)}
-                            onReaction={() => {}}
-                            replyTo={message.replied_message}
-                          />
-                        ) : (
+                      {messages.map((message) => {
+                        // GIF Message
+                        if (message.gif_url && message.message_type === 'gif') {
+                          return (
+                            <div key={message.id} className={`flex gap-3 mb-4 ${message.sender_id === user?.id ? 'flex-row-reverse' : ''}`}>
+                              <Avatar className="w-8 h-8 flex-shrink-0">
+                                <AvatarImage src={message.profiles?.avatar_url || undefined} />
+                                <AvatarFallback>{(message.profiles?.display_name || message.profiles?.username || "U")[0]}</AvatarFallback>
+                              </Avatar>
+                              <div className={`flex flex-col gap-1 max-w-[70%] ${message.sender_id === user?.id ? 'items-end' : ''}`}>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-semibold">{message.profiles?.display_name || message.profiles?.username}</span>
+                                  <span className="text-xs text-muted-foreground">{format(new Date(message.created_at), 'p')}</span>
+                                </div>
+                                <div className={`rounded-lg overflow-hidden ${message.sender_id === user?.id ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                                  <img src={message.gif_url} alt={message.gif_title || 'GIF'} className="max-w-full h-auto" />
+                                  {message.body && <p className="p-3 text-sm">{message.body}</p>}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        // Voice Message
+                        if (message.voice_url && message.message_type === 'voice') {
+                          return (
+                            <div key={message.id} className={`flex gap-3 mb-4 ${message.sender_id === user?.id ? 'flex-row-reverse' : ''}`}>
+                              <Avatar className="w-8 h-8 flex-shrink-0">
+                                <AvatarImage src={message.profiles?.avatar_url || undefined} />
+                                <AvatarFallback>{(message.profiles?.display_name || message.profiles?.username || "U")[0]}</AvatarFallback>
+                              </Avatar>
+                              <div className={`flex flex-col gap-1 max-w-[70%] ${message.sender_id === user?.id ? 'items-end' : ''}`}>
+                                <div className="flex items-center gap-2">
+                                  <span className="text-sm font-semibold">{message.profiles?.display_name || message.profiles?.username}</span>
+                                  <span className="text-xs text-muted-foreground">{format(new Date(message.created_at), 'p')}</span>
+                                </div>
+                                <div className={`rounded-lg p-3 ${message.sender_id === user?.id ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
+                                  <audio controls src={message.voice_url} className="max-w-full" />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+                        
+                        // Image Message
+                        if (message.image_url) {
+                          return (
+                            <ChatMessageWithImage
+                              key={message.id}
+                              id={message.id}
+                              body={message.body}
+                              image_url={message.image_url}
+                              created_at={message.created_at}
+                              sender={{
+                                id: message.sender_id,
+                                username: message.profiles?.username || "Unknown",
+                                display_name: message.profiles?.display_name,
+                                avatar_url: message.profiles?.avatar_url,
+                              }}
+                              isOwn={message.sender_id === user?.id}
+                              onReply={() => setReplyingTo(message)}
+                              onReaction={() => {}}
+                              replyTo={message.replied_message}
+                            />
+                          );
+                        }
+                        
+                        // Text Message
+                        return (
                           <ChatMessage
                             key={message.id}
                             id={message.id}
@@ -1217,8 +1350,8 @@ const Chat = () => {
                             isOwn={message.sender_id === user?.id}
                             onReply={() => setReplyingTo(message)}
                           />
-                        )
-                      )}
+                        );
+                      })}
                       <div ref={messagesEndRef} />
                     </ScrollArea>
 

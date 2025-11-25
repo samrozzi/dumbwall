@@ -9,7 +9,9 @@ interface CheckersGameProps {
   metadata: CheckersMetadata;
   userId: string;
   onMove: (fromRow: number, fromCol: number, toRow: number, toCol: number) => void;
+  onRematch: () => void;
   isFinished: boolean;
+  isCreatingRematch: boolean;
 }
 
 export const CheckersGame = ({
@@ -17,7 +19,9 @@ export const CheckersGame = ({
   metadata,
   userId,
   onMove,
+  onRematch,
   isFinished,
+  isCreatingRematch,
 }: CheckersGameProps) => {
   const [selectedCell, setSelectedCell] = useState<{row: number; col: number} | null>(null);
   
@@ -65,14 +69,26 @@ export const CheckersGame = ({
         <CardTitle>{title || "Checkers"}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Winner Display */}
         {winner && (
-          <div className="text-center text-lg font-semibold text-primary">
-            {winner === userId ? "You won! 🎉" : "You lost"}
+          <div className="text-center space-y-2 pb-4 border-b">
+            <div className="text-lg font-semibold">
+              <span className="text-primary text-xl">
+                {winner === userId ? "You won! 🎉" : winner === 'computer' ? "Computer wins!" : "Opponent wins!"}
+              </span>
+            </div>
           </div>
         )}
+        
+        {/* Turn Indicator */}
         {!isFinished && (
-          <div className="text-center text-sm text-muted-foreground">
-            You are {myColor} - {isMyTurn ? "Your turn" : "Opponent's turn"}
+          <div className="text-center text-sm">
+            <div className="font-medium">
+              You are <span className={myColor === 'red' ? 'text-red-500' : 'text-foreground'}>{myColor}</span>
+            </div>
+            <div className="text-muted-foreground">
+              {isMyTurn ? "Your turn - Select a piece" : metadata.blackPlayer === 'computer' ? "Computer's turn..." : "Opponent's turn"}
+            </div>
           </div>
         )}
         
@@ -90,6 +106,17 @@ export const CheckersGame = ({
             ))
           )}
         </div>
+        
+        {/* Rematch Button */}
+        {isFinished && (
+          <Button 
+            onClick={onRematch} 
+            disabled={isCreatingRematch}
+            className="w-full"
+          >
+            {isCreatingRematch ? "Creating..." : "Play Again"}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

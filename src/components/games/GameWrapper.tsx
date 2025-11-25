@@ -4,6 +4,7 @@ import { useGameAPI } from "@/hooks/useGameAPI";
 import { Game, GameEvent, GameParticipant } from "@/types/games";
 import { supabase } from "@/integrations/supabase/client";
 import { getTicTacToeAIMove, getConnectFourAIMove, getCheckersAIMove } from "@/lib/gameAI";
+import { Chess } from "chess.js";
 import { PollGame } from "./PollGame";
 import { WouldYouRatherGame } from "./WouldYouRatherGame";
 import { QuestionOfTheDayGame } from "./QuestionOfTheDayGame";
@@ -99,7 +100,8 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
             break;
 
           case 'connect_four':
-            if (game.metadata.yellowPlayer === 'computer' && game.metadata.currentTurn === 'yellow' && game.status === 'in_progress') {
+            // Check if it's computer's turn - allow both waiting and in_progress
+            if (game.metadata.yellowPlayer === 'computer' && game.metadata.currentTurn === 'yellow' && (game.status === 'in_progress' || game.status === 'waiting')) {
               const aiCol = getConnectFourAIMove(
                 game.metadata.board,
                 game.metadata.difficulty || 'medium',
@@ -136,8 +138,13 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
                   };
 
                   const winner = checkWin(row, aiCol, 'Y');
+                  
+                  // Check for draw
+                  const isDraw = !winner && newBoard[0].every(cell => cell !== null);
+                  // Update status from 'waiting' to 'in_progress' if needed
+                  const aiStatus = (winner || isDraw) ? 'finished' : (game.status === 'waiting' ? 'in_progress' : undefined);
 
-                  await gameAction(gameId, 'drop', { col: aiCol }, winner ? 'finished' : undefined, {
+                  await gameAction(gameId, 'drop', { col: aiCol }, aiStatus, {
                     ...game.metadata,
                     board: newBoard,
                     currentTurn: 'red',
@@ -154,7 +161,8 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
             break;
 
           case 'checkers':
-            if (game.metadata.blackPlayer === 'computer' && game.metadata.currentTurn === 'black' && game.status === 'in_progress') {
+            // Check if it's computer's turn - allow both waiting and in_progress
+            if (game.metadata.blackPlayer === 'computer' && game.metadata.currentTurn === 'black' && (game.status === 'in_progress' || game.status === 'waiting')) {
               const aiMove = getCheckersAIMove(
                 game.metadata.board,
                 game.metadata.difficulty || 'medium',
@@ -168,6 +176,76 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
                   toRow: aiMove.to.row,
                   toCol: aiMove.to.col,
                 });
+              }
+            }
+            break;
+            
+          case 'chess':
+            // Check if it's computer's turn - allow both waiting and in_progress
+            if (game.metadata.blackPlayer === 'computer' && game.metadata.currentTurn === 'black' && (game.status === 'in_progress' || game.status === 'waiting')) {
+              const chess = new Chess(game.metadata.fen);
+              const moves = chess.moves();
+              
+              if (moves.length > 0) {
+                // Simple AI: pick a random legal move (can be improved)
+                let selectedMove: string;
+                
+                if (game.metadata.difficulty === 'easy') {
+                  // Easy: completely random
+                  selectedMove = moves[Math.floor(Math.random() * moves.length)];
+                } else if (game.metadata.difficulty === 'hard') {
+                  // Hard: prioritize captures
+                  const captureMoves = moves.filter(m => m.includes('x'));
+                  selectedMove = captureMoves.length > 0 
+                    ? captureMoves[Math.floor(Math.random() * captureMoves.length)]
+                    : moves[Math.floor(Math.random() * moves.length)];
+                } else {
+                  // Medium: mix of random and captures (50/50)
+                  const captureMoves = moves.filter(m => m.includes('x'));
+                  if (captureMoves.length > 0 && Math.random() < 0.5) {
+                    selectedMove = captureMoves[Math.floor(Math.random() * captureMoves.length)];
+                  } else {
+                    selectedMove = moves[Math.floor(Math.random() * moves.length)];
+                  }
+                }
+                
+                const move = chess.move(selectedMove);
+                if (move) {
+                  const newFen = chess.fen();
+                  const newMoveHistory = [...game.metadata.moveHistory, move.san];
+                  
+                  let gameStatus: any = 'active';
+                  let winnerUserId = null;
+                  
+                  if (chess.isCheckmate()) {
+                    gameStatus = 'checkmate';
+                    winnerUserId = 'computer';
+                  } else if (chess.isCheck()) {
+                    gameStatus = 'check';
+                  } else if (chess.isStalemate()) {
+                    gameStatus = 'stalemate';
+                  } else if (chess.isDraw()) {
+                    gameStatus = 'draw';
+                  }
+                  
+                  const aiStatus = (gameStatus === 'checkmate' || gameStatus === 'stalemate' || gameStatus === 'draw') 
+                    ? 'finished' 
+                    : (game.status === 'waiting' ? 'in_progress' : undefined);
+                  
+                  await gameAction(gameId, 'move', { from: move.from, to: move.to }, aiStatus, {
+                    ...game.metadata,
+                    fen: newFen,
+                    currentTurn: 'white',
+                    moveHistory: newMoveHistory,
+                    gameStatus,
+                    winnerUserId,
+                  });
+                  
+                  // Force refresh UI after AI move
+                  setTimeout(() => {
+                    loadGame();
+                  }, 100);
+                }
               }
             }
             break;
@@ -283,7 +361,7 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
           board: Array(6).fill(null).map(() => Array(7).fill(null)),
           currentTurn: 'red',
           redPlayer: userId,
-          yellowPlayer: '',
+          yellowPlayer: game.metadata.isComputerOpponent ? 'computer' : '',
           ...(game.metadata.isComputerOpponent && {
             isComputerOpponent: true,
             difficulty: game.metadata.difficulty || 'medium',
@@ -305,7 +383,20 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
           board: checkersBoard,
           currentTurn: 'red',
           redPlayer: userId,
-          blackPlayer: '',
+          blackPlayer: game.metadata.isComputerOpponent ? 'computer' : '',
+          ...(game.metadata.isComputerOpponent && {
+            isComputerOpponent: true,
+            difficulty: game.metadata.difficulty || 'medium',
+          }),
+        };
+      } else if (game.type === 'chess') {
+        metadata = {
+          fen: 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', // Starting position
+          currentTurn: 'white',
+          whitePlayer: userId,
+          blackPlayer: game.metadata.isComputerOpponent ? 'computer' : '',
+          moveHistory: [],
+          gameStatus: 'active',
           ...(game.metadata.isComputerOpponent && {
             isComputerOpponent: true,
             difficulty: game.metadata.difficulty || 'medium',
@@ -435,9 +526,29 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
           metadata={game.metadata}
           userId={userId}
           onMove={(fromRow, fromCol, toRow, toCol) => {
-            handleAction('move', { fromRow, fromCol, toRow, toCol });
+            // Basic move validation and status update
+            const newBoard = game.metadata.board.map((r: any[]) => [...r]);
+            const piece = newBoard[fromRow][fromCol];
+            
+            // Simple move (not handling captures yet - AI will improve this)
+            newBoard[toRow][toCol] = piece;
+            newBoard[fromRow][fromCol] = null;
+            
+            // Switch turns
+            const nextTurn = game.metadata.currentTurn === 'red' ? 'black' : 'red';
+            
+            // Update status from 'waiting' to 'in_progress' on first move
+            const newStatus = game.status === 'waiting' ? 'in_progress' : undefined;
+            
+            handleAction('move', { fromRow, fromCol, toRow, toCol }, newStatus, {
+              ...game.metadata,
+              board: newBoard,
+              currentTurn: nextTurn,
+            });
           }}
+          onRematch={handleRematch}
           isFinished={game.status === 'finished'}
+          isCreatingRematch={isCreatingRematch}
         />
       );
 
@@ -448,6 +559,9 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
           title={game.title}
           metadata={game.metadata}
           userId={userId}
+          onRematch={handleRematch}
+          isFinished={game.status === 'finished'}
+          isCreatingRematch={isCreatingRematch}
           onDrop={(col) => {
             const newBoard = game.metadata.board.map((r: any[]) => [...r]);
             for (let row = 5; row >= 0; row--) {
@@ -472,19 +586,22 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
                 };
 
                 const winner = checkWin(row, col, newBoard[row][col]);
+                
+                // Check for draw (board full, no winner)
+                const isDraw = !winner && newBoard[0].every(cell => cell !== null);
+                // Update status from 'waiting' to 'in_progress' on first move
+                const newStatus = (winner || isDraw) ? 'finished' : (game.status === 'waiting' ? 'in_progress' : undefined);
 
-                handleAction('drop', { col }, winner ? 'finished' : undefined, {
+                handleAction('drop', { col }, newStatus, {
+                  ...game.metadata,
                   board: newBoard,
                   currentTurn: game.metadata.currentTurn === 'red' ? 'yellow' : 'red',
-                  redPlayer: game.metadata.redPlayer,
-                  yellowPlayer: game.metadata.yellowPlayer,
                   winnerUserId: winner ? userId : null,
                 });
                 break;
               }
             }
           }}
-          isFinished={game.status === 'finished'}
         />
       );
 
@@ -670,6 +787,7 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
           }}
           onRematch={handleRematch}
           isFinished={game.status === 'finished'}
+          isCreatingRematch={isCreatingRematch}
         />
       );
 

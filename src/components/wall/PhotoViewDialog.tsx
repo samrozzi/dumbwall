@@ -51,7 +51,7 @@ export const PhotoViewDialog = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-7xl max-h-[90vh] p-0 border-2 border-white/10 rounded-2xl overflow-hidden [&>button]:hidden">
+      <DialogContent className="max-w-7xl max-h-[90vh] p-0 border-2 border-white/10 rounded-2xl overflow-hidden">
         {/* Close button - top right of dialog */}
         <button
           onClick={onClose}

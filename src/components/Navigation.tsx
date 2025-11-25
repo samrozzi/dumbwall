@@ -157,7 +157,7 @@ const Navigation = ({ circleId, hideBackButton }: NavigationProps) => {
     { icon: StickyNote, label: "Wall", path: `/circle/${circleId}/wall` },
     { icon: Gamepad2, label: "Games", path: `/circle/${circleId}/games` },
     { icon: MessageCircle, label: "Chat", path: `/circle/${circleId}/chat` },
-    { icon: Users, label: "People", path: `/circle/${circleId}/people` },
+    { icon: Users, label: "Pulse", path: `/circle/${circleId}/people` },
     { icon: Settings, label: "Settings", path: `/circle/${circleId}/settings` },
   ];
 
@@ -167,7 +167,7 @@ const Navigation = ({ circleId, hideBackButton }: NavigationProps) => {
         <div className="flex items-center justify-around px-2 py-3">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path || 
-                           (item.label === "People" && isOnProfilePage);
+                           (item.label === "Pulse" && isOnProfilePage);
             
             return (
               <NavLink
@@ -201,7 +201,7 @@ const Navigation = ({ circleId, hideBackButton }: NavigationProps) => {
       <div className="flex flex-col gap-2">
         {navItems.map((item) => {
           const isCurrentPage = location.pathname === item.path ||
-                               (item.label === "People" && isOnProfilePage);
+                               (item.label === "Pulse" && isOnProfilePage);
           
           return (
             <div key={item.path} className="relative group">

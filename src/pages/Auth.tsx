@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { notify } from "@/components/ui/custom-notification";
 import { cn } from "@/lib/utils";
-import wallLogo from "@/assets/wall-logo.png";
+import wallLogo from "@/assets/wall-logo.webp";
 
 // Debounce utility
 const debounce = <T extends (...args: any[]) => any>(

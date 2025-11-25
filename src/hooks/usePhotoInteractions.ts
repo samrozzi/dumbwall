@@ -34,6 +34,7 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
   const [optimisticCommentId, setOptimisticCommentId] = useState<string | null>(null);
 
   const loadComments = async () => {
+    console.log('🔄 Loading comments for wall item:', wallItemId, 'Optimistic ID:', optimisticCommentId);
     const { data, error } = await supabase
       .from('wall_item_comments')
       .select('id, comment_text, user_id, created_at')
@@ -57,10 +58,13 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
       profiles: profilesData?.find(p => p.id === comment.user_id),
     })) || [];
 
+    console.log('📊 Loaded', commentsWithProfiles.length, 'comments from database');
+
     // Preserve optimistic comment if it hasn't been confirmed yet
     setComments(prev => {
       const optimistic = prev.find(c => c.id === optimisticCommentId);
       if (optimistic && optimisticCommentId) {
+        console.log('🔍 Checking for real version of optimistic comment:', optimisticCommentId);
         // Check if real comment exists (matching user + text + recent timestamp)
         const hasRealVersion = commentsWithProfiles.some(c => 
           c.user_id === optimistic.user_id &&
@@ -69,10 +73,12 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
         );
         
         if (hasRealVersion) {
+          console.log('✅ Real version found, clearing optimistic comment');
           // Real version exists, clear optimistic flag and use database comments
           setOptimisticCommentId(null);
           return commentsWithProfiles as Comment[];
         } else {
+          console.log('⏳ Real version not found yet, keeping optimistic comment');
           // Real version not found yet, keep optimistic at end
           return [...commentsWithProfiles.filter(c => c.id !== optimisticCommentId), optimistic] as Comment[];
         }
@@ -196,8 +202,12 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
       }
     };
     
+    console.log('🚀 Adding optimistic comment:', tempId, commentText.substring(0, 30));
     setOptimisticCommentId(tempId);
-    setComments(prev => [...prev, optimisticComment]);
+    setComments(prev => {
+      console.log('📝 Current comments before add:', prev.length, '→ Adding optimistic comment');
+      return [...prev, optimisticComment];
+    });
 
     try {
       // Check if thread already exists for this photo

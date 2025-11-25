@@ -86,7 +86,7 @@ export const GameInvites = () => {
     };
   };
 
-  const handleAccept = async (inviteId: string, gameId: string) => {
+  const handleAccept = async (inviteId: string, gameId: string, circleId: string) => {
     if (!user) return;
 
     try {
@@ -151,7 +151,7 @@ export const GameInvites = () => {
               <Button
                 size="sm"
                 variant="default"
-                onClick={() => handleAccept(invite.id, invite.game_id)}
+                onClick={() => handleAccept(invite.id, invite.game_id, invite.games.circle_id)}
               >
                 <Check className="w-4 h-4 mr-1" />
                 Accept

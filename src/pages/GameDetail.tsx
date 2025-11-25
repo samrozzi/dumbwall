@@ -4,6 +4,7 @@ import { useAuth } from "@/lib/auth";
 import Navigation from "@/components/Navigation";
 import { GameWrapper } from "@/components/games/GameWrapper";
 import { InviteMemberDialog } from "@/components/games/InviteMemberDialog";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import { useGameAPI } from "@/hooks/useGameAPI";
 import { Game } from "@/types/games";
 import { Button } from "@/components/ui/button";
@@ -154,6 +155,7 @@ const GameDetail = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <NotificationCenter />
               {getStatusBadge(game.status)}
             </div>
           </div>
@@ -180,6 +182,21 @@ const GameDetail = () => {
                   Delete Game
                 </Button>
               )}
+            </div>
+          )}
+
+          {/* Forfeit button for active games */}
+          {game.status === "in_progress" && game.created_by === user.id && (
+            <div className="flex items-center gap-2">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDelete}
+                disabled={isDeleting}
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Forfeit Game
+              </Button>
             </div>
           )}
 

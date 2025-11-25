@@ -73,7 +73,8 @@ export const GameCard = ({ game, userId, onDelete }: GameCardProps) => {
     
     setIsDeleting(true);
     try {
-      await gameAction(game.id, "cancel", {}, "cancelled");
+      // Use "forfeit" event type which is valid, and set status to "cancelled"
+      await gameAction(game.id, "forfeit", {}, "cancelled");
       notify("Game deleted!");
       onDelete?.();
     } catch (error) {

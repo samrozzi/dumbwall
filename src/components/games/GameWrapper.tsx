@@ -77,10 +77,10 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
                 const winner = checkWinner();
 
                 await gameAction(gameId, 'move', { row: aiMove.row, col: aiMove.col }, winner ? 'finished' : undefined, {
+                  ...game.metadata,
                   board: newBoard,
                   nextTurnUserId: userId,
                   winnerUserId: winner ? 'computer' : null,
-                  ...game.metadata,
                 });
               }
             }
@@ -126,10 +126,10 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
                   const winner = checkWin(row, aiCol, 'Y');
 
                   await gameAction(gameId, 'drop', { col: aiCol }, winner ? 'finished' : undefined, {
+                    ...game.metadata,
                     board: newBoard,
                     currentTurn: 'red',
                     winnerUserId: winner ? 'computer' : null,
-                    ...game.metadata,
                   });
                 }
               }
@@ -168,7 +168,7 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
         clearTimeout(computerMoveTimeoutRef.current);
       }
     };
-  }, [game, userId, gameId]);
+  }, [game, userId, gameId, gameAction]);
 
   const setupRealtime = () => {
     const channel = supabase

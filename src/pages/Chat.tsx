@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo } from "react";
 import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -27,6 +27,7 @@ import { useTypingIndicator } from "@/hooks/useTypingIndicator";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { SwipeableMessage } from "@/components/chat/SwipeableMessage";
+import { SwipeableThreadItem } from "@/components/chat/SwipeableThreadItem";
 import { GifPicker } from "@/components/chat/GifPicker";
 import { VoiceRecorder } from "@/components/chat/VoiceRecorder";
 import { AttachmentMenu } from "@/components/chat/AttachmentMenu";
@@ -174,6 +175,7 @@ const Chat = () => {
       loadThread();
       loadMessages();
       subscribeToMessages();
+      markThreadAsRead();
     }
   }, [threadId, searchParams, threads]);
 
@@ -344,6 +346,24 @@ const Chat = () => {
       }
     } else {
       setThreadPhoto(null);
+    }
+  };
+
+  const markThreadAsRead = async () => {
+    if (!user || !threadId) return;
+    
+    try {
+      await supabase
+        .from('thread_read_status')
+        .upsert({
+          thread_id: threadId,
+          user_id: user.id,
+          last_read_at: new Date().toISOString()
+        }, {
+          onConflict: 'thread_id,user_id'
+        });
+    } catch (error) {
+      console.error("Error marking thread as read:", error);
     }
   };
 
@@ -697,6 +717,28 @@ const Chat = () => {
     }
   };
 
+  const handleDeleteThread = async (tId: string) => {
+    if (!user || !window.confirm('Delete this conversation?')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('chat_threads')
+        .delete()
+        .eq('id', tId);
+
+      if (error) throw error;
+
+      if (threadId === tId) {
+        navigate(`/circle/${circleId}/chat`);
+      }
+      loadThreads();
+      toast.success('Conversation deleted');
+    } catch (error: any) {
+      console.error('Error deleting thread:', error);
+      toast.error('Failed to delete conversation');
+    }
+  };
+
   const handleMessageSearch = (threadId: string, messageId: string) => {
     navigate(`/circle/${circleId}/chat?threadId=${threadId}`);
     // Scroll to message after navigation
@@ -949,7 +991,7 @@ const Chat = () => {
                 </div>
 
                 {/* Scrollable Messages Area - Account for fixed input bar */}
-                <ScrollArea className="flex-1 p-4 pb-24 overflow-y-auto md:pb-4">
+                <ScrollArea className="flex-1 p-4 pb-32 overflow-y-auto md:pb-4">
                   {threadPhoto && (
                     <div className="mb-4 rounded-lg overflow-hidden border-2 border-primary bg-black">
                       <img 
@@ -1229,36 +1271,40 @@ const Chat = () => {
                 <ScrollArea className="flex-1 border rounded-lg bg-card/50 backdrop-blur">
                   <div className="p-2 space-y-2">
                     {filteredThreads.map((thread) => (
-                      <button
+                      <SwipeableThreadItem
                         key={thread.id}
-                        onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
-                        className={`w-full text-left p-3 rounded-lg transition-all hover:bg-card flex items-center gap-3 ${
-                          threadId === thread.id 
-                            ? "bg-card shadow-md" 
-                            : thread.unreadCount > 0 
-                              ? "bg-accent border-l-4 border-primary" 
-                              : "bg-card/40"
-                        }`}
+                        onSwipeDelete={() => handleDeleteThread(thread.id)}
                       >
-                        {thread.unreadCount > 0 && (
-                          <div className="flex-shrink-0 bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
-                            {thread.unreadCount > 9 ? "9+" : thread.unreadCount}
+                        <button
+                          onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
+                          className={`w-full text-left p-3 rounded-lg transition-all hover:bg-card flex items-center gap-3 ${
+                            threadId === thread.id 
+                              ? "bg-card shadow-md" 
+                              : thread.unreadCount > 0 
+                                ? "bg-accent border-l-4 border-primary" 
+                                : "bg-card/40"
+                          }`}
+                        >
+                          {thread.unreadCount > 0 && (
+                            <div className="flex-shrink-0 bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
+                              {thread.unreadCount > 9 ? "9+" : thread.unreadCount}
+                            </div>
+                          )}
+                          <ThreadAvatarStack 
+                            members={thread.members} 
+                            currentUserId={user?.id || ""} 
+                          />
+                          <div className="flex-1 min-w-0">
+                            <div className={`flex items-center gap-2 ${thread.unreadCount > 0 ? 'font-bold' : 'font-medium'}`}>
+                              {thread.linked_wall_item_id && <span>📷</span>}
+                              <span className="truncate">{thread.title}</span>
+                            </div>
+                            <div className={`text-xs mt-1 ${thread.unreadCount > 0 ? 'text-white font-medium' : 'text-muted-foreground'}`}>
+                              {getRelativeTimeString(thread.lastMessageAt)}
+                            </div>
                           </div>
-                        )}
-                        <ThreadAvatarStack 
-                          members={thread.members} 
-                          currentUserId={user?.id || ""} 
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className={`flex items-center gap-2 ${thread.unreadCount > 0 ? 'font-bold' : 'font-medium'}`}>
-                            {thread.linked_wall_item_id && <span>📷</span>}
-                            <span className="truncate">{thread.title}</span>
-                          </div>
-                          <div className={`text-xs mt-1 ${thread.unreadCount > 0 ? 'text-white font-medium' : 'text-muted-foreground'}`}>
-                            {new Date(thread.lastMessageAt).toLocaleDateString()}
-                          </div>
-                        </div>
-                      </button>
+                        </button>
+                      </SwipeableThreadItem>
                     ))}
                   </div>
                 </ScrollArea>

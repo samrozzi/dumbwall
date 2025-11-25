@@ -31,6 +31,7 @@ import { notify } from "@/components/ui/custom-notification";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { LayoutGrid, List, Camera } from "lucide-react";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import { useIsMobile } from "@/hooks/use-mobile";
 import {
   Dialog,
@@ -890,14 +891,15 @@ const Wall = () => {
         </div>
 
         {viewMode === "wall" && isMobile ? (
-          <div className="flex flex-col gap-4 pb-24 w-full px-4">
-            {items
-              .filter(item => item.id !== pendingDelete?.id)
-              .sort((a, b) => {
-                // Sort by desktop position: top-to-bottom (y), then left-to-right (x)
-                if (Math.abs(a.y - b.y) < 100) {
-                  // If items are roughly on same row (within 100px), sort by x
-                  return a.x - b.x;
+          <ScrollArea className="flex-1 overflow-y-auto pb-20">
+            <div className="flex flex-col gap-4 w-full px-4 py-2">
+              {items
+                .filter(item => item.id !== pendingDelete?.id)
+                .sort((a, b) => {
+                  // Sort by desktop position: top-to-bottom (y), then left-to-right (x)
+                  if (Math.abs(a.y - b.y) < 100) {
+                    // If items are roughly on same row (within 100px), sort by x
+                    return a.x - b.x;
                 }
                 // Otherwise sort by y (top to bottom)
                 return a.y - b.y;
@@ -1037,11 +1039,12 @@ const Wall = () => {
                         isCreator={item.created_by === user?.id}
                       />
                     </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </ScrollArea>
         ) : viewMode === "wall" ? (
           // Desktop canvas view
           <div

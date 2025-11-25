@@ -23,6 +23,11 @@ export const VoiceRecorder = ({ onVoiceRecorded, onCancel, threadId, userId }: V
   const timerIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const startTimeRef = useRef<number>(0);
 
+  // Auto-start recording when component mounts
+  useEffect(() => {
+    startRecording();
+  }, []);
+
   useEffect(() => {
     return () => {
       if (timerIntervalRef.current) {

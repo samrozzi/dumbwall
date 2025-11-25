@@ -24,6 +24,8 @@ interface ChatMessageProps {
   currentUserId?: string;
   isOwn: boolean;
   onReply: () => void;
+  onDeleteForMe?: () => void;
+  onDeleteForEveryone?: () => void;
 }
 
 export function ChatMessage({
@@ -36,8 +38,12 @@ export function ChatMessage({
   currentUserId,
   isOwn,
   onReply,
+  onDeleteForMe,
+  onDeleteForEveryone,
 }: ChatMessageProps) {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [contextMenuPos, setContextMenuPos] = useState({ x: 0, y: 0 });
   const messageRef = useRef<HTMLDivElement>(null);
   const isMobile = useIsMobile();
   const { reactions, toggleReaction } = useReactions(id, currentUserId);
@@ -47,14 +53,22 @@ export function ChatMessage({
     setShowEmojiPicker(false);
   };
 
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setContextMenuPos({ x: e.clientX, y: e.clientY });
+    setShowContextMenu(true);
+  };
+
   return (
-    <div
-      ref={messageRef}
-      className={cn(
-        "group relative flex gap-3 py-2 px-3 hover:bg-accent/30 transition-colors",
-        isOwn && "flex-row-reverse"
-      )}
-    >
+    <>
+      <div
+        ref={messageRef}
+        onContextMenu={handleContextMenu}
+        className={cn(
+          "group relative flex gap-3 py-2 px-3 hover:bg-accent/30 transition-colors",
+          isOwn && "flex-row-reverse"
+        )}
+      >
       <Avatar className="h-8 w-8 shrink-0">
         <AvatarImage src={sender_avatar} />
         <AvatarFallback className="bg-primary text-primary-foreground text-xs">
@@ -154,7 +168,51 @@ export function ChatMessage({
           </div>
         )}
       </div>
-
     </div>
+
+    {/* Context Menu */}
+    {showContextMenu && (
+      <>
+        <div 
+          className="fixed inset-0 z-40" 
+          onClick={() => setShowContextMenu(false)}
+        />
+        <div 
+          className="fixed z-50 bg-card border border-border rounded-lg shadow-lg py-1 min-w-[160px]"
+          style={{ left: contextMenuPos.x, top: contextMenuPos.y }}
+        >
+          <button
+            className="w-full text-left px-4 py-2 text-sm hover:bg-accent transition-colors"
+            onClick={() => {
+              onReply();
+              setShowContextMenu(false);
+            }}
+          >
+            Reply
+          </button>
+          <button
+            className="w-full text-left px-4 py-2 text-sm hover:bg-accent transition-colors text-destructive"
+            onClick={() => {
+              onDeleteForMe?.();
+              setShowContextMenu(false);
+            }}
+          >
+            Delete for Me
+          </button>
+          {isOwn && onDeleteForEveryone && (
+            <button
+              className="w-full text-left px-4 py-2 text-sm hover:bg-accent transition-colors text-destructive"
+              onClick={() => {
+                onDeleteForEveryone();
+                setShowContextMenu(false);
+              }}
+            >
+              Delete for Everyone
+            </button>
+          )}
+        </div>
+      </>
+    )}
+  </>
   );
 }

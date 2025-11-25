@@ -3,6 +3,9 @@ import { StickyNote, MessageCircle, Users, Settings, Gamepad2, ArrowLeft } from 
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/lib/auth";
 
 interface NavigationProps {
   circleId?: string;
@@ -13,9 +16,93 @@ const Navigation = ({ circleId, hideBackButton }: NavigationProps) => {
   const isMobile = useIsMobile();
   const location = useLocation();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [hasUnreadMessages, setHasUnreadMessages] = useState(false);
   
   // Check if we're on a profile page (should highlight People nav)
   const isOnProfilePage = location.pathname.startsWith('/u/');
+
+  // Check for unread messages
+  useEffect(() => {
+    if (!circleId || !user) return;
+
+    const checkUnreadMessages = async () => {
+      // Get all threads in this circle
+      const { data: threads } = await supabase
+        .from('chat_threads')
+        .select('id')
+        .eq('circle_id', circleId);
+
+      if (!threads || threads.length === 0) {
+        setHasUnreadMessages(false);
+        return;
+      }
+
+      const threadIds = threads.map(t => t.id);
+
+      // Get read status for current user
+      const { data: readStatuses } = await supabase
+        .from('thread_read_status')
+        .select('thread_id, last_read_at')
+        .eq('user_id', user.id)
+        .in('thread_id', threadIds);
+
+      // Check each thread for unread messages
+      let hasUnread = false;
+      for (const thread of threads) {
+        const readStatus = readStatuses?.find(rs => rs.thread_id === thread.id);
+        
+        if (!readStatus) {
+          // No read status means there are unread messages
+          const { count } = await supabase
+            .from('chat_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('thread_id', thread.id);
+          
+          if (count && count > 0) {
+            hasUnread = true;
+            break;
+          }
+        } else {
+          // Check for messages after last read time
+          const { count } = await supabase
+            .from('chat_messages')
+            .select('*', { count: 'exact', head: true })
+            .eq('thread_id', thread.id)
+            .gt('created_at', readStatus.last_read_at);
+          
+          if (count && count > 0) {
+            hasUnread = true;
+            break;
+          }
+        }
+      }
+
+      setHasUnreadMessages(hasUnread);
+    };
+
+    checkUnreadMessages();
+
+    // Subscribe to new messages
+    const channel = supabase
+      .channel(`circle-${circleId}-messages`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'chat_messages',
+        },
+        () => {
+          checkUnreadMessages();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [circleId, user]);
   
   // If no circleId and hideBackButton is true, don't render anything
   if (!circleId && hideBackButton) {
@@ -77,14 +164,19 @@ const Navigation = ({ circleId, hideBackButton }: NavigationProps) => {
                 to={item.path}
                 className={
                   cn(
-                    "p-3 rounded-full transition-all duration-300",
+                    "p-3 rounded-full transition-all duration-300 relative",
                     isActive
                       ? "bg-primary text-primary-foreground shadow-lg"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
                   )
                 }
               >
-              <item.icon className="w-5 h-5" />
+                <item.icon className="w-5 h-5" />
+                {item.label === "Chat" && hasUnreadMessages && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full flex items-center justify-center">
+                    <span className="text-[10px] text-white font-bold">!</span>
+                  </div>
+                )}
             </NavLink>
           );
         })}
@@ -106,7 +198,7 @@ const Navigation = ({ circleId, hideBackButton }: NavigationProps) => {
                 to={item.path}
                 className={({ isActive }) =>
                   cn(
-                    "p-3 rounded-full transition-all duration-300 block",
+                    "p-3 rounded-full transition-all duration-300 block relative",
                     isActive
                       ? "bg-primary text-primary-foreground shadow-lg"
                       : "text-muted-foreground hover:bg-muted hover:text-foreground"
@@ -114,6 +206,11 @@ const Navigation = ({ circleId, hideBackButton }: NavigationProps) => {
                 }
               >
                 <item.icon className="w-5 h-5" />
+                {item.label === "Chat" && hasUnreadMessages && (
+                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-destructive rounded-full flex items-center justify-center">
+                    <span className="text-[10px] text-white font-bold">!</span>
+                  </div>
+                )}
               </NavLink>
               <div 
                 className={cn(

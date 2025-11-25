@@ -10,7 +10,7 @@ interface Story {
   content: any;
   created_at: string;
   expires_at: string;
-  profile?: {
+  profiles?: {
     username: string;
     display_name: string | null;
     avatar_url: string | null;
@@ -53,7 +53,7 @@ export const useStories = (circleId: string) => {
         .from("circle_stories")
         .select(`
           *,
-          profile:profiles(username, display_name, avatar_url)
+          profiles!user_id(username, display_name, avatar_url)
         `)
         .eq("circle_id", circleId)
         .gt("expires_at", new Date().toISOString())

@@ -38,11 +38,11 @@ export const StoriesRow = ({ circleId }: StoriesRowProps) => {
 
   if (loading) {
     return (
-      <div className="flex gap-4 overflow-x-auto pb-4">
+      <div className="flex gap-3 overflow-x-auto pb-2">
         {[1, 2, 3, 4].map((i) => (
-          <div key={i} className="flex flex-col items-center gap-2">
-            <Skeleton className="w-16 h-16 rounded-full" />
-            <Skeleton className="w-12 h-3" />
+          <div key={i} className="flex flex-col items-center gap-1.5">
+            <Skeleton className="w-12 h-12 rounded-full" />
+            <Skeleton className="w-10 h-2.5" />
           </div>
         ))}
       </div>
@@ -51,32 +51,32 @@ export const StoriesRow = ({ circleId }: StoriesRowProps) => {
 
   return (
     <>
-      <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide">
+      <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
         {/* New Story Button */}
-        <div className="flex flex-col items-center gap-2 flex-shrink-0">
+        <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
           <button
             onClick={() => setCreatorOpen(true)}
-            className="relative w-16 h-16 rounded-full bg-muted hover:bg-muted/80 transition-colors flex items-center justify-center border-2 border-dashed border-border"
+            className="relative w-12 h-12 rounded-full bg-muted hover:bg-muted/80 transition-colors flex items-center justify-center border-2 border-dashed border-border"
           >
-            <Plus className="w-6 h-6" />
+            <Plus className="w-5 h-5" />
           </button>
-          <span className="text-xs text-muted-foreground">New Story</span>
+          <span className="text-[10px] text-muted-foreground max-w-[48px] truncate">New</span>
         </div>
 
         {/* User Stories */}
         {storyGroups.map((group: any, index: number) => (
           <div
             key={group.user_id}
-            className="flex flex-col items-center gap-2 flex-shrink-0"
+            className="flex flex-col items-center gap-1.5 flex-shrink-0"
           >
             <StoryAvatar
               src={group.profiles?.avatar_url}
               alt={group.profiles?.display_name || group.profiles?.username || "User"}
-              size="lg"
+              size="md"
               hasUnviewedStory={true}
               onClick={() => handleStoryClick(index)}
             />
-            <span className="text-xs text-foreground max-w-[64px] truncate">
+            <span className="text-[10px] text-foreground max-w-[48px] truncate">
               {group.profiles?.display_name || group.profiles?.username || "User"}
             </span>
           </div>

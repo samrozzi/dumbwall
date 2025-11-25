@@ -137,7 +137,7 @@ const ImageCard = ({
       )}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-4xl max-h-[90vh] p-0 bg-background">
+        <DialogContent className="max-w-7xl max-h-[90vh] p-0 bg-background overflow-hidden">
           {/* Close button positioned outside overflow container */}
           <button
             onClick={() => setIsOpen(false)}
@@ -146,11 +146,11 @@ const ImageCard = ({
             <X className="h-7 w-7" />
           </button>
 
-          {/* Cleaner single border */}
-          <div className="relative border-4 border-amber-500/80 rounded-lg overflow-hidden h-full flex flex-col max-h-[90vh] shadow-xl">
+          {/* Instagram-style layout */}
+          <div className="relative border-4 border-amber-500/80 rounded-lg overflow-hidden h-[90vh] flex flex-col md:flex-row">
             
-            {/* Image & Caption Section - Fit to viewport */}
-            <div className="bg-black flex-shrink-0 flex flex-col max-h-[60vh]">
+            {/* Left: Image & Caption Section */}
+            <div className="bg-black md:w-[60%] flex flex-col">
               <div className="flex-1 flex items-center justify-center overflow-hidden">
                 <img
                   src={content.url}
@@ -167,10 +167,10 @@ const ImageCard = ({
               )}
             </div>
 
-            {/* Interactions Section - Flex column with sticky input */}
-            <div className="bg-background border-t flex flex-col flex-1 overflow-hidden">
+            {/* Right: Interactions & Comments Section */}
+            <div className="bg-background md:w-[40%] border-l-4 border-amber-500/80 flex flex-col">
               {/* Reactions & Votes - Fixed height */}
-              <div className="p-4 space-y-3 flex-shrink-0">
+              <div className="p-4 space-y-3 flex-shrink-0 border-b">
                 {/* Reactions Row */}
                 <div className="flex items-center gap-2 flex-wrap">
                   {reactions.map((reaction) => (
@@ -198,7 +198,7 @@ const ImageCard = ({
                 </div>
 
                 {/* Vote Section */}
-                <div className="flex items-center gap-4 pb-3 border-b">
+                <div className="flex items-center gap-4">
                   <button
                     onClick={() => toggleVote('up')}
                     className={cn(
@@ -226,15 +226,17 @@ const ImageCard = ({
                 </div>
               </div>
 
-              {/* Comments - Scrollable */}
-              <div className="flex-1 overflow-y-auto px-4">
-                <h4 className="font-semibold text-sm flex items-center gap-2 mb-3">
-                  💬 Comments ({comments.length})
-                </h4>
-                <ScrollArea className="h-[120px] sm:h-[150px] pr-4">
-                  <div className="space-y-3">
+              {/* Comments - Scrollable fills space */}
+              <div className="flex-1 overflow-hidden flex flex-col">
+                <div className="p-4 pb-2">
+                  <h4 className="font-semibold text-sm flex items-center gap-2">
+                    💬 Comments ({comments.length})
+                  </h4>
+                </div>
+                <ScrollArea className="flex-1 px-4">
+                  <div className="space-y-3 pb-4">
                     {comments.length === 0 ? (
-                      <p className="text-sm text-muted-foreground text-center py-4">
+                      <p className="text-sm text-muted-foreground text-center py-8">
                         No comments yet. Be the first to comment!
                       </p>
                     ) : (

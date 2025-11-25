@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import Navigation from "@/components/Navigation";
 import { CircleHeader } from "@/components/CircleHeader";
-import { GameCard } from "@/components/games/GameCard";
+import { GameSummaryCard } from "@/components/games/GameSummaryCard";
 import { GameInvites } from "@/components/games/GameInvites";
 import { QuickPollDialog } from "@/components/games/InstantPlay/QuickPollDialog";
 import { RockPaperScissorsDialog } from "@/components/games/InstantPlay/RockPaperScissorsDialog";
@@ -457,14 +457,24 @@ const Games = () => {
           {myActiveGames.length > 0 && (
             <section>
               <div className="mb-4">
-                <h2 className="text-2xl font-semibold mb-1">Your Games</h2>
+                <h2 className="text-2xl font-semibold mb-1">Active Games</h2>
                 <p className="text-sm text-muted-foreground">
                   {myActiveGames.length} active game{myActiveGames.length !== 1 ? 's' : ''}
                 </p>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {/* Horizontal scroll on mobile, grid on desktop */}
+              <div className={cn(
+                isMobile
+                  ? "flex overflow-x-auto gap-3 pb-2 snap-x snap-mandatory scrollbar-hide"
+                  : "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+              )}>
                 {myActiveGames.map((game) => (
-                  <GameCard key={game.id} game={game} userId={user.id} onDelete={loadGames} />
+                  <div
+                    key={game.id}
+                    className={cn(isMobile && "flex-shrink-0 w-64 snap-start")}
+                  >
+                    <GameSummaryCard game={game} userId={user.id} circleId={circleId!} />
+                  </div>
                 ))}
               </div>
             </section>

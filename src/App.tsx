@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import Circles from "./pages/Circles";
 import Wall from "./pages/Wall";
 import Games from "./pages/Games";
+import GameDetail from "./pages/GameDetail";
 import Chat from "./pages/Chat";
 import People from "./pages/People";
 import Settings from "./pages/Settings";
@@ -29,6 +30,7 @@ const AppContent = () => {
       <Route path="/circles" element={<ProtectedRoute><Circles /></ProtectedRoute>} />
       <Route path="/circle/:circleId/wall" element={<ProtectedRoute><Wall /></ProtectedRoute>} />
       <Route path="/circle/:circleId/games" element={<ProtectedRoute><Games /></ProtectedRoute>} />
+      <Route path="/circle/:circleId/games/:gameId" element={<ProtectedRoute><GameDetail /></ProtectedRoute>} />
       <Route path="/circle/:circleId/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
       <Route path="/circle/:circleId/people" element={<ProtectedRoute><People /></ProtectedRoute>} />
       <Route path="/circle/:circleId/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />

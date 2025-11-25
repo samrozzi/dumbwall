@@ -316,6 +316,35 @@ export type Database = {
         }
         Relationships: []
       }
+      deleted_messages: {
+        Row: {
+          deleted_at: string
+          id: string
+          message_id: string
+          user_id: string
+        }
+        Insert: {
+          deleted_at?: string
+          id?: string
+          message_id: string
+          user_id: string
+        }
+        Update: {
+          deleted_at?: string
+          id?: string
+          message_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deleted_messages_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "chat_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       game_events: {
         Row: {
           created_at: string

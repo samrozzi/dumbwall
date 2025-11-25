@@ -26,6 +26,7 @@ interface MessageActionsProps {
   isPinned: boolean;
   onEdit: () => void;
   onDelete: () => void;
+  onDeleteForMe: () => void;
   onPin: () => void;
   onForward: () => void;
   onCopy: () => void;
@@ -37,18 +38,30 @@ export const MessageActions = ({
   isPinned,
   onEdit,
   onDelete,
+  onDeleteForMe,
   onPin,
   onForward,
   onCopy
 }: MessageActionsProps) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteType, setDeleteType] = useState<'me' | 'everyone'>('me');
 
-  const handleDelete = () => {
+  const handleDeleteForMe = () => {
+    setDeleteType('me');
+    setShowDeleteDialog(true);
+  };
+
+  const handleDeleteForEveryone = () => {
+    setDeleteType('everyone');
     setShowDeleteDialog(true);
   };
 
   const confirmDelete = () => {
-    onDelete();
+    if (deleteType === 'everyone') {
+      onDelete();
+    } else {
+      onDeleteForMe();
+    }
     setShowDeleteDialog(false);
   };
 
@@ -77,16 +90,20 @@ export const MessageActions = ({
             <Pin className="w-4 h-4 mr-2" />
             {isPinned ? 'Unpin' : 'Pin'}
           </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={handleDeleteForMe} className="text-destructive">
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete for Me
+          </DropdownMenuItem>
           {isOwn && (
             <>
-              <DropdownMenuSeparator />
               <DropdownMenuItem onClick={onEdit}>
                 <Edit className="w-4 h-4 mr-2" />
                 Edit
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+              <DropdownMenuItem onClick={handleDeleteForEveryone} className="text-destructive">
                 <Trash2 className="w-4 h-4 mr-2" />
-                Delete
+                Delete for Everyone
               </DropdownMenuItem>
             </>
           )}
@@ -98,7 +115,9 @@ export const MessageActions = ({
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Message?</AlertDialogTitle>
             <AlertDialogDescription>
-              This message will be deleted for everyone. This action cannot be undone.
+              {deleteType === 'everyone' 
+                ? "This message will be deleted for everyone. This action cannot be undone."
+                : "This message will be removed from your view only."}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { z } from "zod";
+import { getRelativeTimeString } from "@/lib/dateUtils";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -349,6 +350,7 @@ const Chat = () => {
   const loadMessages = async () => {
     if (!user || !threadId) return;
     
+    // Get messages excluding those deleted by current user
     const { data, error } = await supabase
       .from("chat_messages")
       .select("*")
@@ -360,15 +362,26 @@ const Chat = () => {
       return;
     }
 
+    // Get deleted messages for current user
+    const { data: deletedData } = await supabase
+      .from("deleted_messages")
+      .select("message_id")
+      .eq("user_id", user.id);
+    
+    const deletedMessageIds = new Set(deletedData?.map(d => d.message_id) || []);
+
+    // Filter out deleted messages
+    const filteredData = data?.filter(m => !deletedMessageIds.has(m.id)) || [];
+
     // Fetch profiles for all senders
-    const senderIds = [...new Set(data?.map((m) => m.sender_id) || [])];
+    const senderIds = [...new Set(filteredData.map((m) => m.sender_id) || [])];
     const { data: profiles } = await supabase
       .from("profiles")
       .select("id, display_name, username, avatar_url")
       .in("id", senderIds);
 
     // Fetch replied messages
-    const replyToIds = data?.filter(m => m.reply_to_id).map(m => m.reply_to_id).filter(Boolean) || [];
+    const replyToIds = filteredData.filter(m => m.reply_to_id).map(m => m.reply_to_id).filter(Boolean) || [];
     let repliedMessages: any[] = [];
     if (replyToIds.length > 0) {
       const { data: repliedData } = await supabase
@@ -378,7 +391,7 @@ const Chat = () => {
       repliedMessages = repliedData || [];
     }
 
-    const messagesWithProfiles = (data || []).map((msg) => {
+    const messagesWithProfiles = filteredData.map((msg) => {
       const profile = profiles?.find((p) => p.id === msg.sender_id);
       let replied_message = null;
       
@@ -642,6 +655,48 @@ const Chat = () => {
     }
   };
 
+  const handleDeleteForMe = async (messageId: string) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('deleted_messages')
+        .insert({
+          message_id: messageId,
+          user_id: user.id
+        });
+      
+      if (error) throw error;
+      
+      // Remove from local state
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+      toast.success('Message deleted');
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast.error('Failed to delete message');
+    }
+  };
+
+  const handleDeleteForEveryone = async (messageId: string) => {
+    if (!user) return;
+    
+    try {
+      const { error } = await supabase
+        .from('chat_messages')
+        .delete()
+        .eq('id', messageId);
+      
+      if (error) throw error;
+      
+      // Remove from local state (realtime will update for others)
+      setMessages(prev => prev.filter(m => m.id !== messageId));
+      toast.success('Message deleted for everyone');
+    } catch (error) {
+      console.error('Error deleting message:', error);
+      toast.error('Failed to delete message');
+    }
+  };
+
   const handleMessageSearch = (threadId: string, messageId: string) => {
     navigate(`/circle/${circleId}/chat?threadId=${threadId}`);
     // Scroll to message after navigation
@@ -831,7 +886,7 @@ const Chat = () => {
                             {thread.title}
                           </div>
                           <div className={`text-xs mt-1 ${thread.unreadCount > 0 ? 'text-white font-medium' : 'text-muted-foreground'}`}>
-                            {new Date(thread.lastMessageAt).toLocaleDateString()}
+                            {getRelativeTimeString(thread.lastMessageAt)}
                           </div>
                         </div>
                         {thread.linked_wall_item_id && (
@@ -977,27 +1032,34 @@ const Chat = () => {
                     
                     // Text Message
                     return (
-                      <ChatMessage
+                      <SwipeableMessage
                         key={message.id}
-                        id={message.id}
-                        body={message.body}
-                        created_at={message.created_at}
-                        sender_id={message.sender_id}
-                        sender_name={message.profiles?.display_name || message.profiles?.username || "Unknown"}
-                        sender_avatar={message.profiles?.avatar_url || undefined}
-                        reply_to_id={message.reply_to_id}
-                        replied_message={message.replied_message}
-                        currentUserId={user?.id}
-                        isOwn={message.sender_id === user?.id}
-                        onReply={() => setReplyingTo(message)}
-                      />
+                        onSwipeReply={() => setReplyingTo(message)}
+                        onSwipeDelete={() => handleDeleteForMe(message.id)}
+                      >
+                        <ChatMessage
+                          id={message.id}
+                          body={message.body}
+                          created_at={message.created_at}
+                          sender_id={message.sender_id}
+                          sender_name={message.profiles?.display_name || message.profiles?.username || "Unknown"}
+                          sender_avatar={message.profiles?.avatar_url || undefined}
+                          reply_to_id={message.reply_to_id}
+                          replied_message={message.replied_message}
+                          currentUserId={user?.id}
+                          isOwn={message.sender_id === user?.id}
+                          onReply={() => setReplyingTo(message)}
+                          onDeleteForMe={() => handleDeleteForMe(message.id)}
+                          onDeleteForEveryone={() => handleDeleteForEveryone(message.id)}
+                        />
+                      </SwipeableMessage>
                     );
                   })}
                   <div ref={messagesEndRef} />
                 </ScrollArea>
 
                 {/* Fixed Input Bar - Positioned above mobile browser UI */}
-                <div className="fixed bottom-0 left-0 right-0 p-4 pb-24 border-t bg-card md:relative md:bottom-auto md:pb-4">
+                <div className="fixed bottom-0 left-0 right-0 p-4 pb-20 border-t bg-card md:relative md:bottom-auto md:pb-4">
                   {replyingTo && (
                     <ReplyPreview
                       username={replyingTo.profiles?.display_name || replyingTo.profiles?.username || "Unknown"}
@@ -1010,56 +1072,58 @@ const Chat = () => {
                   <TypingIndicator typingUsers={typingUsers} />
 
                   <div className="flex gap-2 items-center">
-                    <AttachmentMenu
-                      onPhotoSelect={async (files) => {
-                        if (!user || !threadId) return;
-                        const file = files[0];
-                        if (!file) return;
+                    {!isRecordingVoice && (
+                      <AttachmentMenu
+                        onPhotoSelect={async (files) => {
+                          if (!user || !threadId) return;
+                          const file = files[0];
+                          if (!file) return;
 
-                        try {
-                          console.log('Uploading photo to chat-images...');
-                          const fileName = `${threadId}/${user.id}/${Date.now()}.jpg`;
-                          const { data: uploadData, error: uploadError } = await supabase.storage
-                            .from('chat-images')
-                            .upload(fileName, file);
+                          try {
+                            console.log('Uploading photo to chat-images...');
+                            const fileName = `${threadId}/${user.id}/${Date.now()}.jpg`;
+                            const { data: uploadData, error: uploadError } = await supabase.storage
+                              .from('chat-images')
+                              .upload(fileName, file);
 
-                          if (uploadError) {
-                            console.error('Photo upload error:', uploadError);
-                            throw uploadError;
+                            if (uploadError) {
+                              console.error('Photo upload error:', uploadError);
+                              throw uploadError;
+                            }
+
+                            const { data: { publicUrl } } = supabase.storage
+                              .from('chat-images')
+                              .getPublicUrl(fileName);
+
+                            const { error: messageError } = await supabase
+                              .from('chat_messages')
+                              .insert({
+                                thread_id: threadId,
+                                sender_id: user.id,
+                                body: '',
+                                image_url: publicUrl,
+                                message_type: 'image',
+                                reply_to_id: replyingTo?.id,
+                              });
+
+                            if (messageError) {
+                              console.error('Message insert error:', messageError);
+                              throw messageError;
+                            }
+
+                            setReplyingTo(null);
+                            toast.success('Photo sent!');
+                          } catch (error) {
+                            console.error('Error uploading photo:', error);
+                            toast.error('Failed to send photo');
                           }
-
-                          const { data: { publicUrl } } = supabase.storage
-                            .from('chat-images')
-                            .getPublicUrl(fileName);
-
-                          const { error: messageError } = await supabase
-                            .from('chat_messages')
-                            .insert({
-                              thread_id: threadId,
-                              sender_id: user.id,
-                              body: '',
-                              image_url: publicUrl,
-                              message_type: 'image',
-                              reply_to_id: replyingTo?.id,
-                            });
-
-                          if (messageError) {
-                            console.error('Message insert error:', messageError);
-                            throw messageError;
-                          }
-
-                          setReplyingTo(null);
-                          toast.success('Photo sent!');
-                        } catch (error) {
-                          console.error('Error uploading photo:', error);
-                          toast.error('Failed to send photo');
-                        }
-                      }}
-                      onVoiceStart={() => setIsRecordingVoice(true)}
-                      onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)}
-                      onGifSelect={handleGifMessage}
-                      disabled={!threadId}
-                    />
+                        }}
+                        onVoiceStart={() => setIsRecordingVoice(true)}
+                        onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)}
+                        onGifSelect={handleGifMessage}
+                        disabled={!threadId}
+                      />
+                    )}
 
                     {isRecordingVoice ? (
                     <VoiceRecorder

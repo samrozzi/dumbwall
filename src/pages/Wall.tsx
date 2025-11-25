@@ -1114,7 +1114,7 @@ const Wall = () => {
           </div>
         </div>
         ) : (
-          <ScrollArea className="flex-1 h-[calc(100vh-200px)]">
+          <ScrollArea className="flex-1">
             <div className="space-y-2 pb-32">
               {items.filter(item => item.id !== pendingDelete?.id).map((item) => {
                 return (

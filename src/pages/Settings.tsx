@@ -626,7 +626,7 @@ const Settings = () => {
     <div className="h-screen bg-background flex flex-col overflow-hidden">
       {circleId && <Navigation circleId={circleId} />}
 
-      <div className={`flex-1 overflow-y-auto ${circleId && !isMobile ? 'pl-24 pr-8' : isMobile ? 'px-4' : 'px-8'} pt-8 ${isMobile ? 'max-w-full' : 'max-w-5xl'} mx-auto relative`}>
+      <div className={`flex-1 overflow-y-auto ${circleId && !isMobile ? 'pl-24 pr-8' : isMobile ? 'px-4' : 'px-8'} pt-8 relative`}>
         {circleId ? (
           <CircleHeader
             circleId={circleId}

@@ -615,6 +615,35 @@ export type Database = {
         }
         Relationships: []
       }
+      pinned_threads: {
+        Row: {
+          id: string
+          pinned_at: string
+          thread_id: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          pinned_at?: string
+          thread_id: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          pinned_at?: string
+          thread_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pinned_threads_thread_id_fkey"
+            columns: ["thread_id"]
+            isOneToOne: false
+            referencedRelation: "chat_threads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profile_interests: {
         Row: {
           created_at: string | null

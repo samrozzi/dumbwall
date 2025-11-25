@@ -304,7 +304,7 @@ export const ChessGame = ({
                   disabled={!isMyTurn || isFinished || gameOver}
                   className={cn(
                         "relative flex items-center justify-center text-4xl font-bold transition-all",
-                        "active:scale-95 disabled:cursor-not-allowed min-h-[44px] touch-none select-none",
+                        "active:scale-95 disabled:cursor-not-allowed min-h-[44px] touch-manipulation select-none",
                         isLight
                           ? "bg-slate-600 hover:bg-slate-500" 
                           : "bg-slate-800 hover:bg-slate-700",

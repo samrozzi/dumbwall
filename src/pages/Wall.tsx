@@ -5,8 +5,7 @@ import { useAuth } from "@/lib/auth";
 import { Database } from "@/integrations/supabase/types";
 import { z } from "zod";
 import Navigation from "@/components/Navigation";
-import { NotificationCenter } from "@/components/NotificationCenter";
-import { CircleMembersBar } from "@/components/CircleMembersBar";
+import { CircleHeader } from "@/components/CircleHeader";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import StickyNote from "@/components/wall/StickyNote";
 import ImageCard from "@/components/wall/ImageCard";
@@ -822,74 +821,33 @@ const Wall = () => {
       <Navigation circleId={circleId} />
 
       <div className={`flex-1 flex flex-col ${isMobile ? 'px-2 pt-4' : 'pl-24 pr-8 pt-8'}`}>
-        {/* Desktop Header */}
-        <div className="hidden sm:flex justify-between items-center mb-6">
-          <h1 className="text-2xl md:text-3xl font-bold">The Wall</h1>
-          
-          <div className="flex-1 flex justify-center px-8">
-            <CircleMembersBar 
-              circleId={circleId!} 
-              onAddMember={() => setShowAddMemberDialog(true)}
-            />
-          </div>
-          
-          <div className="flex gap-3 items-center">
-            <NotificationCenter />
+        <CircleHeader
+          circleId={circleId!}
+          pageTitle="The Wall"
+          onAddMember={() => setShowAddMemberDialog(true)}
+          actions={
             <div className="flex gap-1">
               <Button
                 variant={viewMode === "wall" ? "default" : "outline"}
-                size="sm"
+                size={isMobile ? "sm" : "sm"}
                 onClick={() => setViewMode("wall")}
+                className={isMobile ? "px-2" : ""}
               >
                 <LayoutGrid className="w-4 h-4" />
-                <span className="hidden lg:inline ml-2">Wall</span>
+                {!isMobile && <span className="hidden lg:inline ml-2">Wall</span>}
               </Button>
               <Button
                 variant={viewMode === "list" ? "default" : "outline"}
-                size="sm"
+                size={isMobile ? "sm" : "sm"}
                 onClick={() => setViewMode("list")}
+                className={isMobile ? "px-2" : ""}
               >
                 <List className="w-4 h-4" />
-                <span className="hidden lg:inline ml-2">List</span>
+                {!isMobile && <span className="hidden lg:inline ml-2">List</span>}
               </Button>
             </div>
-          </div>
-        </div>
-
-        {/* Mobile Header */}
-        <div className="sm:hidden space-y-3 mb-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold">The Wall</h1>
-            
-            <div className="flex gap-2 items-center">
-              <NotificationCenter />
-              <div className="flex gap-1">
-                <Button
-                  variant={viewMode === "wall" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setViewMode("wall")}
-                  className="px-2"
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                </Button>
-                <Button
-                  variant={viewMode === "list" ? "default" : "outline"}
-                  size="sm"
-                  onClick={() => setViewMode("list")}
-                  className="px-2"
-                >
-                  <List className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-          
-          <CircleMembersBar 
-            circleId={circleId!} 
-            onAddMember={() => setShowAddMemberDialog(true)}
-            compact
-          />
-        </div>
+          }
+        />
 
         {viewMode === "wall" && isMobile ? (
           <ScrollArea className="flex-1 h-[calc(100vh-200px)]">

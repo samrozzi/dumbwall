@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import Navigation from "@/components/Navigation";
+import { CircleHeader } from "@/components/CircleHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -180,16 +181,20 @@ const People = () => {
     <div className="min-h-screen bg-background pb-24 md:pb-8 overflow-x-hidden">{/* Prevent horizontal scroll */}
       <Navigation circleId={circleId} />
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl md:pl-24 w-full">{/* Full width container */}
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-3xl font-bold">{circleName}</h1>
-          {canAddMembers && (
-            <Button onClick={() => setAddMemberOpen(true)}>
-              <Users className="mr-2 h-4 w-4" />
-              Add Member
-            </Button>
-          )}
-        </div>
+      <div className="container mx-auto px-4 py-8 max-w-6xl md:pl-24 w-full">
+        <CircleHeader
+          circleId={circleId!}
+          pageTitle={circleName}
+          onAddMember={canAddMembers ? () => setAddMemberOpen(true) : undefined}
+          actions={
+            canAddMembers ? (
+              <Button onClick={() => setAddMemberOpen(true)} className="hidden sm:flex">
+                <Users className="mr-2 h-4 w-4" />
+                Add Member
+              </Button>
+            ) : null
+          }
+        />
 
         <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 max-w-full overflow-hidden">{/* 2 cols on mobile/tablet, 3 on desktop */}
           {members.map((member, index) => {

@@ -12,13 +12,30 @@ import { RandomQuestionDialog } from "@/components/games/InstantPlay/RandomQuest
 import { useGameAPI } from "@/hooks/useGameAPI";
 import { Game } from "@/types/games";
 import { Button } from "@/components/ui/button";
-import { Plus, Gamepad2, Megaphone, Hand, Coins, Dices, Zap } from "lucide-react";
+import {
+  Plus,
+  Gamepad2,
+  Megaphone,
+  Hand,
+  Coins,
+  Dices,
+  Zap,
+  Grid3x3,
+  Circle,
+  Castle,
+  Bot,
+  Users,
+  Trophy,
+  MessageCircleQuestion,
+  Crown
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -30,8 +47,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { notify } from "@/components/ui/custom-notification";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
+
+const WORD_BANK = [
+  "javascript", "python", "computer", "programming", "developer",
+  "algorithm", "database", "function", "variable", "interface",
+  "elephant", "butterfly", "mountain", "ocean", "rainbow",
+  "chocolate", "adventure", "mystery", "treasure", "galaxy"
+];
 
 const Games = () => {
   const isMobile = useIsMobile();
@@ -51,6 +78,13 @@ const Games = () => {
   const [gameType, setGameType] = useState<string>("tic_tac_toe");
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [opponentType, setOpponentType] = useState<"friend" | "computer">("friend");
+  const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">("medium");
+
+  // New game specific state
+  const [hangmanWord, setHangmanWord] = useState("");
+  const [hangmanHint, setHangmanHint] = useState("");
+  const [questionsSubject, setQuestionsSubject] = useState("");
 
   useEffect(() => {
     if (!user) {
@@ -74,23 +108,48 @@ const Games = () => {
     }
   };
 
+  const isClassicGame = ["tic_tac_toe", "checkers", "connect_four", "chess"].includes(gameType);
+  const needsCustomSetup = ["hangman", "twenty_one_questions"].includes(gameType);
+
   const handleCreateGame = async () => {
     if (!title.trim()) {
       notify("Please enter a game title");
       return;
     }
 
+    // Validation for custom setup games
+    if (gameType === "hangman" && opponentType === "friend" && !hangmanWord.trim()) {
+      notify("Please enter a word for Hangman");
+      return;
+    }
+    if (gameType === "twenty_one_questions" && !questionsSubject.trim()) {
+      notify("Please enter what you're thinking of");
+      return;
+    }
+
     try {
       let metadata = {};
-      
+
       // Set default metadata based on game type
       switch (gameType) {
         case "tic_tac_toe":
-          metadata = {
-            board: [[null, null, null], [null, null, null], [null, null, null]],
-            nextTurnUserId: user?.id,
-          };
+          if (opponentType === "computer") {
+            metadata = {
+              board: [[null, null, null], [null, null, null], [null, null, null]],
+              nextTurnUserId: user?.id,
+              isComputerOpponent: true,
+              difficulty,
+              playerSymbol: 'X',
+              computerSymbol: 'O',
+            };
+          } else {
+            metadata = {
+              board: [[null, null, null], [null, null, null], [null, null, null]],
+              nextTurnUserId: user?.id,
+            };
+          }
           break;
+
         case "checkers":
           const checkersBoard = Array(8).fill(null).map(() => Array(8).fill(null));
           for (let row = 0; row < 3; row++) {
@@ -107,17 +166,62 @@ const Games = () => {
             board: checkersBoard,
             currentTurn: 'red',
             redPlayer: user?.id,
-            blackPlayer: '',
+            blackPlayer: opponentType === "computer" ? "computer" : '',
+            isComputerOpponent: opponentType === "computer",
+            difficulty: opponentType === "computer" ? difficulty : undefined,
           };
           break;
+
         case "connect_four":
           metadata = {
             board: Array(6).fill(null).map(() => Array(7).fill(null)),
             currentTurn: 'red',
             redPlayer: user?.id,
-            yellowPlayer: '',
+            yellowPlayer: opponentType === "computer" ? "computer" : '',
+            isComputerOpponent: opponentType === "computer",
+            difficulty: opponentType === "computer" ? difficulty : undefined,
           };
           break;
+
+        case "chess":
+          metadata = {
+            fen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", // Starting position
+            currentTurn: 'white',
+            whitePlayer: user?.id,
+            blackPlayer: opponentType === "computer" ? "computer" : '',
+            moveHistory: [],
+            gameStatus: 'active',
+            isComputerOpponent: opponentType === "computer",
+            difficulty: opponentType === "computer" ? difficulty : undefined,
+          };
+          break;
+
+        case "hangman":
+          const word = opponentType === "computer"
+            ? WORD_BANK[Math.floor(Math.random() * WORD_BANK.length)].toUpperCase()
+            : hangmanWord.trim().toUpperCase();
+          metadata = {
+            word,
+            guessedLetters: [],
+            maxGuesses: 6,
+            incorrectGuesses: 0,
+            currentTurn: user?.id,
+            wordHint: hangmanHint || undefined,
+            isComputerOpponent: opponentType === "computer",
+          };
+          break;
+
+        case "twenty_one_questions":
+          metadata = {
+            subject: questionsSubject.trim(),
+            currentQuestion: 0,
+            maxQuestions: 21,
+            questions: [],
+            thinkerUserId: user?.id,
+            guesserUserId: '', // Will be set when opponent joins
+          };
+          break;
+
         case "poll":
           metadata = {
             options: [
@@ -127,24 +231,28 @@ const Games = () => {
             allowMultiple: false,
           };
           break;
+
         case "would_you_rather":
           metadata = {
             optionA: { text: "Option A", votes: [] },
             optionB: { text: "Option B", votes: [] },
           };
           break;
+
         case "question_of_the_day":
           metadata = {
             question: title,
             responses: [],
           };
           break;
+
         case "story_chain":
           metadata = {
             storyParts: [],
             maxCharacters: 200,
           };
           break;
+
         case "rate_this":
           metadata = {
             subject: title,
@@ -154,19 +262,28 @@ const Games = () => {
           break;
       }
 
+      const status = opponentType === "computer" ? "in_progress" : "waiting";
+
       await createGame(
         circleId!,
         gameType as any,
         title,
         description || undefined,
         metadata,
-        "waiting"
+        status
       );
 
-      notify("Game created!");
+      notify(opponentType === "computer" ? "Game started vs Computer!" : "Game created!");
+
+      // Reset form
       setTitle("");
       setDescription("");
-      setGameType("poll");
+      setGameType("tic_tac_toe");
+      setOpponentType("friend");
+      setDifficulty("medium");
+      setHangmanWord("");
+      setHangmanHint("");
+      setQuestionsSubject("");
       setCreateDialogOpen(false);
       loadGames();
     } catch (error) {
@@ -180,7 +297,7 @@ const Games = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
-      
+
       <div className="px-4 sm:pl-24 sm:pr-8 py-8">
         <div className="max-w-7xl mx-auto space-y-6">
           <CircleHeader
@@ -188,7 +305,11 @@ const Games = () => {
             pageTitle="Games"
             actions={
               <div className="flex items-center gap-2">
-                <Button variant="secondary" size="sm" onClick={() => document.getElementById('instant-play')?.scrollIntoView({ behavior: 'smooth' })}>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => document.getElementById('instant-play')?.scrollIntoView({ behavior: 'smooth' })}
+                >
                   <Zap className="w-4 h-4 mr-2" />
                   Quick Play
                 </Button>
@@ -196,56 +317,343 @@ const Games = () => {
                   <DialogTrigger asChild>
                     <Button>
                       <Plus className="w-4 h-4 mr-2" />
-                      Create Game
+                      New Game
                     </Button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                     <DialogHeader>
                       <DialogTitle>Create New Game</DialogTitle>
+                      <DialogDescription>
+                        Choose a game type and opponent
+                      </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4 pt-4">
-                      <div className="space-y-2">
-                        <Label>Game Type</Label>
-                        <Select value={gameType} onValueChange={setGameType}>
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">Classic Games</div>
-                            <SelectItem value="tic_tac_toe">Tic Tac Toe</SelectItem>
-                            <SelectItem value="checkers">Checkers</SelectItem>
-                            <SelectItem value="connect_four">Connect Four</SelectItem>
-                            <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground border-t mt-2 pt-2">Social Games</div>
-                            <SelectItem value="poll">Poll</SelectItem>
-                            <SelectItem value="would_you_rather">Would You Rather</SelectItem>
-                            <SelectItem value="question_of_the_day">Question of the Day</SelectItem>
-                            <SelectItem value="story_chain">Story Chain</SelectItem>
-                            <SelectItem value="rate_this">Rate This</SelectItem>
-                          </SelectContent>
-                        </Select>
+
+                    <div className="space-y-6 pt-4">
+                      {/* Game Type Selection */}
+                      <div className="space-y-3">
+                        <Label>Choose Your Game</Label>
+                        <Tabs defaultValue="classic" className="w-full">
+                          <TabsList className="grid w-full grid-cols-3">
+                            <TabsTrigger value="classic">Classic</TabsTrigger>
+                            <TabsTrigger value="word">Word Games</TabsTrigger>
+                            <TabsTrigger value="social">Social</TabsTrigger>
+                          </TabsList>
+
+                          <TabsContent value="classic" className="space-y-2 mt-4">
+                            <div className="grid grid-cols-2 gap-3">
+                              <button
+                                onClick={() => setGameType("tic_tac_toe")}
+                                className={cn(
+                                  "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all hover:scale-105",
+                                  gameType === "tic_tac_toe"
+                                    ? "border-primary bg-primary/10"
+                                    : "border-border hover:border-primary/50"
+                                )}
+                              >
+                                <Grid3x3 className="w-8 h-8" />
+                                <span className="font-medium text-sm">Tic Tac Toe</span>
+                              </button>
+
+                              <button
+                                onClick={() => setGameType("checkers")}
+                                className={cn(
+                                  "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all hover:scale-105",
+                                  gameType === "checkers"
+                                    ? "border-primary bg-primary/10"
+                                    : "border-border hover:border-primary/50"
+                                )}
+                              >
+                                <Circle className="w-8 h-8" />
+                                <span className="font-medium text-sm">Checkers</span>
+                              </button>
+
+                              <button
+                                onClick={() => setGameType("connect_four")}
+                                className={cn(
+                                  "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all hover:scale-105",
+                                  gameType === "connect_four"
+                                    ? "border-primary bg-primary/10"
+                                    : "border-border hover:border-primary/50"
+                                )}
+                              >
+                                <Gamepad2 className="w-8 h-8" />
+                                <span className="font-medium text-sm">Connect Four</span>
+                              </button>
+
+                              <button
+                                onClick={() => setGameType("chess")}
+                                className={cn(
+                                  "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all hover:scale-105",
+                                  gameType === "chess"
+                                    ? "border-primary bg-primary/10"
+                                    : "border-border hover:border-primary/50"
+                                )}
+                              >
+                                <Castle className="w-8 h-8" />
+                                <span className="font-medium text-sm">Chess</span>
+                              </button>
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="word" className="space-y-2 mt-4">
+                            <div className="grid grid-cols-2 gap-3">
+                              <button
+                                onClick={() => setGameType("hangman")}
+                                className={cn(
+                                  "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all hover:scale-105",
+                                  gameType === "hangman"
+                                    ? "border-primary bg-primary/10"
+                                    : "border-border hover:border-primary/50"
+                                )}
+                              >
+                                <MessageCircleQuestion className="w-8 h-8" />
+                                <span className="font-medium text-sm">Hangman</span>
+                              </button>
+
+                              <button
+                                onClick={() => setGameType("twenty_one_questions")}
+                                className={cn(
+                                  "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all hover:scale-105",
+                                  gameType === "twenty_one_questions"
+                                    ? "border-primary bg-primary/10"
+                                    : "border-border hover:border-primary/50"
+                                )}
+                              >
+                                <MessageCircleQuestion className="w-8 h-8" />
+                                <span className="font-medium text-sm">21 Questions</span>
+                              </button>
+                            </div>
+                          </TabsContent>
+
+                          <TabsContent value="social" className="space-y-2 mt-4">
+                            <div className="grid grid-cols-2 gap-3">
+                              <button
+                                onClick={() => setGameType("poll")}
+                                className={cn(
+                                  "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all hover:scale-105",
+                                  gameType === "poll"
+                                    ? "border-primary bg-primary/10"
+                                    : "border-border hover:border-primary/50"
+                                )}
+                              >
+                                <Megaphone className="w-8 h-8" />
+                                <span className="font-medium text-sm">Poll</span>
+                              </button>
+
+                              <button
+                                onClick={() => setGameType("would_you_rather")}
+                                className={cn(
+                                  "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all hover:scale-105",
+                                  gameType === "would_you_rather"
+                                    ? "border-primary bg-primary/10"
+                                    : "border-border hover:border-primary/50"
+                                )}
+                              >
+                                <Dices className="w-8 h-8" />
+                                <span className="font-medium text-sm">Would You Rather</span>
+                              </button>
+
+                              <button
+                                onClick={() => setGameType("question_of_the_day")}
+                                className={cn(
+                                  "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all hover:scale-105",
+                                  gameType === "question_of_the_day"
+                                    ? "border-primary bg-primary/10"
+                                    : "border-border hover:border-primary/50"
+                                )}
+                              >
+                                <MessageCircleQuestion className="w-8 h-8" />
+                                <span className="font-medium text-sm">Question</span>
+                              </button>
+
+                              <button
+                                onClick={() => setGameType("story_chain")}
+                                className={cn(
+                                  "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all hover:scale-105",
+                                  gameType === "story_chain"
+                                    ? "border-primary bg-primary/10"
+                                    : "border-border hover:border-primary/50"
+                                )}
+                              >
+                                <MessageCircleQuestion className="w-8 h-8" />
+                                <span className="font-medium text-sm">Story Chain</span>
+                              </button>
+
+                              <button
+                                onClick={() => setGameType("rate_this")}
+                                className={cn(
+                                  "flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all hover:scale-105",
+                                  gameType === "rate_this"
+                                    ? "border-primary bg-primary/10"
+                                    : "border-border hover:border-primary/50"
+                                )}
+                              >
+                                <Trophy className="w-8 h-8" />
+                                <span className="font-medium text-sm">Rate This</span>
+                              </button>
+                            </div>
+                          </TabsContent>
+                        </Tabs>
                       </div>
 
-                      <div className="space-y-2">
-                        <Label>Title</Label>
-                        <Input
-                          value={title}
-                          onChange={(e) => setTitle(e.target.value)}
-                          placeholder="Enter game title"
-                        />
+                      {/* Opponent Type - Only for classic games */}
+                      {isClassicGame && (
+                        <div className="space-y-3">
+                          <Label>Choose Your Opponent</Label>
+                          <RadioGroup value={opponentType} onValueChange={(v) => setOpponentType(v as any)}>
+                            <div className="grid grid-cols-2 gap-3">
+                              <label
+                                className={cn(
+                                  "flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                                  opponentType === "friend"
+                                    ? "border-primary bg-primary/10"
+                                    : "border-border hover:border-primary/50"
+                                )}
+                              >
+                                <RadioGroupItem value="friend" id="friend" />
+                                <div className="flex items-center gap-2">
+                                  <Users className="w-5 h-5" />
+                                  <div>
+                                    <div className="font-medium">Play with Friend</div>
+                                    <div className="text-xs text-muted-foreground">Invite circle members</div>
+                                  </div>
+                                </div>
+                              </label>
+
+                              <label
+                                className={cn(
+                                  "flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all",
+                                  opponentType === "computer"
+                                    ? "border-primary bg-primary/10"
+                                    : "border-border hover:border-primary/50"
+                                )}
+                              >
+                                <RadioGroupItem value="computer" id="computer" />
+                                <div className="flex items-center gap-2">
+                                  <Bot className="w-5 h-5" />
+                                  <div>
+                                    <div className="font-medium">Play vs AI</div>
+                                    <div className="text-xs text-muted-foreground">Practice against computer</div>
+                                  </div>
+                                </div>
+                              </label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+                      )}
+
+                      {/* Difficulty - Only for computer opponent */}
+                      {isClassicGame && opponentType === "computer" && (
+                        <div className="space-y-3">
+                          <Label>AI Difficulty</Label>
+                          <RadioGroup value={difficulty} onValueChange={(v) => setDifficulty(v as any)}>
+                            <div className="grid grid-cols-3 gap-3">
+                              <label
+                                className={cn(
+                                  "flex flex-col items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all",
+                                  difficulty === "easy"
+                                    ? "border-green-500 bg-green-500/10"
+                                    : "border-border hover:border-green-500/50"
+                                )}
+                              >
+                                <RadioGroupItem value="easy" id="easy" className="sr-only" />
+                                <div className="font-medium">Easy</div>
+                                <div className="text-xs text-muted-foreground text-center">Casual play</div>
+                              </label>
+
+                              <label
+                                className={cn(
+                                  "flex flex-col items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all",
+                                  difficulty === "medium"
+                                    ? "border-yellow-500 bg-yellow-500/10"
+                                    : "border-border hover:border-yellow-500/50"
+                                )}
+                              >
+                                <RadioGroupItem value="medium" id="medium" className="sr-only" />
+                                <div className="font-medium">Medium</div>
+                                <div className="text-xs text-muted-foreground text-center">Balanced</div>
+                              </label>
+
+                              <label
+                                className={cn(
+                                  "flex flex-col items-center gap-2 p-3 rounded-lg border-2 cursor-pointer transition-all",
+                                  difficulty === "hard"
+                                    ? "border-red-500 bg-red-500/10"
+                                    : "border-border hover:border-red-500/50"
+                                )}
+                              >
+                                <RadioGroupItem value="hard" id="hard" className="sr-only" />
+                                <div className="font-medium">Hard</div>
+                                <div className="text-xs text-muted-foreground text-center">Challenging</div>
+                              </label>
+                            </div>
+                          </RadioGroup>
+                        </div>
+                      )}
+
+                      {/* Game Details */}
+                      <div className="space-y-4 pt-2 border-t">
+                        <div className="space-y-2">
+                          <Label>Game Title</Label>
+                          <Input
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="Enter game title"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Description (Optional)</Label>
+                          <Textarea
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
+                            placeholder="Add a description"
+                            rows={2}
+                          />
+                        </div>
+
+                        {/* Hangman specific fields */}
+                        {gameType === "hangman" && opponentType === "friend" && (
+                          <>
+                            <div className="space-y-2">
+                              <Label>Word to Guess</Label>
+                              <Input
+                                value={hangmanWord}
+                                onChange={(e) => setHangmanWord(e.target.value)}
+                                placeholder="Enter a word"
+                                maxLength={20}
+                              />
+                            </div>
+                            <div className="space-y-2">
+                              <Label>Hint (Optional)</Label>
+                              <Input
+                                value={hangmanHint}
+                                onChange={(e) => setHangmanHint(e.target.value)}
+                                placeholder="Give a helpful hint"
+                              />
+                            </div>
+                          </>
+                        )}
+
+                        {/* 21 Questions specific field */}
+                        {gameType === "twenty_one_questions" && (
+                          <div className="space-y-2">
+                            <Label>What are you thinking of?</Label>
+                            <Input
+                              value={questionsSubject}
+                              onChange={(e) => setQuestionsSubject(e.target.value)}
+                              placeholder="Enter what you're thinking of (keep it secret!)"
+                            />
+                            <p className="text-xs text-muted-foreground">
+                              This will be hidden until someone guesses correctly or runs out of questions
+                            </p>
+                          </div>
+                        )}
                       </div>
 
-                      <div className="space-y-2">
-                        <Label>Description (Optional)</Label>
-                        <Textarea
-                          value={description}
-                          onChange={(e) => setDescription(e.target.value)}
-                          placeholder="Add a description"
-                          rows={3}
-                        />
-                      </div>
-
-                      <Button onClick={handleCreateGame} className="w-full">
-                        Create Game
+                      <Button onClick={handleCreateGame} className="w-full" size="lg">
+                        <Plus className="w-4 h-4 mr-2" />
+                        {opponentType === "computer" ? "Start Game vs AI" : "Create Game"}
                       </Button>
                     </div>
                   </DialogContent>
@@ -266,15 +674,31 @@ const Games = () => {
             </div>
           ) : games.length === 0 ? (
             <div className="text-center py-12 space-y-6">
-              <Gamepad2 className="w-16 h-16 mx-auto text-muted-foreground" />
+              <div className="relative inline-block">
+                <Gamepad2 className="w-20 h-20 mx-auto text-muted-foreground" />
+                <Crown className="w-8 h-8 absolute -top-2 -right-2 text-yellow-500" />
+              </div>
               <div>
                 <h2 className="text-2xl font-semibold mb-2">No games yet</h2>
-                <p className="text-muted-foreground mb-6">Start something new for your circle.</p>
+                <p className="text-muted-foreground mb-6">Start a new game with friends or challenge the AI</p>
               </div>
-              <Button onClick={() => setCreateDialogOpen(true)} size="lg">
-                <Plus className="w-4 h-4 mr-2" />
-                Create your first game
-              </Button>
+              <div className="flex gap-3 justify-center">
+                <Button onClick={() => setCreateDialogOpen(true)} size="lg">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Create Game
+                </Button>
+                <Button
+                  onClick={() => {
+                    setOpponentType("computer");
+                    setCreateDialogOpen(true);
+                  }}
+                  size="lg"
+                  variant="secondary"
+                >
+                  <Bot className="w-4 h-4 mr-2" />
+                  Play vs AI
+                </Button>
+              </div>
             </div>
           ) : (
             <div className="space-y-8">
@@ -283,6 +707,9 @@ const Games = () => {
                 <section>
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-semibold">Active Games</h2>
+                    <span className="text-sm text-muted-foreground">
+                      {games.filter(g => g.status !== 'finished').length} game{games.filter(g => g.status !== 'finished').length !== 1 ? 's' : ''}
+                    </span>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {games

@@ -63,7 +63,7 @@ export const StoryViewer = ({
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-md h-[80vh] p-0 overflow-hidden">
+      <DialogContent className="max-w-md h-[80vh] p-0 overflow-hidden [&>button]:hidden">
         {/* Progress bars */}
         <div className="absolute top-2 left-2 right-2 z-10 flex gap-1">
           {currentGroup.stories.map((_: any, i: number) => (

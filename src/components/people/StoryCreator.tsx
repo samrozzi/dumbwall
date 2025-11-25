@@ -71,7 +71,7 @@ export const StoryCreator = ({ open, onClose, circleId }: StoryCreatorProps) => 
 
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-hidden">
         <DialogHeader>
           <DialogTitle>Add to Story</DialogTitle>
         </DialogHeader>

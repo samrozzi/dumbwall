@@ -111,6 +111,7 @@ const Wall = () => {
   const [draggedItem, setDraggedItem] = useState<string | null>(null);
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const [pendingDelete, setPendingDelete] = useState<{ id: string; item: WallItem } | null>(null);
+  const [deleteTimeout, setDeleteTimeout] = useState<NodeJS.Timeout | null>(null);
   const [maxZIndex, setMaxZIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const canvasRef = useRef<HTMLDivElement>(null);
@@ -374,54 +375,64 @@ const Wall = () => {
     const itemToDelete = items.find(item => item.id === id);
     if (!itemToDelete) return;
 
+    // Immediately hide from UI (optimistic)
+    setItems(prev => prev.filter(item => item.id !== id));
+
     // Store for potential undo
     setPendingDelete({ id, item: itemToDelete });
 
-    // Show toast with undo option at top center
+    // Show toast with undo option
     toast({
       title: "Item deleted",
       description: "Undo to restore",
+      duration: 3000,
       action: (
         <Button
-          variant="outline"
+          variant="secondary"
           size="sm"
           onClick={() => undoDelete()}
+          className="bg-white text-black hover:bg-gray-200"
         >
           Undo
         </Button>
       ),
-      className: "fixed top-4 left-1/2 -translate-x-1/2 z-[9999]",
+      className: "bg-black/90 text-white border-white/20",
     });
 
-    // Perform actual deletion after 3 seconds
-    setTimeout(async () => {
-      setPendingDelete(current => {
-        if (current?.id === id) {
-          // Still pending, perform deletion
-          supabase
-            .from("wall_items")
-            .delete()
-            .eq("id", id)
-            .then(({ error }) => {
-              if (error) {
-                console.error("Error deleting item:", error);
-                toast({
-                  title: "Error",
-                  description: "Failed to delete item",
-                  variant: "destructive",
-                });
-              }
-            });
-          return null;
-        }
-        return current;
-      });
+    // Schedule actual deletion
+    const timeout = setTimeout(async () => {
+      const { error } = await supabase
+        .from("wall_items")
+        .delete()
+        .eq("id", id);
+        
+      if (error) {
+        console.error("Error deleting item:", error);
+        // Restore item on error
+        setItems(prev => [...prev, itemToDelete]);
+        toast({
+          title: "Error",
+          description: "Failed to delete item",
+          variant: "destructive",
+        });
+      }
+      setPendingDelete(null);
+      setDeleteTimeout(null);
     }, 3000);
+    
+    setDeleteTimeout(timeout);
   };
 
   const undoDelete = () => {
-    if (pendingDelete) {
+    if (pendingDelete && deleteTimeout) {
+      // Cancel the scheduled deletion
+      clearTimeout(deleteTimeout);
+      setDeleteTimeout(null);
+      
+      // Restore item immediately
+      setItems(prev => [...prev, pendingDelete.item]);
       setPendingDelete(null);
+      
       toast({
         title: "Deletion cancelled",
         description: "Item restored",

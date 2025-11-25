@@ -302,7 +302,7 @@ const Games = () => {
     <div className="h-screen overflow-hidden flex flex-col bg-background">
       <Navigation circleId={circleId} />
 
-      <div className="px-4 sm:pl-24 sm:pr-8 py-8 overflow-y-auto flex-1">
+      <div className={`${isMobile ? 'px-4' : 'pl-24 pr-8'} py-8 overflow-y-auto flex-1`}>
         <div className="max-w-7xl mx-auto space-y-6">
           <CircleHeader
             circleId={circleId}

@@ -2,6 +2,9 @@ export type GameType =
   | 'tic_tac_toe'
   | 'checkers'
   | 'connect_four'
+  | 'chess'
+  | 'hangman'
+  | 'twenty_one_questions'
   | 'poll'
   | 'would_you_rather'
   | 'question_of_the_day'
@@ -104,4 +107,40 @@ export interface ConnectFourMetadata {
   redPlayer: string;
   yellowPlayer: string;
   winnerUserId?: string | null;
+}
+
+export interface HangmanMetadata {
+  word: string;
+  guessedLetters: string[];
+  maxGuesses: number;
+  incorrectGuesses: number;
+  currentTurn: string;
+  winnerUserId?: string | null;
+  wordHint?: string;
+}
+
+export interface ChessMetadata {
+  fen: string; // Forsyth-Edwards Notation for board state
+  currentTurn: 'white' | 'black';
+  whitePlayer: string;
+  blackPlayer: string;
+  moveHistory: string[];
+  winnerUserId?: string | null;
+  gameStatus?: 'active' | 'check' | 'checkmate' | 'stalemate' | 'draw';
+}
+
+export interface TwentyOneQuestionsMetadata {
+  subject: string; // What the thinker is thinking of
+  currentQuestion: number;
+  maxQuestions: number;
+  questions: {
+    question: string;
+    answer: 'yes' | 'no' | 'maybe';
+    askedBy: string;
+    timestamp: string;
+  }[];
+  thinkerUserId: string;
+  guesserUserId: string;
+  winnerUserId?: string | null;
+  correctGuess?: string;
 }

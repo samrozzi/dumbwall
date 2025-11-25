@@ -137,7 +137,7 @@ const ImageCard = ({
       )}
 
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-7xl max-h-[90vh] p-0 border-2 border-white/10 rounded-2xl overflow-hidden">
+        <DialogContent className="max-w-7xl max-h-[90vh] p-0 border-2 border-white/10 rounded-2xl overflow-hidden [&>button]:hidden">
           {/* Close button */}
           <button
             onClick={() => setIsOpen(false)}
@@ -161,14 +161,14 @@ const ImageCard = ({
                 />
               </div>
               {content.caption && (
-                <div className="bg-muted p-4 border-t-2 border-amber-500 flex-shrink-0">
+                <div className="bg-muted p-4 border-t border-border flex-shrink-0">
                   <p className="text-foreground font-semibold">{content.caption}</p>
                 </div>
               )}
             </div>
 
             {/* Right: Interactions & Comments Section */}
-            <div className="bg-background md:w-[40%] border-l-4 border-amber-500/80 flex flex-col">
+            <div className="bg-background md:w-[40%] border-l border-border flex flex-col">
               {/* Reactions & Votes - Fixed height */}
               <div className="p-4 space-y-3 flex-shrink-0 border-b">
                 {/* Reactions Row */}

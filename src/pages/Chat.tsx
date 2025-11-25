@@ -123,7 +123,6 @@ const Chat = () => {
   const [deleteThreadId, setDeleteThreadId] = useState<string | null>(null);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [pinnedThreadIds, setPinnedThreadIds] = useState<Set<string>>(new Set());
-  const [selectedFilter, setSelectedFilter] = useState<"all" | "wall" | "convos">("all");
 
   // Typing indicators
   const { typingUsers, handleTyping, stopTypingIndicator } = useTypingIndicator(threadId, user?.id);
@@ -914,9 +913,9 @@ const Chat = () => {
 
   const sortedFilteredThreads = useMemo(() => {
     const filtered = threads.filter((thread) => {
-      if (selectedFilter === "all") return true;
-      if (selectedFilter === "wall") return thread.linked_wall_item_id !== null;
-      if (selectedFilter === "convos") return thread.linked_wall_item_id === null;
+      if (filter === "all") return true;
+      if (filter === "wall") return thread.linked_wall_item_id !== null;
+      if (filter === "convos") return thread.linked_wall_item_id === null;
       return true;
     });
 
@@ -931,7 +930,7 @@ const Chat = () => {
       const bTime = b.lastMessageAt || b.updated_at;
       return new Date(bTime).getTime() - new Date(aTime).getTime();
     });
-  }, [threads, selectedFilter, pinnedThreadIds]);
+  }, [threads, filter, pinnedThreadIds]);
 
   return (
     <div className="min-h-screen bg-background">

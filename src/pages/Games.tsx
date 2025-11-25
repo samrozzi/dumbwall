@@ -286,19 +286,19 @@ const Games = () => {
       setQuestionsSubject("");
       setCreateDialogOpen(false);
       loadGames();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error creating game:", error);
-      notify("Error creating game");
+      notify(error?.message || "Error creating game. Please try again.");
     }
   };
 
   if (!user || !circleId) return null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="h-screen overflow-hidden flex flex-col bg-background">
       <Navigation circleId={circleId} />
 
-      <div className="px-4 sm:pl-24 sm:pr-8 py-8">
+      <div className="px-4 sm:pl-24 sm:pr-8 py-8 overflow-y-auto flex-1">
         <div className="max-w-7xl mx-auto space-y-6">
           <CircleHeader
             circleId={circleId}

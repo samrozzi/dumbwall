@@ -57,6 +57,10 @@ export interface TicTacToeMetadata {
   board: ('X' | 'O' | null)[][];
   nextTurnUserId: string | null;
   winnerUserId?: string | null;
+  isComputerOpponent?: boolean;
+  difficulty?: 'easy' | 'medium' | 'hard';
+  playerSymbol?: 'X' | 'O';
+  computerSymbol?: 'X' | 'O';
 }
 
 export interface PollOption {
@@ -99,6 +103,8 @@ export interface CheckersMetadata {
   redPlayer: string;
   blackPlayer: string;
   winnerUserId?: string | null;
+  isComputerOpponent?: boolean;
+  difficulty?: 'easy' | 'medium' | 'hard';
 }
 
 export interface ConnectFourMetadata {
@@ -107,6 +113,8 @@ export interface ConnectFourMetadata {
   redPlayer: string;
   yellowPlayer: string;
   winnerUserId?: string | null;
+  isComputerOpponent?: boolean;
+  difficulty?: 'easy' | 'medium' | 'hard';
 }
 
 export interface HangmanMetadata {
@@ -117,6 +125,8 @@ export interface HangmanMetadata {
   currentTurn: string;
   winnerUserId?: string | null;
   wordHint?: string;
+  isComputerOpponent?: boolean;
+  difficulty?: 'easy' | 'medium' | 'hard';
 }
 
 export interface ChessMetadata {
@@ -127,6 +137,8 @@ export interface ChessMetadata {
   moveHistory: string[];
   winnerUserId?: string | null;
   gameStatus?: 'active' | 'check' | 'checkmate' | 'stalemate' | 'draw';
+  isComputerOpponent?: boolean;
+  difficulty?: 'easy' | 'medium' | 'hard';
 }
 
 export interface TwentyOneQuestionsMetadata {

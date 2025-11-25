@@ -6,11 +6,12 @@ import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceRecorderProps {
   onVoiceRecorded: (audioFile: File, duration: number) => void;
+  onCancel: () => void;
   threadId: string;
   userId: string;
 }
 
-export const VoiceRecorder = ({ onVoiceRecorded, threadId, userId }: VoiceRecorderProps) => {
+export const VoiceRecorder = ({ onVoiceRecorded, onCancel, threadId, userId }: VoiceRecorderProps) => {
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
@@ -112,6 +113,7 @@ export const VoiceRecorder = ({ onVoiceRecorded, threadId, userId }: VoiceRecord
         timerIntervalRef.current = null;
       }
     }
+    onCancel();
   };
 
   const sendVoiceMessage = async () => {
@@ -121,7 +123,7 @@ export const VoiceRecorder = ({ onVoiceRecorded, threadId, userId }: VoiceRecord
       type: 'audio/webm;codecs=opus'
     });
     
-    onVoiceRecorded(file, recordingTime);
+    await onVoiceRecorded(file, recordingTime);
 
     // Reset state
     setAudioBlob(null);
@@ -130,6 +132,7 @@ export const VoiceRecorder = ({ onVoiceRecorded, threadId, userId }: VoiceRecord
       setAudioUrl(null);
     }
     setRecordingTime(0);
+    onCancel();
   };
 
   const formatTime = (seconds: number) => {

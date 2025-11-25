@@ -576,9 +576,11 @@ const Chat = () => {
       if (messageError) throw messageError;
 
       setReplyingTo(null);
+      setIsRecordingVoice(false);
       toast.success('Voice message sent!');
     } catch (error) {
       console.error('Error sending voice message:', error);
+      setIsRecordingVoice(false);
       toast.error('Failed to send voice message');
     }
   };
@@ -976,11 +978,12 @@ const Chat = () => {
                     />
 
                     {isRecordingVoice ? (
-                      <VoiceRecorder
-                        threadId={threadId!}
-                        userId={user!.id}
-                        onVoiceRecorded={handleVoiceMessage}
-                      />
+                    <VoiceRecorder
+                      threadId={threadId!}
+                      userId={user!.id}
+                      onVoiceRecorded={handleVoiceMessage}
+                      onCancel={() => setIsRecordingVoice(false)}
+                    />
                     ) : (
                       <>
                         <Input
@@ -1234,42 +1237,43 @@ const Chat = () => {
 
                       <div className="flex gap-2 items-center">
                         <AttachmentMenu
-                          onPhotoSelect={async (files) => {
-                            if (!user || !threadId) return;
-                            const file = files[0];
-                            if (!file) return;
+                      onPhotoSelect={async (files) => {
+                        if (!user || !threadId) return;
+                        const file = files[0];
+                        if (!file) return;
 
-                            try {
-                              const fileName = `${user.id}/${Date.now()}.jpg`;
-                              const { data: uploadData, error: uploadError } = await supabase.storage
-                                .from('chat-images')
-                                .upload(fileName, file);
+                        try {
+                          const fileName = `${threadId}/${user.id}/${Date.now()}.jpg`;
+                          const { data: uploadData, error: uploadError } = await supabase.storage
+                            .from('chat-images')
+                            .upload(fileName, file);
 
-                              if (uploadError) throw uploadError;
+                          if (uploadError) throw uploadError;
 
-                              const { data: { publicUrl } } = supabase.storage
-                                .from('chat-images')
-                                .getPublicUrl(fileName);
+                          const { data: { publicUrl } } = supabase.storage
+                            .from('chat-images')
+                            .getPublicUrl(fileName);
 
-                              const { error: messageError } = await supabase
-                                .from('chat_messages')
-                                .insert({
-                                  thread_id: threadId,
-                                  sender_id: user.id,
-                                  body: '',
-                                  image_url: publicUrl,
-                                  reply_to_id: replyingTo?.id,
-                                });
+                          const { error: messageError } = await supabase
+                            .from('chat_messages')
+                            .insert({
+                              thread_id: threadId,
+                              sender_id: user.id,
+                              body: '',
+                              image_url: publicUrl,
+                              message_type: 'image',
+                              reply_to_id: replyingTo?.id,
+                            });
 
-                              if (messageError) throw messageError;
+                          if (messageError) throw messageError;
 
-                              setReplyingTo(null);
-                              toast.success('Photo sent!');
-                            } catch (error) {
-                              console.error('Error uploading photo:', error);
-                              toast.error('Failed to send photo');
-                            }
-                          }}
+                          setReplyingTo(null);
+                          toast.success('Photo sent!');
+                        } catch (error) {
+                          console.error('Error uploading photo:', error);
+                          toast.error('Failed to send photo');
+                        }
+                      }}
                           onVoiceStart={() => setIsRecordingVoice(true)}
                           onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)}
                           onGifSelect={handleGifMessage}
@@ -1277,11 +1281,12 @@ const Chat = () => {
                         />
 
                         {isRecordingVoice ? (
-                          <VoiceRecorder
-                            threadId={threadId!}
-                            userId={user!.id}
-                            onVoiceRecorded={handleVoiceMessage}
-                          />
+                        <VoiceRecorder
+                          threadId={threadId!}
+                          userId={user!.id}
+                          onVoiceRecorded={handleVoiceMessage}
+                          onCancel={() => setIsRecordingVoice(false)}
+                        />
                         ) : (
                           <>
                             <Input

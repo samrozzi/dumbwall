@@ -18,32 +18,47 @@ export type Database = {
         Row: {
           body: string
           created_at: string
+          gif_title: string | null
+          gif_url: string | null
           id: string
           image_caption: string | null
           image_url: string | null
+          message_type: string | null
           reply_to_id: string | null
           sender_id: string
           thread_id: string
+          voice_duration: number | null
+          voice_url: string | null
         }
         Insert: {
           body: string
           created_at?: string
+          gif_title?: string | null
+          gif_url?: string | null
           id?: string
           image_caption?: string | null
           image_url?: string | null
+          message_type?: string | null
           reply_to_id?: string | null
           sender_id: string
           thread_id: string
+          voice_duration?: number | null
+          voice_url?: string | null
         }
         Update: {
           body?: string
           created_at?: string
+          gif_title?: string | null
+          gif_url?: string | null
           id?: string
           image_caption?: string | null
           image_url?: string | null
+          message_type?: string | null
           reply_to_id?: string | null
           sender_id?: string
           thread_id?: string
+          voice_duration?: number | null
+          voice_url?: string | null
         }
         Relationships: [
           {

@@ -5,17 +5,13 @@ import Navigation from "@/components/Navigation";
 import { CircleHeader } from "@/components/CircleHeader";
 import { GameSummaryCard } from "@/components/games/GameSummaryCard";
 import { GameInvites } from "@/components/games/GameInvites";
-import { QuickPollDialog } from "@/components/games/InstantPlay/QuickPollDialog";
-import { RockPaperScissorsDialog } from "@/components/games/InstantPlay/RockPaperScissorsDialog";
-import { CoinFlipDialog } from "@/components/games/InstantPlay/CoinFlipDialog";
-import { RandomQuestionDialog } from "@/components/games/InstantPlay/RandomQuestionDialog";
+import { NotificationCenter } from "@/components/NotificationCenter";
 import { useGameAPI } from "@/hooks/useGameAPI";
 import { Game, GameType } from "@/types/games";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus,
-  Zap,
   Grid3x3,
   Circle,
   Castle,
@@ -24,8 +20,6 @@ import {
   Megaphone,
   Dices,
   Trophy,
-  Hand,
-  Coins,
   Bot,
   Users,
 } from "lucide-react";
@@ -169,12 +163,6 @@ const Games = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<"all" | GameCategory>("all");
   const [selectedGameDef, setSelectedGameDef] = useState<GameDefinition | null>(null);
-
-  // Instant play dialogs
-  const [quickPollOpen, setQuickPollOpen] = useState(false);
-  const [rpsOpen, setRpsOpen] = useState(false);
-  const [coinFlipOpen, setCoinFlipOpen] = useState(false);
-  const [randomQuestionOpen, setRandomQuestionOpen] = useState(false);
 
   const { listGames, createGame } = useGameAPI();
 
@@ -364,7 +352,8 @@ const Games = () => {
             guessedLetters: [],
             maxGuesses: 6,
             incorrectGuesses: 0,
-            currentTurn: user?.id,
+            // If playing with friend, the invited player guesses (not creator)
+            currentTurn: opponentType === "friend" && selectedPlayer ? selectedPlayer : user?.id,
             wordHint: hangmanHint || undefined,
             isComputerOpponent: opponentType === "computer",
           };
@@ -488,14 +477,7 @@ const Games = () => {
             <div className="flex items-center justify-between">
               <h1 className="text-3xl font-bold">Games</h1>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => document.getElementById('instant-play')?.scrollIntoView({ behavior: 'smooth' })}
-                >
-                  <Zap className="w-4 h-4 mr-2" />
-                  Quick Play
-                </Button>
+                <NotificationCenter />
                 <Button
                   size="sm"
                   onClick={() => document.getElementById('category-games')?.scrollIntoView({ behavior: 'smooth' })}
@@ -630,44 +612,6 @@ const Games = () => {
                   <p className="font-semibold text-sm text-center">{gameDef.name}</p>
                 </button>
               ))}
-            </div>
-          </section>
-
-          {/* Instant Play Section */}
-          <section id="instant-play" className="scroll-mt-20">
-            <div className="mb-4">
-              <h2 className="text-2xl font-semibold mb-1">Instant Play</h2>
-              <p className="text-sm text-muted-foreground">Quick games with minimal setup</p>
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <button
-                onClick={() => setQuickPollOpen(true)}
-                className="bg-purple-100 dark:bg-purple-950 border-2 border-purple-400 dark:border-purple-600 rounded-lg p-6 hover:scale-105 transition-transform"
-              >
-                <Megaphone className="w-8 h-8 mx-auto mb-2 text-purple-600 dark:text-purple-400" />
-                <p className="font-semibold text-sm">Quick Poll</p>
-              </button>
-              <button
-                onClick={() => setRpsOpen(true)}
-                className="bg-pink-100 dark:bg-pink-950 border-2 border-pink-400 dark:border-pink-600 rounded-lg p-6 hover:scale-105 transition-transform"
-              >
-                <Hand className="w-8 h-8 mx-auto mb-2 text-pink-600 dark:text-pink-400" />
-                <p className="font-semibold text-sm">Rock Paper Scissors</p>
-              </button>
-              <button
-                onClick={() => setCoinFlipOpen(true)}
-                className="bg-amber-100 dark:bg-amber-950 border-2 border-amber-400 dark:border-amber-600 rounded-lg p-6 hover:scale-105 transition-transform"
-              >
-                <Coins className="w-8 h-8 mx-auto mb-2 text-amber-600 dark:text-amber-400" />
-                <p className="font-semibold text-sm">Coin Flip</p>
-              </button>
-              <button
-                onClick={() => setRandomQuestionOpen(true)}
-                className="bg-cyan-100 dark:bg-cyan-950 border-2 border-cyan-400 dark:border-cyan-600 rounded-lg p-6 hover:scale-105 transition-transform"
-              >
-                <Dices className="w-8 h-8 mx-auto mb-2 text-cyan-600 dark:text-cyan-400" />
-                <p className="font-semibold text-sm">Random Question</p>
-              </button>
             </div>
           </section>
         </div>
@@ -870,12 +814,6 @@ const Games = () => {
           </div>
         </DialogContent>
       </Dialog>
-
-      {/* Instant Play Dialogs */}
-      <QuickPollDialog open={quickPollOpen} onOpenChange={setQuickPollOpen} circleId={circleId} />
-      <RockPaperScissorsDialog open={rpsOpen} onOpenChange={setRpsOpen} circleId={circleId} />
-      <CoinFlipDialog open={coinFlipOpen} onOpenChange={setCoinFlipOpen} circleId={circleId} />
-      <RandomQuestionDialog open={randomQuestionOpen} onOpenChange={setRandomQuestionOpen} circleId={circleId} />
     </div>
   );
 };

@@ -83,7 +83,7 @@ const Navigation = ({ circleId, hideBackButton }: NavigationProps) => {
 
     checkUnreadMessages();
 
-    // Subscribe to new messages
+    // Subscribe to new messages and read status updates
     const channel = supabase
       .channel(`circle-${circleId}-messages`)
       .on(
@@ -92,6 +92,17 @@ const Navigation = ({ circleId, hideBackButton }: NavigationProps) => {
           event: 'INSERT',
           schema: 'public',
           table: 'chat_messages',
+        },
+        () => {
+          checkUnreadMessages();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'thread_read_status',
         },
         () => {
           checkUnreadMessages();

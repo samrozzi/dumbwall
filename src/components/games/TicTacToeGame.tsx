@@ -19,6 +19,7 @@ interface TicTacToeGameProps {
   onMove: (row: number, col: number) => void;
   onRematch: () => void;
   isFinished: boolean;
+  isCreatingRematch?: boolean;
 }
 
 export const TicTacToeGame = ({
@@ -29,6 +30,7 @@ export const TicTacToeGame = ({
   onMove,
   onRematch,
   isFinished,
+  isCreatingRematch,
 }: TicTacToeGameProps) => {
   const isMyTurn = metadata.nextTurnUserId === userId;
   const winner = metadata.winnerUserId;
@@ -104,8 +106,8 @@ export const TicTacToeGame = ({
         </div>
         
         {(isFinished || isDraw) && (
-          <Button onClick={onRematch} className="w-full">
-            Rematch
+          <Button onClick={onRematch} className="w-full" disabled={isCreatingRematch}>
+            {isCreatingRematch ? "Creating..." : "Rematch"}
           </Button>
         )}
       </CardContent>

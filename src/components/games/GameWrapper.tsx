@@ -28,6 +28,7 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
   const [participants, setParticipants] = useState<GameParticipant[]>([]);
   const [events, setEvents] = useState<GameEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreatingRematch, setIsCreatingRematch] = useState(false);
   const { getGame, joinGame, gameAction, createGame } = useGameAPI();
   const navigate = useNavigate();
   const computerMoveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -51,8 +52,8 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
       try {
         switch (game.type) {
           case 'tic_tac_toe':
-            // Check if it's computer's turn
-            if (game.metadata.nextTurnUserId === 'computer' && game.status === 'in_progress') {
+            // Check if it's computer's turn - allow both waiting and in_progress
+            if (game.metadata.nextTurnUserId === 'computer' && (game.status === 'in_progress' || game.status === 'waiting')) {
               const aiMove = getTicTacToeAIMove(
                 game.metadata.board,
                 game.metadata.difficulty || 'medium',
@@ -77,7 +78,10 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
 
                 const winner = checkWinner();
 
-                await gameAction(gameId, 'move', { row: aiMove.row, col: aiMove.col }, winner ? 'finished' : undefined, {
+                // Update status from 'waiting' to 'in_progress' if needed
+                const aiStatus = winner ? 'finished' : (game.status === 'waiting' ? 'in_progress' : undefined);
+
+                await gameAction(gameId, 'move', { row: aiMove.row, col: aiMove.col }, aiStatus, {
                   ...game.metadata,
                   board: newBoard,
                   nextTurnUserId: userId,
@@ -253,8 +257,9 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
   };
 
   const handleRematch = async () => {
-    if (!game) return;
+    if (!game || isCreatingRematch) return;
     
+    setIsCreatingRematch(true);
     try {
       const newGameId = await createGame(
         game.circle_id,
@@ -271,6 +276,7 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
     } catch (error) {
       console.error("Error creating rematch:", error);
       notify("Error creating rematch");
+      setIsCreatingRematch(false);
     }
   };
 
@@ -344,16 +350,20 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
               }
             });
 
+            // Update status from 'waiting' to 'in_progress' on first move
+            const newStatus = winner ? 'finished' : (game.status === 'waiting' ? 'in_progress' : undefined);
+
             // Send to server - CRITICAL: spread ...game.metadata FIRST so new values override
-            handleAction('move', { row, col }, winner ? 'finished' : undefined, {
+            handleAction('move', { row, col }, newStatus, {
               ...game.metadata,
               board: newBoard,
               nextTurnUserId,
               winnerUserId: winner ? userId : null,
             });
           }}
-          onRematch={handleRematch}
-          isFinished={game.status === 'finished'}
+            onRematch={handleRematch}
+            isFinished={game.status === 'finished'}
+            isCreatingRematch={isCreatingRematch}
         />
       );
 

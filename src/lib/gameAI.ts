@@ -121,6 +121,29 @@ export function getTicTacToeAIMove(
 
   if (emptyPositions.length === 0) return null;
 
+  // For medium and hard: ALWAYS check for immediate wins and blocks first
+  if (difficulty !== 'easy') {
+    // Step 1: Check if AI can win immediately
+    for (const { row, col } of emptyPositions) {
+      board[row][col] = aiSymbol;
+      if (checkTicTacToeWinner(board, aiSymbol)) {
+        board[row][col] = null;
+        return { row, col };
+      }
+      board[row][col] = null;
+    }
+
+    // Step 2: Block opponent's winning move
+    for (const { row, col } of emptyPositions) {
+      board[row][col] = humanSymbol;
+      if (checkTicTacToeWinner(board, humanSymbol)) {
+        board[row][col] = null;
+        return { row, col };
+      }
+      board[row][col] = null;
+    }
+  }
+
   // Easy: Random moves most of the time, 30% optimal
   if (difficulty === 'easy') {
     if (Math.random() < 0.7) {
@@ -128,7 +151,7 @@ export function getTicTacToeAIMove(
     }
   }
 
-  // Medium: Random moves sometimes, 70% optimal
+  // Medium: After checking critical moves, 30% random for non-critical positions
   if (difficulty === 'medium') {
     if (Math.random() < 0.3) {
       return emptyPositions[Math.floor(Math.random() * emptyPositions.length)];

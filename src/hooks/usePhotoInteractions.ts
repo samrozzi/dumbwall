@@ -186,9 +186,13 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
   }, [wallItemId, currentUserId]);
 
   const addComment = async (commentText: string) => {
-    if (!currentUserId || !commentText.trim()) return;
+    if (!currentUserId || !commentText.trim()) {
+      console.log('⚠️ [addComment] Skipped - missing userId or empty text');
+      return;
+    }
 
-    console.log('🚀 Adding optimistic comment:', commentText.substring(0, 30));
+    console.log('🚀 [addComment] Starting - wallItemId:', wallItemId, 'userId:', currentUserId);
+    console.log('💬 [addComment] Comment text:', commentText.substring(0, 50) + (commentText.length > 50 ? '...' : ''));
 
     // Optimistic update - add comment immediately to UI
     const tempId = `temp-${Date.now()}`;
@@ -204,16 +208,17 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
       }
     };
     
-    console.log('📝 Setting optimistic comment ID:', tempId);
+    console.log('📝 [addComment] Setting optimistic comment ID:', tempId);
     setOptimisticCommentId(tempId);
     
     setComments(prev => {
-      console.log('📊 Current comments count:', prev.length, '→ Adding optimistic');
+      console.log('📊 [addComment] Current comments count:', prev.length, '→ Adding optimistic');
       return [...prev, optimisticComment];
     });
 
     try {
-      console.log('💾 Database insert started for wall item:', wallItemId);
+      console.log('💾 [addComment] Database insert started for wall item:', wallItemId);
+      console.log('🔍 [addComment] Checking for existing thread...');
       // Check if thread already exists for this photo
       const { data: existingThread } = await supabase
         .from('chat_threads')
@@ -223,8 +228,11 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
 
       let threadId = existingThread?.id;
 
+      console.log('🔍 [addComment] Thread lookup result:', threadId ? `Found: ${threadId}` : 'Not found - will create');
+
       // If no thread exists, create one
       if (!threadId) {
+        console.log('📝 [addComment] Creating new thread for wall item...');
         // Get photo details
         const { data: wallItem } = await supabase
           .from('wall_items')
@@ -233,9 +241,14 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
           .single();
 
         if (!wallItem) {
+          console.error('❌ [addComment] Wall item not found:', wallItemId);
           toast.error('Failed to find photo');
+          setComments(prev => prev.filter(c => c.id !== tempId));
+          setOptimisticCommentId(null);
           return;
         }
+
+        console.log('📊 [addComment] Wall item found - circle_id:', wallItem.circle_id);
 
         // Create thread
         const { data: newThread, error: threadError } = await supabase
@@ -250,12 +263,15 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
           .single();
 
         if (threadError) {
-          console.error('Error creating thread:', threadError);
+          console.error('❌ [addComment] Error creating thread:', threadError.message, threadError.details);
           toast.error('Failed to create conversation');
+          setComments(prev => prev.filter(c => c.id !== tempId));
+          setOptimisticCommentId(null);
           return;
         }
 
         threadId = newThread?.id;
+        console.log('✅ [addComment] Thread created successfully:', threadId);
 
         // Add photo creator as thread member
         if (threadId && wallItem.created_by !== currentUserId) {
@@ -293,6 +309,7 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
       }
 
       // Insert the comment
+      console.log('💾 [addComment] Inserting comment into database...');
       const { error: commentError } = await supabase
         .from('wall_item_comments')
         .insert({
@@ -302,7 +319,8 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
         });
 
       if (commentError) {
-        console.error('❌ Error adding comment:', commentError);
+        console.error('❌ [addComment] Error inserting comment:', commentError.message, commentError.details);
+        console.error('❌ [addComment] Error code:', commentError.code);
         toast.error('Failed to add comment');
         // Remove optimistic comment on error
         setComments(prev => prev.filter(c => c.id !== tempId));
@@ -310,7 +328,8 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
         return;
       }
 
-      console.log('✅ Database insert complete, clearing optimistic ID');
+      console.log('✅ [addComment] Comment inserted successfully into database');
+      console.log('🧹 [addComment] Clearing optimistic ID, realtime subscription will refresh');
       setOptimisticCommentId(null);
 
       // Create corresponding chat message in the thread
@@ -324,9 +343,12 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
           });
       }
       
+      console.log('🎉 [addComment] Comment flow complete!');
       toast.success('Comment added!');
-    } catch (error) {
-      console.error('❌ Error in addComment:', error);
+    } catch (error: any) {
+      console.error('❌ [addComment] Unexpected error:', error);
+      console.error('❌ [addComment] Error message:', error?.message);
+      console.error('❌ [addComment] Error stack:', error?.stack);
       toast.error('Failed to add comment');
       // Remove optimistic comment on error
       setComments(prev => prev.filter(c => c.id !== tempId));

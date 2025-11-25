@@ -1,77 +1,34 @@
-import { useParams, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import { CircleHeader } from "@/components/CircleHeader";
-import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/lib/auth";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { Users } from "lucide-react";
-import { toast } from "sonner";
 import { AddMemberDialog } from "@/components/AddMemberDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { StoriesRow } from "@/components/people/StoriesRow";
+import { ActivityFeed } from "@/components/people/ActivityFeed";
+import { MembersPanel } from "@/components/people/MembersPanel";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { cn } from "@/lib/utils";
-
-interface Member {
-  user_id: string;
-  profile: {
-    username: string | null;
-    display_name: string | null;
-    avatar_url: string | null;
-  };
-}
 
 const People = () => {
   const { circleId } = useParams();
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const isMobile = useIsMobile();
-  const [members, setMembers] = useState<Member[]>([]);
-  const [loading, setLoading] = useState(true);
   const [addMemberOpen, setAddMemberOpen] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
   const [circleName, setCircleName] = useState("");
-  const [invitePermission, setInvitePermission] = useState<'anyone' | 'owner_only'>('owner_only');
+  const [canInvite, setCanInvite] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
-    if (circleId && user) {
-      loadMembers();
-      loadCircleInfo();
-    }
-  }, [circleId, user]);
-
-  const loadMembers = async () => {
-    try {
-      const { data, error } = await supabase
-        .from("circle_members")
-        .select(`
-          user_id,
-          profiles!circle_members_user_id_fkey(username, display_name, avatar_url)
-        `)
-        .eq("circle_id", circleId);
-
-      if (error) throw error;
-      
-      // Transform the data to match our interface
-      const transformedData = data?.map(item => ({
-        user_id: item.user_id,
-        profile: item.profiles as any
-      })) || [];
-      
-      setMembers(transformedData as Member[]);
-    } catch (error: any) {
-      toast.error(error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (!circleId) return;
+    loadCircleInfo();
+  }, [circleId]);
 
   const loadCircleInfo = async () => {
-    if (!circleId || !user) return;
+    if (!circleId) return;
 
     try {
-      // Get circle info
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
       const { data: circle } = await supabase
         .from("circles")
         .select("name, created_by")
@@ -83,177 +40,67 @@ const People = () => {
         setIsOwner(circle.created_by === user.id);
       }
 
-      // Get circle settings
-      const { data: settings } = await supabase
-        .from("circle_settings")
-        .select("invite_permission")
-        .eq("circle_id", circleId)
-        .maybeSingle();
+      const { data: canInviteResult } = await supabase.rpc("can_invite_to_circle", {
+        circle_uuid: circleId,
+        user_uuid: user.id,
+      });
 
-      setInvitePermission(settings?.invite_permission || 'owner_only');
-    } catch (error: any) {
+      setCanInvite(canInviteResult || false);
+    } catch (error) {
       console.error("Error loading circle info:", error);
     }
   };
 
-  const handleStartChat = async (otherUserId: string, otherUserName: string) => {
-    if (!user || !circleId) return;
-
-    try {
-      // Check if a private thread already exists between these two users
-      const { data: existingThreads, error: searchError } = await supabase
-        .from("chat_threads")
-        .select("id, title")
-        .eq("circle_id", circleId)
-        .is("linked_wall_item_id", null);
-
-      if (searchError) throw searchError;
-
-      // Find existing private thread between these two users
-      let threadId: string | null = null;
-      
-      if (existingThreads) {
-        for (const thread of existingThreads) {
-          // Check if this thread only has messages from these two users
-          const { data: messages, error: msgError } = await supabase
-            .from("chat_messages")
-            .select("sender_id")
-            .eq("thread_id", thread.id);
-
-          if (msgError) continue;
-
-          const senderIds = new Set(messages?.map(m => m.sender_id) || []);
-          if (
-            senderIds.size <= 2 &&
-            senderIds.has(user.id) &&
-            senderIds.has(otherUserId)
-          ) {
-            threadId = thread.id;
-            break;
-          }
-        }
-      }
-
-      // Create new thread if none exists
-      if (!threadId) {
-        const { data: newThread, error: threadError } = await supabase
-          .from("chat_threads")
-          .insert({
-            circle_id: circleId,
-            title: `Chat with ${otherUserName}`,
-            created_by: user.id,
-          })
-          .select()
-          .single();
-
-        if (threadError) throw threadError;
-        threadId = newThread.id;
-      }
-
-      // Navigate to chat with this thread selected
-      navigate(`/circle/${circleId}/chat?thread=${threadId}`);
-    } catch (error: any) {
-      toast.error("Failed to start chat: " + error.message);
-    }
-  };
-
-  const getDisplayName = (member: Member) => {
-    return member.profile?.display_name || member.profile?.username || "Unknown User";
-  };
-
-  const getInitials = (member: Member) => {
-    const name = getDisplayName(member);
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const canAddMembers = isOwner || invitePermission === 'anyone';
-
-  if (loading) {
-    return <div>Loading...</div>;
+  if (!circleId) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Circle not found</p>
+      </div>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-8 overflow-x-hidden">{/* Prevent horizontal scroll */}
+    <div className="min-h-screen bg-background">
       <Navigation circleId={circleId} />
 
-      <div className="container mx-auto px-4 py-8 max-w-6xl md:pl-24 w-full">
+      <div className={`flex-1 ${!isMobile ? 'pl-24 pr-8' : 'px-4'} pt-8`}>
+        {/* Header */}
         <CircleHeader
-          circleId={circleId!}
+          circleId={circleId}
           pageTitle={circleName}
-          onAddMember={canAddMembers ? () => setAddMemberOpen(true) : undefined}
-          actions={
-            canAddMembers ? (
-              <Button onClick={() => setAddMemberOpen(true)} className="hidden sm:flex">
-                <Users className="mr-2 h-4 w-4" />
-                Add Member
-              </Button>
-            ) : null
-          }
+          onAddMember={canInvite ? () => setAddMemberOpen(true) : undefined}
         />
 
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-3 max-w-full overflow-hidden">{/* 2 cols on mobile/tablet, 3 on desktop */}
-          {members.map((member, index) => {
-            const rotation = isMobile ? 0 : (index % 2 === 0 ? 1 : -1) * (1 + (index % 3)); // No rotation on mobile
-            const borderRadii = [
-              '50% 60% 70% 40%',
-              '60% 40% 60% 40%',
-              '55% 45% 60% 40%',
-              '45% 55% 50% 50%',
-            ];
-            const borderRadius = borderRadii[index % borderRadii.length];
-            
-            return (
-              <Card 
-                key={member.user_id}
-                className={cn(
-                  "cursor-pointer hover:scale-105 hover:shadow-2xl transition-all duration-300 relative",
-                  "bg-gradient-to-br from-background/95 to-background/90 backdrop-blur-sm",
-                  "border-[6px] p-1 overflow-hidden w-full" // Ensure full width within grid cell
-                )}
-                style={{
-                  transform: `rotate(${rotation}deg)`,
-                  borderImage: `linear-gradient(135deg, hsl(var(--primary)), hsl(var(--accent))) 1`,
-                  borderRadius: borderRadius,
-                }}
-                onClick={() => navigate(`/u/${member.profile.username}`)}
-              >
-                <CardContent className="p-6 relative">
-                  <div className="flex flex-col items-center gap-3 text-center">
-                    <Avatar className="h-20 w-20 border-4 border-background shadow-lg ring-2 ring-primary/20">
-                      <AvatarImage src={member.profile.avatar_url || undefined} />
-                      <AvatarFallback className="text-lg font-bold bg-gradient-to-br from-primary/20 to-accent/20">
-                        {getInitials(member)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0 w-full">
-                      <h3 className="font-bold text-lg truncate">
-                        {getDisplayName(member)}
-                      </h3>
-                      <p className="text-sm text-muted-foreground truncate">
-                        @{member.profile.username}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+        {/* Stories Row */}
+        <div className="mb-4 pb-4 border-b border-white/[0.06]">
+          <StoriesRow circleId={circleId} />
+        </div>
+
+        {/* Two Column Layout */}
+        <div className={`flex ${isMobile ? 'flex-col' : 'gap-6'}`}>
+          {/* Activity Feed */}
+          <div className={`${isMobile ? 'mb-6' : 'flex-[2]'} min-w-0`}>
+            <h2 className="text-2xl font-bold mb-4">Activity</h2>
+            <ActivityFeed circleId={circleId} />
+          </div>
+
+          {/* Members Panel (hidden on mobile, uses top bar) */}
+          {!isMobile && (
+            <div className="flex-1 min-w-0">
+              <MembersPanel circleId={circleId} />
+            </div>
+          )}
         </div>
       </div>
 
       <AddMemberDialog
         open={addMemberOpen}
         onOpenChange={setAddMemberOpen}
-        circleId={circleId || ""}
+        circleId={circleId}
         circleName={circleName}
         isOwner={isOwner}
-        invitePermission={invitePermission}
-        onSuccess={() => { loadMembers(); }}
+        invitePermission={canInvite ? 'anyone' : 'owner_only'}
+        onSuccess={() => {}}
       />
     </div>
   );

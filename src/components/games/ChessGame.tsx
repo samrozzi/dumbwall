@@ -118,19 +118,20 @@ export const ChessGame = ({
       onMove(selectedSquare, square);
       setSelectedSquare(null);
       setLegalMoves([]);
+      return;
+    }
+    
+    // Try to select the new square
+    const piece = chess.get(square as Square);
+    if (piece &&
+      ((metadata.currentTurn === 'white' && piece.color === 'w') ||
+       (metadata.currentTurn === 'black' && piece.color === 'b'))) {
+      setSelectedSquare(square);
+      const moves = chess.moves({ square: square as Square, verbose: true });
+      setLegalMoves(moves.map(m => m.to));
     } else {
-      // Try to select the new square
-      const piece = chess.get(square as Square);
-      if (piece &&
-        ((metadata.currentTurn === 'white' && piece.color === 'w') ||
-         (metadata.currentTurn === 'black' && piece.color === 'b'))) {
-        setSelectedSquare(square);
-        const moves = chess.moves({ square: square as Square, verbose: true });
-        setLegalMoves(moves.map(m => m.to));
-      } else {
-        setSelectedSquare(null);
-        setLegalMoves([]);
-      }
+      setSelectedSquare(null);
+      setLegalMoves([]);
     }
   };
 
@@ -258,8 +259,8 @@ export const ChessGame = ({
 
         {/* Chess Board */}
         <div className="w-full max-w-[500px] mx-auto">
-          <div className="aspect-square bg-muted p-2 rounded-lg">
-            <div className="grid grid-cols-8 gap-0 w-full h-full">
+          <div className="aspect-square bg-gradient-to-br from-slate-800 to-slate-900 p-3 rounded-lg border-2 border-purple-500/20 shadow-xl">
+            <div className="grid grid-cols-8 gap-0 w-full h-full rounded-sm overflow-hidden shadow-lg">
               {RANKS.map((rank, rankIdx) =>
                 FILES.map((file, fileIdx) => {
                   const square = `${file}${rank}`;
@@ -272,29 +273,40 @@ export const ChessGame = ({
                     <button
                       key={square}
                       onClick={() => handleSquareClick(square)}
+                      onTouchEnd={(e) => {
+                        e.preventDefault();
+                        handleSquareClick(square);
+                      }}
                       disabled={!isMyTurn || isFinished || gameOver}
                       className={cn(
-                        "relative flex items-center justify-center text-4xl font-bold transition-all",
-                        "hover:brightness-110 disabled:cursor-not-allowed",
-                        isLight ? "bg-amber-100 dark:bg-amber-900/30" : "bg-amber-700 dark:bg-amber-950",
-                        isSelected && "ring-4 ring-primary ring-inset",
-                        isLegalMove && "ring-2 ring-green-500 ring-inset"
+                        "relative flex items-center justify-center text-4xl font-bold transition-all touch-manipulation",
+                        "active:scale-95 disabled:cursor-not-allowed min-h-[44px]",
+                        isLight 
+                          ? "bg-slate-600 hover:bg-slate-500" 
+                          : "bg-slate-800 hover:bg-slate-700",
+                        isSelected && "ring-4 ring-purple-500 ring-inset brightness-125",
+                        isLegalMove && "ring-2 ring-purple-400 ring-inset",
+                        piece && piece.match(/[♔♕♖♗♘♙]/) && "text-slate-100 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]",
+                        piece && piece.match(/[♚♛♜♝♞♟]/) && "text-slate-900 drop-shadow-[0_1px_2px_rgba(255,255,255,0.3)]"
                       )}
                     >
                       {piece}
                       {isLegalMove && !piece && (
-                        <div className="absolute inset-0 flex items-center justify-center">
-                          <div className="w-3 h-3 rounded-full bg-green-500/50" />
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <div className="w-3 h-3 rounded-full bg-purple-500/60 shadow-lg" />
                         </div>
+                      )}
+                      {isLegalMove && piece && (
+                        <div className="absolute inset-0 bg-purple-500/20 pointer-events-none" />
                       )}
                       {/* Coordinate labels */}
                       {fileIdx === 0 && (
-                        <span className="absolute left-0.5 top-0.5 text-[8px] font-mono opacity-50">
+                        <span className="absolute left-1 top-0.5 text-[10px] font-mono text-purple-300/70 select-none">
                           {rank}
                         </span>
                       )}
                       {rankIdx === 7 && (
-                        <span className="absolute right-0.5 bottom-0.5 text-[8px] font-mono opacity-50">
+                        <span className="absolute right-1 bottom-0.5 text-[10px] font-mono text-purple-300/70 select-none">
                           {file}
                         </span>
                       )}

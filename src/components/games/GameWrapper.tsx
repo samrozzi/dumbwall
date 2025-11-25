@@ -769,6 +769,7 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
           title={game.title}
           metadata={game.metadata}
           userId={userId}
+          createdBy={game.created_by}
           participants={participants}
           onGuess={(letter) => {
             const guessedLetters = [...game.metadata.guessedLetters, letter];
@@ -793,6 +794,13 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
               guessedLetters,
               incorrectGuesses,
               winnerUserId,
+            });
+          }}
+          onSetWord={(word, hint) => {
+            handleAction('start', { word, hint }, 'in_progress', {
+              ...game.metadata,
+              word,
+              wordHint: hint,
             });
           }}
           onRematch={handleRematch}

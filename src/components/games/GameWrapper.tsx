@@ -24,6 +24,7 @@ interface GameWrapperProps {
 
 export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
   const [game, setGame] = useState<Game | null>(null);
+  const [optimisticGame, setOptimisticGame] = useState<Game | null>(null);
   const [participants, setParticipants] = useState<GameParticipant[]>([]);
   const [events, setEvents] = useState<GameEvent[]>([]);
   const [loading, setLoading] = useState(true);
@@ -209,6 +210,7 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
       const data = await getGame(gameId);
       console.log('Game data received:', data);
       setGame(data.game);
+      setOptimisticGame(null); // Clear optimistic state when real data arrives
       setParticipants(data.participants);
       setEvents(data.events);
     } catch (error: any) {
@@ -280,13 +282,16 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
     );
   }
 
+  // Use optimistic game state if available, otherwise use real game
+  const displayGame = optimisticGame || game;
+
   switch (game.type) {
     case 'tic_tac_toe':
       return (
         <TicTacToeGame
           gameId={gameId}
-          title={game.title}
-          metadata={game.metadata}
+          title={displayGame.title}
+          metadata={displayGame.metadata}
           userId={userId}
           participants={participants}
           onMove={(row, col) => {
@@ -317,11 +322,23 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
               nextTurnUserId = otherParticipant?.user_id || userId;
             }
 
+            // Optimistic UI update - show the move immediately
+            setOptimisticGame({
+              ...game,
+              metadata: {
+                ...game.metadata,
+                board: newBoard,
+                nextTurnUserId,
+                winnerUserId: winner ? userId : null,
+              }
+            });
+
+            // Send to server - CRITICAL: spread ...game.metadata FIRST so new values override
             handleAction('move', { row, col }, winner ? 'finished' : undefined, {
+              ...game.metadata,
               board: newBoard,
               nextTurnUserId,
               winnerUserId: winner ? userId : null,
-              ...game.metadata,
             });
           }}
           onRematch={handleRematch}

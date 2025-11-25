@@ -170,12 +170,32 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
               );
 
               if (aiMove) {
+                // Create the new board state with AI's move
+                const newBoard = game.metadata.board.map((r: any[]) => [...r]);
+                const piece = newBoard[aiMove.from.row][aiMove.from.col];
+                
+                // Execute move
+                newBoard[aiMove.to.row][aiMove.to.col] = piece;
+                newBoard[aiMove.from.row][aiMove.from.col] = null;
+                
+                // Update status from 'waiting' to 'in_progress' if needed
+                const newStatus = game.status === 'waiting' ? 'in_progress' : undefined;
+                
                 await gameAction(gameId, 'move', {
                   fromRow: aiMove.from.row,
                   fromCol: aiMove.from.col,
                   toRow: aiMove.to.row,
                   toCol: aiMove.to.col,
+                }, newStatus, {
+                  ...game.metadata,
+                  board: newBoard,
+                  currentTurn: 'red',
                 });
+                
+                // Force refresh UI after AI move
+                setTimeout(() => {
+                  loadGame();
+                }, 100);
               }
             }
             break;

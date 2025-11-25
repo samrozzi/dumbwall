@@ -816,9 +816,9 @@ const Chat = () => {
               </div>
             ) : (
               /* Chat View - Fixed mobile layout */
-              <div className="flex flex-col h-screen bg-background md:relative md:h-full md:border md:rounded-lg md:overflow-hidden touch-none overscroll-none">
+              <div className="fixed inset-0 flex flex-col bg-background md:relative md:h-full md:border md:rounded-lg md:overflow-hidden">
                 {/* Fixed Header */}
-                <div className="flex-shrink-0 px-4 py-3 border-b bg-card flex items-center gap-3 z-10">
+                <div className="flex-shrink-0 px-4 py-3 border-b bg-card flex items-center gap-3">
                   <Button
                     size="icon"
                     variant="ghost"
@@ -863,8 +863,8 @@ const Chat = () => {
                   </Dialog>
                 </div>
 
-                {/* Scrollable Messages Area */}
-                <ScrollArea className="flex-1 p-4 overflow-y-auto">
+                {/* Scrollable Messages Area - Account for fixed input bar */}
+                <ScrollArea className="flex-1 p-4 pb-32 overflow-y-auto md:pb-4">
                   {threadPhoto && (
                     <div className="mb-4 rounded-lg overflow-hidden border-2 border-primary bg-black">
                       <img 
@@ -918,8 +918,8 @@ const Chat = () => {
                   <div ref={messagesEndRef} />
                 </ScrollArea>
 
-                {/* Fixed Input Bar */}
-                <div className="flex-shrink-0 p-4 pb-safe border-t bg-card z-10 md:pb-4">
+                {/* Fixed Input Bar - Positioned above mobile browser UI */}
+                <div className="fixed bottom-0 left-0 right-0 p-4 pb-24 border-t bg-card md:relative md:bottom-auto md:pb-4">
                   {replyingTo && (
                     <ReplyPreview
                       username={replyingTo.profiles?.display_name || replyingTo.profiles?.username || "Unknown"}
@@ -1165,7 +1165,7 @@ const Chat = () => {
                   </div>
 
                     {/* Messages */}
-                    <ScrollArea className="flex-1 p-4">
+                    <ScrollArea className="flex-1 p-4 pb-32 md:pb-4">
                       {threadPhoto && (
                         <div className="mb-4 rounded-lg overflow-hidden border-2 border-primary bg-black">
                           <img 

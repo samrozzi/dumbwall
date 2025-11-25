@@ -188,6 +188,8 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
   const addComment = async (commentText: string) => {
     if (!currentUserId || !commentText.trim()) return;
 
+    console.log('🚀 Adding optimistic comment:', commentText.substring(0, 30));
+
     // Optimistic update - add comment immediately to UI
     const tempId = `temp-${Date.now()}`;
     const optimisticComment = {
@@ -202,14 +204,16 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
       }
     };
     
-    console.log('🚀 Adding optimistic comment:', tempId, commentText.substring(0, 30));
+    console.log('📝 Setting optimistic comment ID:', tempId);
     setOptimisticCommentId(tempId);
+    
     setComments(prev => {
-      console.log('📝 Current comments before add:', prev.length, '→ Adding optimistic comment');
+      console.log('📊 Current comments count:', prev.length, '→ Adding optimistic');
       return [...prev, optimisticComment];
     });
 
     try {
+      console.log('💾 Database insert started for wall item:', wallItemId);
       // Check if thread already exists for this photo
       const { data: existingThread } = await supabase
         .from('chat_threads')
@@ -298,10 +302,16 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
         });
 
       if (commentError) {
-        console.error('Error adding comment:', commentError);
+        console.error('❌ Error adding comment:', commentError);
         toast.error('Failed to add comment');
+        // Remove optimistic comment on error
+        setComments(prev => prev.filter(c => c.id !== tempId));
+        setOptimisticCommentId(null);
         return;
       }
+
+      console.log('✅ Database insert complete, clearing optimistic ID');
+      setOptimisticCommentId(null);
 
       // Create corresponding chat message in the thread
       if (threadId) {
@@ -313,9 +323,14 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
             body: commentText.trim(),
           });
       }
+      
+      toast.success('Comment added!');
     } catch (error) {
-      console.error('Error in addComment:', error);
+      console.error('❌ Error in addComment:', error);
       toast.error('Failed to add comment');
+      // Remove optimistic comment on error
+      setComments(prev => prev.filter(c => c.id !== tempId));
+      setOptimisticCommentId(null);
     }
   };
 

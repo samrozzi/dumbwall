@@ -1,21 +1,14 @@
 import { StoryAvatar } from "./StoryAvatar";
 import { formatDistanceToNow } from "date-fns";
-import { ChevronRight, Trophy, MessageCircle, Users, X, ThumbsUp, ThumbsDown, Send } from "lucide-react";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+import { ChevronRight, Trophy, MessageCircle, Users } from "lucide-react";
 import { AudioClip } from "@/components/wall/AudioClip";
 import StickyNote from "@/components/wall/StickyNote";
-import ImageCard from "@/components/wall/ImageCard";
 import { QuickPoll } from "@/components/wall/QuickPoll";
 import { MusicDrop } from "@/components/wall/MusicDrop";
-import { DoodleCanvas } from "@/components/wall/DoodleCanvas";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { ActivityInteractions } from "./ActivityInteractions";
-import { usePhotoInteractions } from "@/hooks/usePhotoInteractions";
+import { PhotoViewDialog } from "@/components/wall/PhotoViewDialog";
 
 interface ActivityCardProps {
   activity: {
@@ -46,8 +39,11 @@ interface ActivityCardProps {
 
 export const ActivityCard = ({ activity }: ActivityCardProps) => {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
-  const [selectedItem, setSelectedItem] = useState<{type: 'image' | 'doodle', content: any, itemId: string} | null>(null);
-  const [commentInput, setCommentInput] = useState("");
+  const [selectedItem, setSelectedItem] = useState<{
+    itemId: string;
+    type: 'image' | 'doodle';
+    content: { url?: string; imageUrl?: string; caption?: string };
+  } | null>(null);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -241,184 +237,16 @@ export const ActivityCard = ({ activity }: ActivityCardProps) => {
         <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
       </div>
 
-      {/* Full view dialog */}
-      <FullViewDialog 
-        selectedItem={selectedItem}
-        onClose={() => setSelectedItem(null)}
-        currentUserId={currentUserId}
-        commentInput={commentInput}
-        setCommentInput={setCommentInput}
-      />
+      {selectedItem && (
+        <PhotoViewDialog
+          isOpen={!!selectedItem}
+          onClose={() => setSelectedItem(null)}
+          wallItemId={selectedItem.itemId}
+          content={selectedItem.content}
+          type={selectedItem.type}
+          currentUserId={currentUserId || undefined}
+        />
+      )}
     </div>
-  );
-};
-
-// Separate component for the full view dialog
-const FullViewDialog = ({ 
-  selectedItem, 
-  onClose, 
-  currentUserId,
-  commentInput,
-  setCommentInput 
-}: {
-  selectedItem: {type: 'image' | 'doodle', content: any, itemId: string} | null;
-  onClose: () => void;
-  currentUserId: string | null;
-  commentInput: string;
-  setCommentInput: (value: string) => void;
-}) => {
-  const { comments, reactions, votes, toggleReaction, toggleVote, addComment } = usePhotoInteractions(
-    selectedItem?.itemId || '',
-    currentUserId || undefined
-  );
-
-  const handleSendComment = async () => {
-    if (!commentInput.trim()) return;
-    await addComment(commentInput);
-    setCommentInput("");
-  };
-
-  if (!selectedItem) return null;
-
-  return (
-    <Dialog open={!!selectedItem} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-6xl h-[90vh] p-0 border-2 border-white/10 rounded-2xl [&>button]:hidden">
-        <div className="flex h-full">
-          {/* Left side - Image/Doodle */}
-          <div className="flex-1 bg-black flex items-center justify-center p-8 relative">
-            <button
-              onClick={onClose}
-              className="absolute top-4 right-4 z-50 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
-            >
-              <X className="h-6 w-6" />
-            </button>
-            
-            {selectedItem.type === 'image' ? (
-              <img 
-                src={selectedItem.content.url}
-                alt={selectedItem.content.caption || "Wall image"}
-                className="max-h-full max-w-full object-contain"
-              />
-            ) : (
-              <div className="bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/20 dark:to-cyan-950/20 border-2 border-teal-200 dark:border-teal-800 rounded-lg p-6">
-                <img 
-                  src={selectedItem.content.imageUrl}
-                  alt="Doodle"
-                  className="max-h-[70vh] w-auto object-contain rounded"
-                />
-              </div>
-            )}
-          </div>
-          
-          {/* Right side - Interactions */}
-          <div className="w-[400px] bg-card border-l border-border flex flex-col">
-            {/* Reactions and votes */}
-            <div className="p-4 border-b border-border space-y-3">
-              {/* Quick reactions */}
-              <div className="flex gap-2 flex-wrap">
-                {['👍', '❤️', '😂', '😮', '😢'].map((emoji) => {
-                  const reaction = reactions.find(r => r.emoji === emoji);
-                  return (
-                    <button
-                      key={emoji}
-                      onClick={() => toggleReaction(emoji)}
-                      className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-                        reaction?.reacted_by_me
-                          ? 'bg-primary/20 border-2 border-primary'
-                          : 'bg-muted hover:bg-muted/80 border-2 border-transparent'
-                      }`}
-                    >
-                      {emoji} {reaction?.count || ''}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Votes */}
-              <div className="flex gap-2">
-                <button
-                  onClick={() => toggleVote('up')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                    votes.user_vote === 'up'
-                      ? 'bg-green-500/20 text-green-600 dark:text-green-400'
-                      : 'bg-muted hover:bg-muted/80'
-                  }`}
-                >
-                  <ThumbsUp className="w-4 h-4" />
-                  <span className="font-semibold">{votes.upvotes}</span>
-                </button>
-                <button
-                  onClick={() => toggleVote('down')}
-                  className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                    votes.user_vote === 'down'
-                      ? 'bg-red-500/20 text-red-600 dark:text-red-400'
-                      : 'bg-muted hover:bg-muted/80'
-                  }`}
-                >
-                  <ThumbsDown className="w-4 h-4" />
-                  <span className="font-semibold">{votes.downvotes}</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Comments */}
-            <ScrollArea className="flex-1 p-4">
-              <div className="space-y-4">
-                {comments.length === 0 ? (
-                  <p className="text-sm text-muted-foreground text-center py-8">
-                    No comments yet. Be the first to comment!
-                  </p>
-                ) : (
-                  comments.map((comment) => (
-                    <div key={comment.id} className="flex gap-3">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={comment.profiles?.avatar_url || undefined} />
-                        <AvatarFallback>
-                          {comment.profiles?.username?.[0]?.toUpperCase() || 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1">
-                        <div className="bg-muted rounded-lg p-3">
-                          <p className="font-semibold text-sm">{comment.profiles?.username || 'Unknown'}</p>
-                          <p className="text-sm mt-1">{comment.comment_text}</p>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          {formatDistanceToNow(new Date(comment.created_at), { addSuffix: true })}
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </ScrollArea>
-
-            {/* Comment input */}
-            <div className="p-4 border-t border-border">
-              <div className="flex gap-2">
-                <Input
-                  value={commentInput}
-                  onChange={(e) => setCommentInput(e.target.value)}
-                  placeholder="Add a comment..."
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSendComment();
-                    }
-                  }}
-                  className="flex-1"
-                />
-                <Button 
-                  onClick={handleSendComment}
-                  size="icon"
-                  disabled={!commentInput.trim()}
-                >
-                  <Send className="w-4 h-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
   );
 };

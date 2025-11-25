@@ -289,12 +289,16 @@ const Games = () => {
               playerSymbol: 'X',
               computerSymbol: 'O',
             };
-          } else {
-            metadata = {
-              board: [[null, null, null], [null, null, null], [null, null, null]],
-              nextTurnUserId: user?.id,
-            };
-          }
+      } else {
+        metadata = {
+          board: [[null, null, null], [null, null, null], [null, null, null]],
+          nextTurnUserId: user?.id,
+          player1Id: user?.id,
+          player2Id: selectedPlayer,
+          player1Symbol: 'X',
+          player2Symbol: 'O',
+        };
+      }
           break;
 
         case "checkers":

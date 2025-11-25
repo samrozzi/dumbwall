@@ -504,8 +504,14 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
           onMove={(row, col) => {
             const newBoard = game.metadata.board.map((r: any[]) => [...r]);
             
-            // Use the stored player symbol
-            const playerSymbol = game.metadata.playerSymbol || 'X';
+            // Determine player's symbol based on who they are
+            let playerSymbol: string;
+            if (game.metadata.isComputerOpponent) {
+              playerSymbol = game.metadata.playerSymbol || 'X';
+            } else {
+              // 2-player game - check which player is making the move
+              playerSymbol = userId === game.metadata.player1Id ? 'X' : 'O';
+            }
             newBoard[row][col] = playerSymbol;
             
             const checkWinner = () => {
@@ -857,6 +863,8 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
               moveHistory: newMoveHistory,
               gameStatus,
               winnerUserId,
+              isComputerOpponent: game.metadata.isComputerOpponent,
+              difficulty: game.metadata.difficulty,
             });
           }}
           onRematch={handleRematch}

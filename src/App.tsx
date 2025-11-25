@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "./lib/auth";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 import { usePresenceTracking } from "./hooks/usePresenceTracking";
 import Auth from "./pages/Auth";
 import Circles from "./pages/Circles";
@@ -25,13 +26,13 @@ const AppContent = () => {
     <Routes>
       <Route path="/" element={<Navigate to="/circles" replace />} />
       <Route path="/auth" element={<Auth />} />
-      <Route path="/circles" element={<Circles />} />
-      <Route path="/circle/:circleId/wall" element={<Wall />} />
-      <Route path="/circle/:circleId/games" element={<Games />} />
-      <Route path="/circle/:circleId/chat" element={<Chat />} />
-      <Route path="/circle/:circleId/people" element={<People />} />
-      <Route path="/circle/:circleId/settings" element={<Settings />} />
-      <Route path="/settings" element={<Settings />} />
+      <Route path="/circles" element={<ProtectedRoute><Circles /></ProtectedRoute>} />
+      <Route path="/circle/:circleId/wall" element={<ProtectedRoute><Wall /></ProtectedRoute>} />
+      <Route path="/circle/:circleId/games" element={<ProtectedRoute><Games /></ProtectedRoute>} />
+      <Route path="/circle/:circleId/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+      <Route path="/circle/:circleId/people" element={<ProtectedRoute><People /></ProtectedRoute>} />
+      <Route path="/circle/:circleId/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+      <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/u/:username" element={<PublicProfile />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />

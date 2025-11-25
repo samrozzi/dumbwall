@@ -11,11 +11,20 @@ interface Activity {
   reference_type: string | null;
   metadata: any;
   created_at: string;
-  profile?: {
+  profiles?: {
     username: string;
     display_name: string | null;
     avatar_url: string | null;
   };
+  wall_items?: {
+    id: string;
+    type: string;
+    content: any;
+    created_by: string;
+    x: number;
+    y: number;
+    z_index: number;
+  } | null;
 }
 
 export const useActivities = (circleId: string, limit: number = 20) => {
@@ -55,7 +64,7 @@ export const useActivities = (circleId: string, limit: number = 20) => {
         .from("circle_activities")
         .select(`
           *,
-          profile:profiles(username, display_name, avatar_url)
+          profiles!user_id(username, display_name, avatar_url)
         `)
         .eq("circle_id", circleId)
         .order("created_at", { ascending: false })
@@ -63,10 +72,26 @@ export const useActivities = (circleId: string, limit: number = 20) => {
 
       if (error) throw error;
 
+      // Fetch wall items separately for activities that reference them
+      const activitiesWithWallItems = await Promise.all(
+        (data || []).map(async (activity) => {
+          if (activity.reference_type === 'wall_item' && activity.reference_id) {
+            const { data: wallItemData } = await supabase
+              .from("wall_items")
+              .select("id, type, content, created_by, x, y, z_index")
+              .eq("id", activity.reference_id)
+              .single();
+            
+            return { ...activity, wall_items: wallItemData };
+          }
+          return activity;
+        })
+      );
+
       if (offset === 0) {
-        setActivities(data || []);
+        setActivities(activitiesWithWallItems || []);
       } else {
-        setActivities((prev) => [...prev, ...(data || [])]);
+        setActivities((prev) => [...prev, ...(activitiesWithWallItems || [])]);
       }
 
       setHasMore((data || []).length === limit);

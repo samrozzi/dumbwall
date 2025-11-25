@@ -21,7 +21,7 @@ export const StoriesRow = ({ circleId }: StoriesRowProps) => {
     if (!acc[story.user_id]) {
       acc[story.user_id] = {
         user_id: story.user_id,
-        profile: story.profile,
+        profiles: story.profiles,
         stories: [],
       };
     }
@@ -70,14 +70,14 @@ export const StoriesRow = ({ circleId }: StoriesRowProps) => {
             className="flex flex-col items-center gap-2 flex-shrink-0"
           >
             <StoryAvatar
-              src={group.profile?.avatar_url}
-              alt={group.profile?.display_name || group.profile?.username || "User"}
+              src={group.profiles?.avatar_url}
+              alt={group.profiles?.display_name || group.profiles?.username || "User"}
               size="lg"
               hasUnviewedStory={true}
               onClick={() => handleStoryClick(index)}
             />
             <span className="text-xs text-foreground max-w-[64px] truncate">
-              {group.profile?.display_name || group.profile?.username || "User"}
+              {group.profiles?.display_name || group.profiles?.username || "User"}
             </span>
           </div>
         ))}

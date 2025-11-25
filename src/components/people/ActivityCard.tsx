@@ -1,7 +1,13 @@
 import { StoryAvatar } from "./StoryAvatar";
 import { formatDistanceToNow } from "date-fns";
 import { ChevronRight, Trophy, MessageCircle, Users } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { AudioClip } from "@/components/wall/AudioClip";
+import StickyNote from "@/components/wall/StickyNote";
+import ImageCard from "@/components/wall/ImageCard";
+import { QuickPoll } from "@/components/wall/QuickPoll";
+import { MusicDrop } from "@/components/wall/MusicDrop";
+import { supabase } from "@/integrations/supabase/client";
+import { useState, useEffect } from "react";
 
 interface ActivityCardProps {
   activity: {
@@ -13,16 +19,33 @@ interface ActivityCardProps {
     metadata: any;
     created_at: string;
     circle_id: string;
-    profile?: {
+    profiles?: {
       username: string;
       display_name: string | null;
       avatar_url: string | null;
+    };
+    wall_items?: {
+      id: string;
+      type: string;
+      content: any;
+      created_by: string;
+      x: number;
+      y: number;
+      z_index: number;
     };
   };
 }
 
 export const ActivityCard = ({ activity }: ActivityCardProps) => {
-  const navigate = useNavigate();
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setCurrentUserId(user?.id || null);
+    };
+    fetchUser();
+  }, []);
 
   const getActionText = () => {
     switch (activity.activity_type) {
@@ -59,22 +82,87 @@ export const ActivityCard = ({ activity }: ActivityCardProps) => {
     }
   };
 
-  const handleClick = () => {
-    if (activity.reference_type === "wall_item" && activity.reference_id) {
-      navigate(`/circle/${activity.circle_id}/wall`);
+  const renderContent = () => {
+    if (activity.reference_type !== 'wall_item' || !activity.wall_items) {
+      return <p className="text-sm text-foreground/70">{getActionText()}</p>;
+    }
+
+    const wallItem = activity.wall_items;
+    
+    switch (wallItem.type) {
+      case 'audio':
+        return (
+          <div className="mt-3">
+            <p className="text-sm text-foreground/70 mb-2">{getActionText()}</p>
+            <AudioClip 
+              content={wallItem.content} 
+              fullWidth 
+            />
+          </div>
+        );
+        
+      case 'note':
+        return (
+          <div className="mt-3">
+            <p className="text-sm text-foreground/70 mb-2">{getActionText()}</p>
+            <StickyNote 
+              content={wallItem.content}
+              fullWidth
+              hideAvatar
+            />
+          </div>
+        );
+        
+      case 'image':
+        return (
+          <div className="mt-3">
+            <p className="text-sm text-foreground/70 mb-2">{getActionText()}</p>
+            <ImageCard 
+              id={wallItem.id}
+              content={wallItem.content}
+              fullWidth
+              hideAvatar
+              currentUserId={currentUserId || undefined}
+            />
+          </div>
+        );
+        
+      case 'poll':
+        return (
+          <div className="mt-3">
+            <p className="text-sm text-foreground/70 mb-2">{getActionText()}</p>
+            <QuickPoll 
+              content={wallItem.content}
+              itemId={wallItem.id}
+              currentUserId={currentUserId || undefined}
+              fullWidth
+            />
+          </div>
+        );
+        
+      case 'music':
+        return (
+          <div className="mt-3">
+            <p className="text-sm text-foreground/70 mb-2">{getActionText()}</p>
+            <MusicDrop 
+              content={wallItem.content}
+              fullWidth
+            />
+          </div>
+        );
+        
+      default:
+        return <p className="text-sm text-foreground/70">{getActionText()}</p>;
     }
   };
 
   return (
-    <div
-      className="group relative bg-white/[0.02] backdrop-blur-[18px] border border-white/[0.06] rounded-2xl p-4 hover:bg-white/[0.04] transition-colors cursor-pointer"
-      onClick={handleClick}
-    >
+    <div className="relative bg-white/[0.02] backdrop-blur-[18px] border border-white/[0.06] rounded-2xl p-5 hover:bg-white/[0.04] transition-colors max-w-2xl">
       <div className="flex gap-3">
         {/* Avatar */}
         <StoryAvatar
-          src={activity.profile?.avatar_url}
-          alt={activity.profile?.display_name || activity.profile?.username || "User"}
+          src={activity.profiles?.avatar_url}
+          alt={activity.profiles?.display_name || activity.profiles?.username || "User"}
           size="md"
         />
 
@@ -83,7 +171,7 @@ export const ActivityCard = ({ activity }: ActivityCardProps) => {
           {/* Header */}
           <div className="flex items-center gap-2 mb-1">
             <span className="font-semibold text-sm truncate">
-              {activity.profile?.display_name || activity.profile?.username || "User"}
+              {activity.profiles?.display_name || activity.profiles?.username || "User"}
             </span>
             {getIcon()}
             <span className="text-xs text-muted-foreground">
@@ -91,46 +179,12 @@ export const ActivityCard = ({ activity }: ActivityCardProps) => {
             </span>
           </div>
 
-          {/* Action */}
-          <p className="text-sm text-foreground/70 mb-2">{getActionText()}</p>
-
-          {/* Preview Content */}
-          {activity.activity_type === "wall_post" && activity.metadata?.content && (
-            <div className="mt-2">
-              {activity.metadata.item_type === "note" && (
-                <div className="bg-background/50 rounded-lg px-3 py-2 text-sm">
-                  {activity.metadata.content.text?.substring(0, 100)}
-                  {activity.metadata.content.text?.length > 100 && "..."}
-                </div>
-              )}
-              {activity.metadata.item_type === "poll" && activity.metadata.content.question && (
-                <div className="bg-background/50 rounded-lg p-3">
-                  <p className="text-sm font-medium mb-2">{activity.metadata.content.question}</p>
-                  <div className="space-y-1">
-                    {activity.metadata.content.options?.slice(0, 2).map((opt: string, i: number) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-white/10 rounded-full overflow-hidden">
-                          <div className="h-full bg-primary/50" style={{ width: "30%" }} />
-                        </div>
-                        <span className="text-xs text-muted-foreground">{opt}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {activity.metadata.item_type === "image" && activity.metadata.content.url && (
-                <img
-                  src={activity.metadata.content.url}
-                  alt="Post"
-                  className="rounded-lg w-24 h-24 object-cover"
-                />
-              )}
-            </div>
-          )}
+          {/* Interactive Content */}
+          {renderContent()}
         </div>
 
         {/* Chevron */}
-        <ChevronRight className="w-5 h-5 text-muted-foreground group-hover:text-foreground transition-colors flex-shrink-0" />
+        <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
       </div>
     </div>
   );

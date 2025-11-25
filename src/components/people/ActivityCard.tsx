@@ -6,6 +6,7 @@ import StickyNote from "@/components/wall/StickyNote";
 import ImageCard from "@/components/wall/ImageCard";
 import { QuickPoll } from "@/components/wall/QuickPoll";
 import { MusicDrop } from "@/components/wall/MusicDrop";
+import { DoodleCanvas } from "@/components/wall/DoodleCanvas";
 import { supabase } from "@/integrations/supabase/client";
 import { useState, useEffect } from "react";
 import { ActivityInteractions } from "./ActivityInteractions";
@@ -84,6 +85,20 @@ export const ActivityCard = ({ activity }: ActivityCardProps) => {
   };
 
   const renderContent = () => {
+    // Check if wall item was deleted
+    if (activity.reference_type === 'wall_item' && !activity.wall_items) {
+      return (
+        <div className="mt-2 relative">
+          <div className="opacity-50 line-through decoration-2 decoration-red-500/50">
+            <p className="text-sm text-foreground/70">{getActionText()}</p>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1 italic">
+            This item was removed
+          </p>
+        </div>
+      );
+    }
+    
     if (activity.reference_type !== 'wall_item' || !activity.wall_items) {
       return <p className="text-sm text-foreground/70">{getActionText()}</p>;
     }
@@ -154,6 +169,23 @@ export const ActivityCard = ({ activity }: ActivityCardProps) => {
             <MusicDrop 
               content={wallItem.content}
               fullWidth
+            />
+          </div>
+        );
+        
+      case 'doodle':
+        return (
+          <div className="mt-3">
+            <p className="text-sm text-foreground/70 mb-2">{getActionText()}</p>
+            <div className="max-h-[280px] overflow-hidden rounded-lg">
+              <DoodleCanvas 
+                content={wallItem.content}
+                fullWidth
+              />
+            </div>
+            <ActivityInteractions 
+              wallItemId={wallItem.id}
+              currentUserId={currentUserId || undefined}
             />
           </div>
         );

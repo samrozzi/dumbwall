@@ -160,6 +160,21 @@ export const usePhotoInteractions = (wallItemId: string, currentUserId?: string)
   const addComment = async (commentText: string) => {
     if (!currentUserId || !commentText.trim()) return;
 
+    // Optimistic update - add comment immediately to UI
+    const optimisticComment = {
+      id: `temp-${Date.now()}`,
+      wall_item_id: wallItemId,
+      user_id: currentUserId,
+      comment_text: commentText,
+      created_at: new Date().toISOString(),
+      profiles: {
+        username: 'You',
+        avatar_url: null
+      }
+    };
+    
+    setComments(prev => [...prev, optimisticComment]);
+
     try {
       // Check if thread already exists for this photo
       const { data: existingThread } = await supabase

@@ -1,11 +1,12 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { useStories } from "@/hooks/useStories";
-import { ImagePlus, Type } from "lucide-react";
+import { ImagePlus, Type, Camera, Upload } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { TextStoryEditor } from "./TextStoryEditor";
+import CameraCapture from "../wall/CameraCapture";
 
 interface StoryCreatorProps {
   open: boolean;
@@ -14,25 +15,19 @@ interface StoryCreatorProps {
 }
 
 export const StoryCreator = ({ open, onClose, circleId }: StoryCreatorProps) => {
-  const [mode, setMode] = useState<"select" | "text" | "image">("select");
-  const [text, setText] = useState("");
+  const [mode, setMode] = useState<"select" | "text" | "image" | "camera">("select");
   const [uploading, setUploading] = useState(false);
   const { createStory } = useStories(circleId);
   const { toast } = useToast();
+  const fileInputRef = useState<HTMLInputElement | null>(null)[0];
 
-  const handleTextStory = async () => {
-    if (!text.trim()) return;
-    
-    await createStory("text", { text });
-    setText("");
+  const handleTextStory = async (storyData: any) => {
+    await createStory("text", storyData);
     onClose();
     setMode("select");
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const handleImageUpload = async (file: File) => {
     setUploading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -67,6 +62,13 @@ export const StoryCreator = ({ open, onClose, circleId }: StoryCreatorProps) => 
     }
   };
 
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleImageUpload(file);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="sm:max-w-md">
@@ -97,54 +99,64 @@ export const StoryCreator = ({ open, onClose, circleId }: StoryCreatorProps) => 
         )}
 
         {mode === "text" && (
-          <div className="space-y-4 py-4">
-            <Textarea
-              placeholder="What's on your mind?"
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              className="min-h-[120px]"
+          <div className="py-4">
+            <TextStoryEditor
+              onSave={handleTextStory}
+              onBack={() => setMode("select")}
             />
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setMode("select")}>
-                Back
-              </Button>
-              <Button onClick={handleTextStory} disabled={!text.trim()}>
-                Post Story
-              </Button>
-            </div>
           </div>
         )}
 
         {mode === "image" && (
-          <div className="py-4">
-            <input
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              disabled={uploading}
-              className="hidden"
-              id="story-image-upload"
-            />
-            <label htmlFor="story-image-upload">
+          <div className="py-4 space-y-4">
+            <div className="grid grid-cols-2 gap-4">
               <Button
                 variant="outline"
-                className="w-full h-32"
-                disabled={uploading}
-                asChild
+                className="h-32 flex flex-col gap-2"
+                onClick={() => setMode("camera")}
               >
-                <div>
-                  <ImagePlus className="w-8 h-8 mr-2" />
-                  {uploading ? "Uploading..." : "Choose Image"}
-                </div>
+                <Camera className="w-8 h-8" />
+                <span>Take Photo</span>
               </Button>
-            </label>
+
+              <label htmlFor="story-image-upload" className="cursor-pointer">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileSelect}
+                  disabled={uploading}
+                  className="hidden"
+                  id="story-image-upload"
+                />
+                <Button
+                  variant="outline"
+                  className="h-32 w-full flex flex-col gap-2"
+                  disabled={uploading}
+                  asChild
+                >
+                  <div>
+                    <Upload className="w-8 h-8" />
+                    <span>{uploading ? "Uploading..." : "Upload Photo"}</span>
+                  </div>
+                </Button>
+              </label>
+            </div>
             <Button
               variant="outline"
-              className="w-full mt-4"
+              className="w-full"
               onClick={() => setMode("select")}
             >
               Back
             </Button>
+          </div>
+        )}
+
+        {mode === "camera" && (
+          <div className="py-4">
+            <CameraCapture
+              onCapture={handleImageUpload}
+              onClose={() => setMode("image")}
+            />
           </div>
         )}
       </DialogContent>

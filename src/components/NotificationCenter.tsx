@@ -11,6 +11,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { useNavigate } from "react-router-dom";
 import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface Notification {
   id: string;
@@ -27,6 +28,21 @@ export const NotificationCenter = () => {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const getNotificationSummary = () => {
+    const unread = notifications.filter(n => !n.read);
+    const typeCounts: Record<string, number> = {};
+    
+    unread.forEach(n => {
+      typeCounts[n.type] = (typeCounts[n.type] || 0) + 1;
+    });
+
+    const summary = Object.entries(typeCounts)
+      .map(([type, count]) => `${count} ${type}${count > 1 ? 's' : ''}`)
+      .join(', ');
+    
+    return summary || 'No new notifications';
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -101,20 +117,30 @@ export const NotificationCenter = () => {
   };
 
   return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative">
-          <Bell className="h-5 w-5" />
+    <TooltipProvider>
+      <Popover>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="icon" className="relative">
+                <Bell className="h-5 w-5" />
+                {unreadCount > 0 && (
+                  <Badge
+                    variant="destructive"
+                    className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
+                  >
+                    {unreadCount > 9 ? "9+" : unreadCount}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+          </TooltipTrigger>
           {unreadCount > 0 && (
-            <Badge
-              variant="destructive"
-              className="absolute -top-1 -right-1 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs"
-            >
-              {unreadCount > 9 ? "9+" : unreadCount}
-            </Badge>
+            <TooltipContent>
+              <p className="text-xs">{getNotificationSummary()}</p>
+            </TooltipContent>
           )}
-        </Button>
-      </PopoverTrigger>
+        </Tooltip>
       <PopoverContent className="z-[9999] w-80 p-0" align="end">
         <div className="flex items-center justify-between p-4 border-b">
           <h3 className="font-semibold">Notifications</h3>
@@ -166,5 +192,6 @@ export const NotificationCenter = () => {
         </ScrollArea>
       </PopoverContent>
     </Popover>
+    </TooltipProvider>
   );
 };

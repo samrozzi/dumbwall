@@ -178,8 +178,27 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
                 newBoard[aiMove.to.row][aiMove.to.col] = piece;
                 newBoard[aiMove.from.row][aiMove.from.col] = null;
                 
-                // Update status from 'waiting' to 'in_progress' if needed
-                const newStatus = game.status === 'waiting' ? 'in_progress' : undefined;
+                // Handle capture: if moved 2 squares, remove the jumped piece
+                if (Math.abs(aiMove.to.row - aiMove.from.row) === 2) {
+                  const midRow = (aiMove.from.row + aiMove.to.row) / 2;
+                  const midCol = (aiMove.from.col + aiMove.to.col) / 2;
+                  newBoard[midRow][midCol] = null;
+                }
+                
+                // Handle king promotion: if piece reaches opposite end
+                if (piece === 'B' && aiMove.to.row === 7) {
+                  newBoard[aiMove.to.row][aiMove.to.col] = 'b';
+                }
+                
+                // Check for winner (opponent has no pieces left)
+                const redPieces = newBoard.flat().filter((p: string | null) => p === 'R' || p === 'r').length;
+                let winnerUserId = null;
+                let newStatus = game.status === 'waiting' ? 'in_progress' : undefined;
+                
+                if (redPieces === 0) {
+                  winnerUserId = 'computer';
+                  newStatus = 'finished';
+                }
                 
                 await gameAction(gameId, 'move', {
                   fromRow: aiMove.from.row,
@@ -190,6 +209,7 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
                   ...game.metadata,
                   board: newBoard,
                   currentTurn: 'red',
+                  winnerUserId,
                 });
                 
                 // Force refresh UI after AI move
@@ -546,24 +566,48 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
           metadata={game.metadata}
           userId={userId}
           onMove={(fromRow, fromCol, toRow, toCol) => {
-            // Basic move validation and status update
             const newBoard = game.metadata.board.map((r: any[]) => [...r]);
             const piece = newBoard[fromRow][fromCol];
             
-            // Simple move (not handling captures yet - AI will improve this)
+            // Move the piece
             newBoard[toRow][toCol] = piece;
             newBoard[fromRow][fromCol] = null;
             
+            // Handle capture: if moved 2 squares, remove the jumped piece
+            if (Math.abs(toRow - fromRow) === 2) {
+              const midRow = (fromRow + toRow) / 2;
+              const midCol = (fromCol + toCol) / 2;
+              newBoard[midRow][midCol] = null;
+            }
+            
+            // Handle king promotion: if piece reaches opposite end
+            if ((piece === 'R' && toRow === 0) || (piece === 'B' && toRow === 7)) {
+              newBoard[toRow][toCol] = piece.toLowerCase();
+            }
+            
+            // Check for winner (opponent has no pieces left)
+            const redPieces = newBoard.flat().filter((p: string | null) => p === 'R' || p === 'r').length;
+            const blackPieces = newBoard.flat().filter((p: string | null) => p === 'B' || p === 'b').length;
+            
+            let winnerUserId = null;
+            let newStatus = game.status === 'waiting' ? 'in_progress' : undefined;
+            
+            if (blackPieces === 0) {
+              winnerUserId = game.metadata.redPlayer;
+              newStatus = 'finished';
+            } else if (redPieces === 0) {
+              winnerUserId = game.metadata.blackPlayer;
+              newStatus = 'finished';
+            }
+            
             // Switch turns
             const nextTurn = game.metadata.currentTurn === 'red' ? 'black' : 'red';
-            
-            // Update status from 'waiting' to 'in_progress' on first move
-            const newStatus = game.status === 'waiting' ? 'in_progress' : undefined;
             
             handleAction('move', { fromRow, fromCol, toRow, toCol }, newStatus, {
               ...game.metadata,
               board: newBoard,
               currentTurn: nextTurn,
+              winnerUserId,
             });
           }}
           onRematch={handleRematch}

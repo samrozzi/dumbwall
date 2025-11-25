@@ -97,7 +97,8 @@ async function listGames(_req: Request, userId: string): Promise<Response> {
   const url = new URL(_req.url);
   const circleId = url.searchParams.get("circle_id");
 
-  let query = client
+  // Get games where user is a participant
+  let participantQuery = client
     .from("games")
     .select(`
       *,
@@ -109,16 +110,48 @@ async function listGames(_req: Request, userId: string): Promise<Response> {
     .order("updated_at", { ascending: false });
 
   if (circleId) {
-    query = query.eq("circle_id", circleId);
+    participantQuery = participantQuery.eq("circle_id", circleId);
   }
 
-  const { data, error } = await query;
-  if (error) {
-    console.error(error);
-    return json({ error: error.message }, 400);
+  // Get games where user has pending invite
+  let inviteQuery = client
+    .from("game_invites")
+    .select(`
+      game_id,
+      games!inner(*)
+    `)
+    .eq("invited_user_id", userId)
+    .eq("status", "pending");
+
+  if (circleId) {
+    inviteQuery = inviteQuery.eq("games.circle_id", circleId);
   }
 
-  return json({ games: data });
+  const [participantResult, inviteResult] = await Promise.all([
+    participantQuery,
+    inviteQuery
+  ]);
+
+  if (participantResult.error) {
+    console.error(participantResult.error);
+    return json({ error: participantResult.error.message }, 400);
+  }
+
+  // Merge games, avoiding duplicates
+  const allGames = [...(participantResult.data || [])];
+  const gameIds = new Set(allGames.map((g: any) => g.id));
+  
+  for (const invite of (inviteResult.data || [])) {
+    const inviteGame = (invite as any).games;
+    if (inviteGame && !gameIds.has(inviteGame.id)) {
+      allGames.push(inviteGame);
+    }
+  }
+
+  // Sort by updated_at
+  allGames.sort((a: any, b: any) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+
+  return json({ games: allGames });
 }
 
 async function createGame(_req: Request, userId: string, body: any): Promise<Response> {

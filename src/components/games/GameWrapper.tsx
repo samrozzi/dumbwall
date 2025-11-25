@@ -818,7 +818,6 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
           participants={participants}
           onMove={(from, to, promotion) => {
             console.log('♟️ GameWrapper onMove called:', { from, to, promotion, currentFen: game.metadata.fen });
-            const { Chess } = require('chess.js');
             const chess = new Chess(game.metadata.fen);
 
             const move = chess.move({ from, to, promotion });

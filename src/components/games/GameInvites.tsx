@@ -97,6 +97,12 @@ export const GameInvites = () => {
         role: "player",
       });
 
+      // Update game status to in_progress
+      await supabase
+        .from("games")
+        .update({ status: "in_progress" })
+        .eq("id", gameId);
+
       // Update invite status
       await supabase
         .from("game_invites")
@@ -104,7 +110,9 @@ export const GameInvites = () => {
         .eq("id", inviteId);
 
       notify("Joined game!");
-      loadInvites();
+      
+      // Navigate to the game
+      window.location.href = `/circle/${circleId}/games/${gameId}`;
     } catch (error) {
       console.error("Error accepting invite:", error);
       notify("Failed to join game");

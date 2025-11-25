@@ -131,7 +131,7 @@ const GameDetail = () => {
     <div className="h-screen overflow-hidden flex flex-col bg-background">
       <Navigation circleId={circleId} />
 
-      <div className={`${isMobile ? 'px-4' : 'pl-24 pr-8'} py-6 overflow-y-auto flex-1`}>
+      <div className={`${isMobile ? 'px-4 pb-24' : 'pl-24 pr-8'} py-6 overflow-y-auto flex-1`}>
         <div className="max-w-4xl mx-auto space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">

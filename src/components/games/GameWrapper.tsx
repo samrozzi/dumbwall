@@ -50,7 +50,7 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
         switch (game.type) {
           case 'tic_tac_toe':
             // Check if it's computer's turn
-            if (game.metadata.nextTurnUserId !== userId && game.status === 'in_progress') {
+            if (game.metadata.nextTurnUserId === 'computer' && game.status === 'in_progress') {
               const aiMove = getTicTacToeAIMove(
                 game.metadata.board,
                 game.metadata.difficulty || 'medium',
@@ -291,11 +291,10 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
           participants={participants}
           onMove={(row, col) => {
             const newBoard = game.metadata.board.map((r: any[]) => [...r]);
-            const currentPlayer = game.metadata.nextTurnUserId === userId ? 
-              (game.metadata.board.flat().filter((c: any) => c === 'X').length <= game.metadata.board.flat().filter((c: any) => c === 'O').length ? 'X' : 'O') :
-              (game.metadata.board.flat().filter((c: any) => c === 'X').length > game.metadata.board.flat().filter((c: any) => c === 'O').length ? 'X' : 'O');
             
-            newBoard[row][col] = currentPlayer;
+            // Use the stored player symbol
+            const playerSymbol = game.metadata.playerSymbol || 'X';
+            newBoard[row][col] = playerSymbol;
             
             const checkWinner = () => {
               for (let i = 0; i < 3; i++) {
@@ -308,13 +307,21 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
             };
 
             const winner = checkWinner();
-            const allParticipants = participants.filter(p => p.user_id !== userId);
-            const otherPlayer = allParticipants.length > 0 ? allParticipants[0].user_id : userId;
+            
+            // Determine next turn - if computer opponent, set to 'computer', otherwise find other player
+            let nextTurnUserId: string;
+            if (game.metadata.isComputerOpponent) {
+              nextTurnUserId = 'computer';
+            } else {
+              const otherParticipant = participants.find(p => p.user_id !== userId);
+              nextTurnUserId = otherParticipant?.user_id || userId;
+            }
 
             handleAction('move', { row, col }, winner ? 'finished' : undefined, {
               board: newBoard,
-              nextTurnUserId: otherPlayer,
+              nextTurnUserId,
               winnerUserId: winner ? userId : null,
+              ...game.metadata,
             });
           }}
           onRematch={handleRematch}

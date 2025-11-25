@@ -163,6 +163,7 @@ const Games = () => {
   const navigate = useNavigate();
   const [games, setGames] = useState<Game[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isCreating, setIsCreating] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<"all" | GameCategory>("all");
   const [selectedGameDef, setSelectedGameDef] = useState<GameDefinition | null>(null);
@@ -224,6 +225,8 @@ const Games = () => {
   };
 
   const handleCreateGame = async () => {
+    if (isCreating) return; // Prevent double-click
+    
     if (!selectedGameDef || !title.trim()) {
       notify("Please enter a game title");
       return;
@@ -240,6 +243,9 @@ const Games = () => {
       notify("Please enter what you're thinking of");
       return;
     }
+
+    setIsCreating(true);
+    setCreateDialogOpen(false); // Close immediately (optimistic)
 
     try {
       let metadata = {};
@@ -398,11 +404,13 @@ const Games = () => {
       setHangmanHint("");
       setQuestionsSubject("");
       setSelectedGameDef(null);
-      setCreateDialogOpen(false);
       loadGames();
     } catch (error: any) {
       console.error("Error creating game:", error);
       notify(error?.message || "Error creating game. Please try again.");
+      setCreateDialogOpen(true); // Reopen on error
+    } finally {
+      setIsCreating(false);
     }
   };
 

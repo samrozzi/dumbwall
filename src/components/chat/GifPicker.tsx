@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 
 interface GifPickerProps {
   onGifSelect: (gifUrl: string, gifTitle: string) => void;
+  trigger?: React.ReactNode;
 }
 
 interface GiphyGif {
@@ -25,11 +26,10 @@ interface GiphyGif {
   };
 }
 
-// Using Giphy's public beta key - in production, you should use your own API key
-const GIPHY_API_KEY = 'your_giphy_api_key_here';
+const GIPHY_API_KEY = import.meta.env.VITE_GIPHY_API_KEY;
 const GIPHY_ENDPOINT = 'https://api.giphy.com/v1/gifs';
 
-export const GifPicker = ({ onGifSelect }: GifPickerProps) => {
+export const GifPicker = ({ onGifSelect, trigger }: GifPickerProps) => {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [gifs, setGifs] = useState<GiphyGif[]>([]);
@@ -93,9 +93,11 @@ export const GifPicker = ({ onGifSelect }: GifPickerProps) => {
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
-        <Button size="icon" variant="outline" title="Add GIF">
-          <Smile className="w-4 h-4" />
-        </Button>
+        {trigger || (
+          <Button size="icon" variant="outline" title="Add GIF">
+            <Smile className="w-4 h-4" />
+          </Button>
+        )}
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="start">
         <div className="flex flex-col h-[400px]">

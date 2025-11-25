@@ -28,6 +28,7 @@ import { TypingIndicator } from "@/components/chat/TypingIndicator";
 import { SwipeableMessage } from "@/components/chat/SwipeableMessage";
 import { GifPicker } from "@/components/chat/GifPicker";
 import { VoiceRecorder } from "@/components/chat/VoiceRecorder";
+import { AttachmentMenu } from "@/components/chat/AttachmentMenu";
 import { MessageSearch } from "@/components/chat/MessageSearch";
 import { DateSeparator } from "@/components/chat/DateSeparator";
 import { UnreadJumpButton } from "@/components/chat/UnreadJumpButton";
@@ -813,9 +814,10 @@ const Chat = () => {
                 </ScrollArea>
               </div>
             ) : (
-              /* Chat View with Back Button */
-              <div className="flex flex-col h-full border rounded-lg bg-card overflow-hidden">
-                <div className="px-4 py-3 border-b bg-card flex items-center gap-3">
+              /* Chat View - Fixed mobile app layout */
+              <div className="fixed inset-0 top-0 flex flex-col bg-background md:relative md:h-full md:border md:rounded-lg md:overflow-hidden">
+                {/* Fixed Header */}
+                <div className="flex-shrink-0 px-4 py-3 border-b bg-card flex items-center gap-3 safe-area-inset-top">
                   <Button
                     size="icon"
                     variant="ghost"
@@ -823,7 +825,7 @@ const Chat = () => {
                   >
                     <ArrowLeft className="w-5 h-5" />
                   </Button>
-                  <h3 className="text-xl font-bold flex-1">{currentThread?.title}</h3>
+                  <h3 className="text-xl font-bold flex-1 truncate">{currentThread?.title}</h3>
                   <Button
                     size="icon"
                     variant="ghost"
@@ -860,7 +862,8 @@ const Chat = () => {
                   </Dialog>
                 </div>
 
-                <ScrollArea className="flex-1 p-4">
+                {/* Scrollable Messages Area */}
+                <ScrollArea className="flex-1 p-4 overflow-y-auto">
                   {threadPhoto && (
                     <div className="mb-4 rounded-lg overflow-hidden border-2 border-primary bg-black">
                       <img 
@@ -914,7 +917,8 @@ const Chat = () => {
                   <div ref={messagesEndRef} />
                 </ScrollArea>
 
-                <div className="p-4 border-t bg-card">
+                {/* Fixed Input Bar */}
+                <div className="flex-shrink-0 p-4 border-t bg-card safe-area-inset-bottom">
                   {replyingTo && (
                     <ReplyPreview
                       username={replyingTo.profiles?.display_name || replyingTo.profiles?.username || "Unknown"}
@@ -926,65 +930,51 @@ const Chat = () => {
                   {/* Typing Indicators */}
                   <TypingIndicator typingUsers={typingUsers} />
 
-                  <div className="flex gap-2">
-                    <Dialog open={photoDialogOpen} onOpenChange={setPhotoDialogOpen}>
-                      <DialogTrigger asChild>
-                        <Button size="icon" variant="outline">
-                          <Camera className="w-4 h-4" />
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent className="max-w-lg">
-                        <DialogHeader>
-                          <DialogTitle>Share a Photo</DialogTitle>
-                        </DialogHeader>
-                        <ChatPhotoUpload
-                          onPhotoSelected={async (file, caption) => {
-                            if (!user || !threadId) return;
+                  <div className="flex gap-2 items-center">
+                    <AttachmentMenu
+                      onPhotoSelect={async (files) => {
+                        if (!user || !threadId) return;
+                        const file = files[0];
+                        if (!file) return;
 
-                            try {
-                              const fileName = `${threadId}/${user.id}/${Date.now()}.jpg`;
-                              const { data: uploadData, error: uploadError } = await supabase.storage
-                                .from('chat-images')
-                                .upload(fileName, file);
+                        try {
+                          const fileName = `${user.id}/${Date.now()}.jpg`;
+                          const { data: uploadData, error: uploadError } = await supabase.storage
+                            .from('chat-images')
+                            .upload(fileName, file);
 
-                              if (uploadError) throw uploadError;
+                          if (uploadError) throw uploadError;
 
-                              const { data: { publicUrl } } = supabase.storage
-                                .from('chat-images')
-                                .getPublicUrl(fileName);
+                          const { data: { publicUrl } } = supabase.storage
+                            .from('chat-images')
+                            .getPublicUrl(fileName);
 
-                              const { error: messageError } = await supabase
-                                .from('chat_messages')
-                                .insert({
-                                  thread_id: threadId,
-                                  sender_id: user.id,
-                                  body: caption,
-                                  image_url: publicUrl,
-                                  reply_to_id: replyingTo?.id,
-                                });
+                          const { error: messageError } = await supabase
+                            .from('chat_messages')
+                            .insert({
+                              thread_id: threadId,
+                              sender_id: user.id,
+                              body: '',
+                              image_url: publicUrl,
+                              reply_to_id: replyingTo?.id,
+                            });
 
-                              if (messageError) throw messageError;
+                          if (messageError) throw messageError;
 
-                              setPhotoDialogOpen(false);
-                              setReplyingTo(null);
-                              toast.success('Photo sent!');
-                            } catch (error) {
-                              console.error('Error uploading photo:', error);
-                              toast.error('Failed to send photo');
-                            }
-                          }}
-                          onClose={() => setPhotoDialogOpen(false)}
-                        />
-                      </DialogContent>
-                    </Dialog>
-
-                    <VoiceRecorder
-                      onVoiceRecorded={handleVoiceMessage}
-                      threadId={threadId || ''}
-                      userId={user?.id || ''}
+                          setReplyingTo(null);
+                          toast.success('Photo sent!');
+                        } catch (error) {
+                          console.error('Error uploading photo:', error);
+                          toast.error('Failed to send photo');
+                        }
+                      }}
+                      onVoiceStart={() => {
+                        // Voice recording handled by VoiceRecorder component state
+                      }}
+                      onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)}
+                      onGifSelect={handleGifMessage}
+                      disabled={!threadId}
                     />
-
-                    <GifPicker onGifSelect={handleGifMessage} />
 
                     <Input
                       placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
@@ -999,9 +989,10 @@ const Chat = () => {
                           handleSendMessage();
                         }
                       }}
+                      className="flex-1"
                     />
-                    <EmojiPicker onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)} />
-                    <Button onClick={handleSendMessage} size="icon">
+                    
+                    <Button onClick={handleSendMessage} size="icon" disabled={!newMessage.trim()}>
                       <Send className="w-4 h-4" />
                     </Button>
                   </div>
@@ -1232,65 +1223,51 @@ const Chat = () => {
                       {/* Typing Indicators */}
                       <TypingIndicator typingUsers={typingUsers} />
 
-                      <div className="flex gap-2">
-                        <Dialog open={photoDialogOpen} onOpenChange={setPhotoDialogOpen}>
-                          <DialogTrigger asChild>
-                            <Button size="icon" variant="outline">
-                              <Camera className="w-4 h-4" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="max-w-lg">
-                            <DialogHeader>
-                              <DialogTitle>Share a Photo</DialogTitle>
-                            </DialogHeader>
-                            <ChatPhotoUpload
-                              onPhotoSelected={async (file, caption) => {
-                                if (!user || !threadId) return;
+                      <div className="flex gap-2 items-center">
+                        <AttachmentMenu
+                          onPhotoSelect={async (files) => {
+                            if (!user || !threadId) return;
+                            const file = files[0];
+                            if (!file) return;
 
-                                try {
-                                  const fileName = `${threadId}/${user.id}/${Date.now()}.jpg`;
-                                  const { data: uploadData, error: uploadError } = await supabase.storage
-                                    .from('chat-images')
-                                    .upload(fileName, file);
+                            try {
+                              const fileName = `${user.id}/${Date.now()}.jpg`;
+                              const { data: uploadData, error: uploadError } = await supabase.storage
+                                .from('chat-images')
+                                .upload(fileName, file);
 
-                                  if (uploadError) throw uploadError;
+                              if (uploadError) throw uploadError;
 
-                                  const { data: { publicUrl } } = supabase.storage
-                                    .from('chat-images')
-                                    .getPublicUrl(fileName);
+                              const { data: { publicUrl } } = supabase.storage
+                                .from('chat-images')
+                                .getPublicUrl(fileName);
 
-                                  const { error: messageError } = await supabase
-                                    .from('chat_messages')
-                                    .insert({
-                                      thread_id: threadId,
-                                      sender_id: user.id,
-                                      body: caption,
-                                      image_url: publicUrl,
-                                      reply_to_id: replyingTo?.id,
-                                    });
+                              const { error: messageError } = await supabase
+                                .from('chat_messages')
+                                .insert({
+                                  thread_id: threadId,
+                                  sender_id: user.id,
+                                  body: '',
+                                  image_url: publicUrl,
+                                  reply_to_id: replyingTo?.id,
+                                });
 
-                                  if (messageError) throw messageError;
+                              if (messageError) throw messageError;
 
-                                  setPhotoDialogOpen(false);
-                                  setReplyingTo(null);
-                                  toast.success('Photo sent!');
-                                } catch (error) {
-                                  console.error('Error uploading photo:', error);
-                                  toast.error('Failed to send photo');
-                                }
-                              }}
-                              onClose={() => setPhotoDialogOpen(false)}
-                            />
-                          </DialogContent>
-                        </Dialog>
-
-                        <VoiceRecorder
-                          onVoiceRecorded={handleVoiceMessage}
-                          threadId={threadId || ''}
-                          userId={user?.id || ''}
+                              setReplyingTo(null);
+                              toast.success('Photo sent!');
+                            } catch (error) {
+                              console.error('Error uploading photo:', error);
+                              toast.error('Failed to send photo');
+                            }
+                          }}
+                          onVoiceStart={() => {
+                            // Voice recording handled by VoiceRecorder component state
+                          }}
+                          onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)}
+                          onGifSelect={handleGifMessage}
+                          disabled={!threadId}
                         />
-
-                        <GifPicker onGifSelect={handleGifMessage} />
 
                         <Input
                           placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
@@ -1305,9 +1282,10 @@ const Chat = () => {
                               handleSendMessage();
                             }
                           }}
+                          className="flex-1"
                         />
-                        <EmojiPicker onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)} />
-                        <Button onClick={handleSendMessage} size="icon">
+                        
+                        <Button onClick={handleSendMessage} size="icon" disabled={!newMessage.trim()}>
                           <Send className="w-4 h-4" />
                         </Button>
                       </div>

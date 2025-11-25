@@ -170,7 +170,7 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
-        gap: columnCount === 2 ? '0.5rem' : '1rem',
+        gap: columnCount === 2 ? '1rem' : '1rem',
         gridAutoRows: columnCount === 2 ? 'auto' : '10px', // Natural sizing on mobile
         gridAutoFlow: columnCount === 2 ? 'row' : 'dense', // Predictable stacking on mobile
       }}

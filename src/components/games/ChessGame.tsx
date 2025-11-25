@@ -31,24 +31,30 @@ interface ChessGameProps {
 const ChessPiece = ({ type, color }: { type: string; color: 'w' | 'b' }) => {
   const isWhite = color === 'w';
   const baseColor = isWhite ? 'rgba(255, 255, 255, 0.95)' : 'rgba(30, 41, 59, 0.95)';
-  const shadowColor = isWhite ? 'rgba(0, 0, 0, 0.3)' : 'rgba(255, 255, 255, 0.2)';
-  const glowColor = isWhite ? 'rgba(167, 139, 250, 0.4)' : 'rgba(139, 92, 246, 0.4)';
+  const strokeColor = isWhite ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.4)';
+  const glowColor = isWhite ? 'rgba(167, 139, 250, 0.5)' : 'rgba(139, 92, 246, 0.5)';
 
-  // Simplified piece paths
+  // Proper, recognizable chess piece SVG paths
   const paths: Record<string, string> = {
-    'k': 'M12 4l-2 2h4l-2-2zm0 4c-2 0-3 1-3 3v6h6v-6c0-2-1-3-3-3zm-4 10v2h8v-2H8z',
-    'q': 'M12 4l-1 3-2-2-1 3-1-1v4c0 2 1 3 3 3h2c2 0 3-1 3-3V7l-1 1-1-3-2 2-1-3zm-3 11v2h6v-2H9z',
-    'r': 'M8 5h2v2H8V5zm4 0h2v2h-2V5zM8 8h8v5c0 1-1 2-2 2h-4c-1 0-2-1-2-2V8zm-1 9v2h10v-2H7z',
-    'b': 'M12 4c-1 0-2 1-2 2s1 2 2 2 2-1 2-2-1-2-2-2zm0 5c-1 0-2 1-2 2v3h4v-3c0-1-1-2-2-2zm-3 7v2h6v-2H9z',
-    'n': 'M12 4c-2 0-3 2-3 3l1 1v5h4v-5l1-1c0-1-1-3-3-3zm-3 12v2h6v-2H9z',
-    'p': 'M12 6c-1 0-2 1-2 2s1 2 2 2 2-1 2-2-1-2-2-2zm0 6c-1 0-2 1-2 2v1h4v-1c0-1-1-2-2-2zm-2 5v2h4v-2h-4z'
+    // King - Crown with cross on top
+    'k': 'M12 2l-1 2h2l-1-2zm-1 3v1h2V5h-1zm-3 2h8l-1 3v4l1 2v2H7v-2l1-2V10l-1-3zm1 9h6v2H9v-2z',
+    // Queen - Crown with multiple points
+    'q': 'M6 6l1.5 2 1.5-2 1.5 2L12 6l1.5 2 1.5-2 1.5 2L18 6l-1 4v3l1 2v2H6v-2l1-2v-3L6 6zm2 11h8v2H8v-2z',
+    // Rook - Castle tower
+    'r': 'M7 5h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zM7 8h10v5c0 1.5-1 2.5-2.5 2.5h-5C8 15.5 7 14.5 7 13V8zm0 9h10v2H7v-2z',
+    // Bishop - Mitre with circle on top
+    'b': 'M12 3c-.5 0-1 .5-1 1s.5 1 1 1 1-.5 1-1-.5-1-1-1zm-2 3l2 3 2-3 1 5v2l1 2v2H8v-2l1-2v-2l1-5zm-2 12h8v2H8v-2z',
+    // Knight - Horse head
+    'n': 'M14 4c-1 0-2 1-2 2 0 .5.2 1 .5 1.3L11 9c-.5.8-1 1.5-1 2.5V13l1 2v2l1 1H8v-2l1-2v-1.5c0-1.5 1-3 2-4l1.5-2C12 6.3 12 6 12 6c0-.5.5-1 1-1h1c.5 0 1 .5 1 1l-1 2zm-6 14h8v2H8v-2z',
+    // Pawn - Simple rounded figure
+    'p': 'M12 5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-2 5c-.5 0-1 .5-1 1v2c0 1 .5 2 1.5 2h3c1 0 1.5-1 1.5-2v-2c0-.5-.5-1-1-1h-4zm-1 7h6v2H9v-2z'
   };
 
   return (
     <svg viewBox="0 0 24 24" className="w-full h-full drop-shadow-lg">
       <defs>
         <filter id={`glow-${color}-${type}`}>
-          <feGaussianBlur stdDeviation="1" result="coloredBlur"/>
+          <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
           <feMerge>
             <feMergeNode in="coloredBlur"/>
             <feMergeNode in="SourceGraphic"/>
@@ -56,16 +62,18 @@ const ChessPiece = ({ type, color }: { type: string; color: 'w' | 'b' }) => {
         </filter>
         <linearGradient id={`grad-${color}-${type}`} x1="0%" y1="0%" x2="0%" y2="100%">
           <stop offset="0%" style={{ stopColor: baseColor, stopOpacity: 1 }} />
-          <stop offset="100%" style={{ stopColor: isWhite ? 'rgba(226, 232, 240, 0.9)' : 'rgba(15, 23, 42, 0.9)', stopOpacity: 1 }} />
+          <stop offset="100%" style={{ stopColor: isWhite ? 'rgba(226, 232, 240, 0.95)' : 'rgba(15, 23, 42, 0.95)', stopOpacity: 1 }} />
         </linearGradient>
       </defs>
       <path
         d={paths[type.toLowerCase()]}
         fill={`url(#grad-${color}-${type})`}
-        stroke={shadowColor}
-        strokeWidth="0.5"
+        stroke={strokeColor}
+        strokeWidth="0.8"
+        strokeLinejoin="round"
+        strokeLinecap="round"
         filter={`url(#glow-${color}-${type})`}
-        style={{ filter: `drop-shadow(0 2px 4px ${glowColor})` }}
+        style={{ filter: `drop-shadow(0 3px 6px ${glowColor})` }}
       />
     </svg>
   );
@@ -91,6 +99,11 @@ export const ChessGame = ({
     from: string;
     to: string;
   } | null>(null);
+  const [animatingMove, setAnimatingMove] = useState<{
+    from: string;
+    to: string;
+    piece: { type: string; color: 'w' | 'b' };
+  } | null>(null);
 
   const isWhite = metadata.whitePlayer === userId;
   const isBlack = metadata.blackPlayer === userId;
@@ -101,10 +114,55 @@ export const ChessGame = ({
   const winner = metadata.winnerUserId;
   const gameOver = metadata.gameStatus === 'checkmate' || metadata.gameStatus === 'stalemate' || metadata.gameStatus === 'draw';
 
-  // Update chess instance when FEN changes
+  // Update chess instance when FEN changes and trigger animation
   useEffect(() => {
+    const prevFen = chess.fen();
     chess.load(metadata.fen);
-  }, [metadata.fen, chess]);
+    
+    // Detect the move by comparing FENs
+    if (metadata.moveHistory.length > 0 && prevFen !== metadata.fen) {
+      const lastMoveStr = metadata.moveHistory[metadata.moveHistory.length - 1];
+      // Parse algebraic notation to get from/to squares
+      // For simplicity, we'll track the last two positions that changed
+      const prevBoard = new Chess(prevFen);
+      const currBoard = new Chess(metadata.fen);
+      
+      // Find which piece moved by comparing boards
+      let fromSquare = '';
+      let toSquare = '';
+      let movedPiece = null;
+      
+      for (let rank of RANKS) {
+        for (let file of FILES) {
+          const sq = `${file}${rank}` as Square;
+          const prevPiece = prevBoard.get(sq);
+          const currPiece = currBoard.get(sq);
+          
+          if (prevPiece && !currPiece) {
+            fromSquare = sq;
+            movedPiece = prevPiece;
+          } else if (!prevPiece && currPiece && movedPiece && 
+                     currPiece.type === movedPiece.type && 
+                     currPiece.color === movedPiece.color) {
+            toSquare = sq;
+          }
+        }
+      }
+      
+      if (fromSquare && toSquare && movedPiece) {
+        setAnimatingMove({
+          from: fromSquare,
+          to: toSquare,
+          piece: { type: movedPiece.type, color: movedPiece.color }
+        });
+        
+        // Clear animation after it completes
+        setTimeout(() => {
+          setAnimatingMove(null);
+        }, 300);
+      }
+    }
+  }, [metadata.fen, chess, metadata.moveHistory]);
 
   const winnerProfile = winner
     ? participants.find(p => p.user_id === winner)?.profiles
@@ -331,6 +389,27 @@ export const ChessGame = ({
                   const isSelected = selectedSquare === square;
                   const isLegalMove = legalMoves.includes(square);
                   const piece = getPieceAt(square);
+                  
+                  // Check if this square has the animating piece
+                  const isAnimatingFrom = animatingMove?.from === square;
+                  const isAnimatingTo = animatingMove?.to === square;
+                  
+                  // Calculate animation transform
+                  let animationStyle = {};
+                  if (isAnimatingTo && animatingMove) {
+                    const fromFile = FILES.indexOf(animatingMove.from[0]);
+                    const fromRank = RANKS.indexOf(animatingMove.from[1]);
+                    const toFile = fileIdx;
+                    const toRank = rankIdx;
+                    const deltaX = (fromFile - toFile) * 100;
+                    const deltaY = (fromRank - toRank) * 100;
+                    
+                    animationStyle = {
+                      animation: 'slideIn 300ms ease-out',
+                      '--slide-from-x': `${deltaX}%`,
+                      '--slide-from-y': `${deltaY}%`,
+                    } as React.CSSProperties;
+                  }
 
                   return (
                     <button
@@ -352,8 +431,11 @@ export const ChessGame = ({
                         isLegalMove && "ring-2 ring-accent ring-inset shadow-accent/50"
                       )}
                     >
-                      {piece && (
-                        <div className="w-[70%] h-[70%]">
+                      {piece && !isAnimatingFrom && (
+                        <div 
+                          className="w-[85%] h-[85%]" 
+                          style={isAnimatingTo ? animationStyle : {}}
+                        >
                           <ChessPiece type={piece.type} color={piece.color} />
                         </div>
                       )}

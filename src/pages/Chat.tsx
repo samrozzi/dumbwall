@@ -10,7 +10,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import Navigation from "@/components/Navigation";
 import { NotificationCenter } from "@/components/NotificationCenter";
 import { toast } from "sonner";
-import { MessageSquare, Plus, Send, UserPlus, ArrowLeft, Camera, Search as SearchIcon, Sparkles, Mic } from "lucide-react";
+import { MessageSquare, Plus, Send, UserPlus, ArrowLeft, Camera, Search as SearchIcon, Sparkles, Mic, Loader2, Trash2, Pin, X, Image as ImageIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import MemberPicker from "@/components/chat/MemberPicker";
@@ -37,7 +37,7 @@ import { DateSeparator } from "@/components/chat/DateSeparator";
 import { UnreadJumpButton } from "@/components/chat/UnreadJumpButton";
 import { MessageAnimations } from "@/components/chat/MessageAnimations";
 import { isSameDay, parseISO } from "date-fns";
-import { Trash2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 
 interface ChatThread {
@@ -119,9 +119,11 @@ const Chat = () => {
   const [showUnreadButton, setShowUnreadButton] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [editingMessage, setEditingMessage] = useState<ChatMessageType | null>(null);
-  const [deleteThreadDialogOpen, setDeleteThreadDialogOpen] = useState(false);
-  const [threadToDelete, setThreadToDelete] = useState<string | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(false);
+  const [deleteThreadId, setDeleteThreadId] = useState<string | null>(null);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [pinnedThreadIds, setPinnedThreadIds] = useState<Set<string>>(new Set());
+  const [selectedFilter, setSelectedFilter] = useState<"all" | "wall" | "convos">("all");
 
   // Typing indicators
   const { typingUsers, handleTyping, stopTypingIndicator } = useTypingIndicator(threadId, user?.id);
@@ -147,6 +149,7 @@ const Chat = () => {
   useEffect(() => {
     if (circleId && user) {
       loadThreads();
+      loadPinnedThreads();
     }
   }, [circleId, user]);
   
@@ -198,6 +201,19 @@ const Chat = () => {
       loadThreads();
     }
   }, [threadId, isMobile, circleId, user]);
+
+  const loadPinnedThreads = async () => {
+    if (!user) return;
+    
+    const { data, error } = await supabase
+      .from('pinned_threads')
+      .select('thread_id')
+      .eq('user_id', user.id);
+    
+    if (!error && data) {
+      setPinnedThreadIds(new Set(data.map(p => p.thread_id)));
+    }
+  };
 
   const loadThreads = async () => {
     if (!user) return;
@@ -661,6 +677,73 @@ const Chat = () => {
     }
   };
 
+  const handleTogglePin = async (threadId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    const isPinned = pinnedThreadIds.has(threadId);
+    
+    try {
+      if (isPinned) {
+        const { error } = await supabase
+          .from('pinned_threads')
+          .delete()
+          .eq('thread_id', threadId)
+          .eq('user_id', user!.id);
+        
+        if (error) throw error;
+        
+        setPinnedThreadIds(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(threadId);
+          return newSet;
+        });
+        
+        toast.success("Thread unpinned");
+      } else {
+        const { error } = await supabase
+          .from('pinned_threads')
+          .insert({
+            thread_id: threadId,
+            user_id: user!.id
+          });
+        
+        if (error) throw error;
+        
+        setPinnedThreadIds(prev => new Set(prev).add(threadId));
+        toast.success("Thread pinned");
+      }
+    } catch (error) {
+      console.error('Error toggling pin:', error);
+      toast.error("Failed to update pin");
+    }
+  };
+
+  const handleDeleteThread = async (threadId: string) => {
+    try {
+      const { error } = await supabase
+        .from('chat_threads')
+        .delete()
+        .eq('id', threadId);
+
+      if (error) throw error;
+
+      toast.success("Thread deleted successfully");
+      setThreads(threads.filter(t => t.id !== threadId));
+      
+      if (currentThread?.id === threadId) {
+        setCurrentThread(null);
+        setMessages([]);
+        navigate(`/circle/${circleId}/chat`);
+      }
+    } catch (error) {
+      console.error('Error deleting thread:', error);
+      toast.error("Failed to delete thread");
+    } finally {
+      setIsDeleteDialogOpen(false);
+      setDeleteThreadId(null);
+    }
+  };
+
   const handleGifMessage = async (gifUrl: string, gifTitle: string) => {
     if (!currentThread || !user || !threadId) return;
 
@@ -732,27 +815,6 @@ const Chat = () => {
     }
   };
 
-  const handleDeleteThread = async (tId: string) => {
-    if (!user || !window.confirm('Delete this conversation?')) return;
-    
-    try {
-      const { error } = await supabase
-        .from('chat_threads')
-        .delete()
-        .eq('id', tId);
-
-      if (error) throw error;
-
-      if (threadId === tId) {
-        navigate(`/circle/${circleId}/chat`);
-      }
-      loadThreads();
-      toast.success('Conversation deleted');
-    } catch (error: any) {
-      console.error('Error deleting thread:', error);
-      toast.error('Failed to delete conversation');
-    }
-  };
 
   const handleMessageSearch = (threadId: string, messageId: string) => {
     navigate(`/circle/${circleId}/chat?threadId=${threadId}`);
@@ -850,11 +912,26 @@ const Chat = () => {
     toast.success(`Added ${selectedMembers.length} member${selectedMembers.length > 1 ? 's' : ''} to thread`);
   };
 
-  const filteredThreads = threads.filter((thread) => {
-    if (filter === "wall") return thread.linked_wall_item_id !== null;
-    if (filter === "convos") return thread.linked_wall_item_id === null;
-    return true;
-  });
+  const sortedFilteredThreads = useMemo(() => {
+    const filtered = threads.filter((thread) => {
+      if (selectedFilter === "all") return true;
+      if (selectedFilter === "wall") return thread.linked_wall_item_id !== null;
+      if (selectedFilter === "convos") return thread.linked_wall_item_id === null;
+      return true;
+    });
+
+    return filtered.sort((a, b) => {
+      const aIsPinned = pinnedThreadIds.has(a.id);
+      const bIsPinned = pinnedThreadIds.has(b.id);
+      
+      if (aIsPinned && !bIsPinned) return -1;
+      if (!aIsPinned && bIsPinned) return 1;
+      
+      const aTime = a.lastMessageAt || a.updated_at;
+      const bTime = b.lastMessageAt || b.updated_at;
+      return new Date(bTime).getTime() - new Date(aTime).getTime();
+    });
+  }, [threads, selectedFilter, pinnedThreadIds]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -921,11 +998,13 @@ const Chat = () => {
                 
             <ScrollArea className="flex-1 h-0">
                   <div className="space-y-1">
-                    {filteredThreads.map((thread) => (
-                      <div key={thread.id} className="relative group">
+                    {sortedFilteredThreads.map((thread) => {
+                      const isPinned = pinnedThreadIds.has(thread.id);
+                      return (
+                      <div key={thread.id} className="relative group flex items-center gap-2">
                         <button
                           onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
-                          className={`w-full text-left p-3 rounded-lg transition-all hover:bg-card flex items-center gap-3 ${
+                          className={`flex-1 text-left p-3 rounded-lg transition-all hover:bg-card flex items-center gap-3 ${
                             thread.unreadCount > 0 ? 'bg-accent border-l-4 border-primary' : 'bg-card/40'
                           }`}
                         >
@@ -952,20 +1031,31 @@ const Chat = () => {
                           </span>
                         )}
                         </button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setThreadToDelete(thread.id);
-                            setDeleteThreadDialogOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => handleTogglePin(thread.id, e)}
+                          >
+                            <Pin className={cn("h-4 w-4", isPinned ? "text-primary fill-primary" : "text-muted-foreground")} />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteThreadId(thread.id);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </ScrollArea>
               </div>
@@ -1298,11 +1388,13 @@ const Chat = () => {
 
                 <ScrollArea className="flex-1 border rounded-lg bg-card/50 backdrop-blur">
                   <div className="p-2 space-y-2">
-                    {filteredThreads.map((thread) => (
-                      <div key={thread.id} className="relative group">
+                    {sortedFilteredThreads.map((thread) => {
+                      const isPinned = pinnedThreadIds.has(thread.id);
+                      return (
+                      <div key={thread.id} className="relative group flex items-center gap-2">
                         <button
                           onClick={() => navigate(`/circle/${circleId}/chat?threadId=${thread.id}`)}
-                          className={`w-full text-left p-3 rounded-lg transition-all hover:bg-card flex items-center gap-3 ${
+                          className={`flex-1 text-left p-3 rounded-lg transition-all hover:bg-card flex items-center gap-3 ${
                             threadId === thread.id 
                               ? "bg-card shadow-md" 
                               : thread.unreadCount > 0 
@@ -1310,6 +1402,7 @@ const Chat = () => {
                                 : "bg-card/40"
                           }`}
                         >
+                          {isPinned && <Pin className="h-3.5 w-3.5 text-primary fill-primary flex-shrink-0" />}
                           {thread.unreadCount > 0 && (
                             <div className="flex-shrink-0 bg-primary text-primary-foreground text-xs font-bold rounded-full w-6 h-6 flex items-center justify-center">
                               {thread.unreadCount > 9 ? "9+" : thread.unreadCount}
@@ -1329,20 +1422,31 @@ const Chat = () => {
                             </div>
                           </div>
                         </button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setThreadToDelete(thread.id);
-                            setDeleteThreadDialogOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                        <div className="flex gap-1">
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8"
+                            onClick={(e) => handleTogglePin(thread.id, e)}
+                          >
+                            <Pin className={cn("h-4 w-4", isPinned ? "text-primary fill-primary" : "text-muted-foreground")} />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteThreadId(thread.id);
+                              setIsDeleteDialogOpen(true);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4 text-muted-foreground" />
+                          </Button>
+                        </div>
                       </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </ScrollArea>
               </div>
@@ -1619,24 +1723,18 @@ const Chat = () => {
         onComplete={() => setMessageEffect(null)}
       />
 
-      <AlertDialog open={deleteThreadDialogOpen} onOpenChange={setDeleteThreadDialogOpen}>
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Conversation?</AlertDialogTitle>
+            <AlertDialogTitle>Delete Thread?</AlertDialogTitle>
             <AlertDialogDescription>
               This will permanently delete this conversation and all its messages. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setThreadToDelete(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setDeleteThreadId(null)}>Cancel</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                if (threadToDelete) {
-                  handleDeleteThread(threadToDelete);
-                  setThreadToDelete(null);
-                  setDeleteThreadDialogOpen(false);
-                }
-              }}
+              onClick={() => deleteThreadId && handleDeleteThread(deleteThreadId)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete

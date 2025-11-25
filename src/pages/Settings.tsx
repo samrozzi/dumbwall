@@ -622,7 +622,7 @@ const Settings = () => {
   const daysRemaining = getDaysUntilUsernameChange();
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col overflow-hidden">
       <Navigation circleId={circleId} />
 
       <div className={`flex-1 overflow-y-auto ${isMobile ? 'pb-24' : 'pl-24 pr-8'} pt-8 ${isMobile ? 'max-w-full px-4' : 'max-w-5xl'} mx-auto relative`}>
@@ -649,18 +649,6 @@ const Settings = () => {
             {/* Back Button - Mobile: Floating Left, Desktop: Above Profile Card */}
             {circleId && (
               <>
-                {/* Mobile: Floating back button on left edge */}
-                {isMobile && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => navigate(`/circle/${circleId}/people`)}
-                    className="fixed left-2 top-20 z-50 rounded-full bg-primary/90 hover:bg-primary text-primary-foreground shadow-lg backdrop-blur-sm h-12 w-12"
-                    title="Back to My Friends"
-                  >
-                    <ArrowLeft className="h-5 w-5" />
-                  </Button>
-                )}
                 
                 {/* Desktop: Back button left of profile header */}
                 {!isMobile && (

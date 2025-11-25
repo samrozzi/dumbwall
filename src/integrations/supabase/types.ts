@@ -122,6 +122,54 @@ export type Database = {
           },
         ]
       }
+      circle_activities: {
+        Row: {
+          activity_type: string
+          circle_id: string
+          created_at: string
+          id: string
+          metadata: Json | null
+          reference_id: string | null
+          reference_type: string | null
+          user_id: string
+        }
+        Insert: {
+          activity_type: string
+          circle_id: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          reference_id?: string | null
+          reference_type?: string | null
+          user_id: string
+        }
+        Update: {
+          activity_type?: string
+          circle_id?: string
+          created_at?: string
+          id?: string
+          metadata?: Json | null
+          reference_id?: string | null
+          reference_type?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_activities_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circle_activities_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       circle_invites: {
         Row: {
           circle_id: string
@@ -288,6 +336,51 @@ export type Database = {
             columns: ["circle_id"]
             isOneToOne: true
             referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      circle_stories: {
+        Row: {
+          circle_id: string
+          content: Json
+          created_at: string
+          expires_at: string
+          id: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          circle_id: string
+          content?: Json
+          created_at?: string
+          expires_at?: string
+          id?: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          circle_id?: string
+          content?: Json
+          created_at?: string
+          expires_at?: string
+          id?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "circle_stories_circle_id_fkey"
+            columns: ["circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "circle_stories_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -1086,6 +1179,7 @@ export type Database = {
         Args: { circle_uuid: string; user_uuid: string }
         Returns: boolean
       }
+      cleanup_expired_stories: { Args: never; Returns: undefined }
       create_notification: {
         Args: {
           notif_link?: string

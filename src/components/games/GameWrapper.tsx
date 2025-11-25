@@ -232,7 +232,7 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
   const handleAction = async (eventType: string, payload: any, status?: string, metadataPatch?: any) => {
     try {
       await gameAction(gameId, eventType, payload, status, metadataPatch);
-      notify("Action submitted!");
+      // Don't show toast for every action - too noisy
     } catch (error) {
       console.error("Error performing action:", error);
       notify("Error performing action");

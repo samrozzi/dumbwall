@@ -168,12 +168,12 @@ export const MasonryGrid = ({ children, onReorder, itemIds, itemTypes }: Masonry
       ref={containerRef}
       className={cn(
         "pb-24 max-w-full overflow-x-hidden",
-        columnCount === 2 ? "px-4 max-w-[95%] mx-auto" : "px-2"
+        columnCount === 2 ? "px-4" : "px-2"
       )}
       style={{
         display: 'grid',
         gridTemplateColumns: `repeat(${columnCount}, 1fr)`,
-        gap: columnCount === 2 ? '0.75rem' : '1rem',
+        gap: columnCount === 2 ? '0.5rem' : '1rem',
         gridAutoRows: columnCount === 2 ? 'auto' : '10px',
         gridAutoFlow: columnCount === 2 ? 'row' : 'dense',
       }}

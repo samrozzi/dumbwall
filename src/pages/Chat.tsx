@@ -94,6 +94,7 @@ const Chat = () => {
   const [photoDialogOpen, setPhotoDialogOpen] = useState(false);
   const [selectedMembers, setSelectedMembers] = useState<string[]>([]);
   const [replyingTo, setReplyingTo] = useState<ChatMessageType | null>(null);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
   const [sidebarSize, setSidebarSize] = useState<number>(() => {
     const saved = localStorage.getItem('chat-sidebar-width');
     return saved ? parseFloat(saved) : 40;
@@ -814,10 +815,10 @@ const Chat = () => {
                 </ScrollArea>
               </div>
             ) : (
-              /* Chat View - Fixed mobile app layout */
-              <div className="flex flex-col h-[100dvh] bg-background md:relative md:h-full md:border md:rounded-lg md:overflow-hidden">
+              /* Chat View - Fixed mobile layout */
+              <div className="flex flex-col h-screen bg-background md:relative md:h-full md:border md:rounded-lg md:overflow-hidden touch-none overscroll-none">
                 {/* Fixed Header */}
-                <div className="flex-shrink-0 px-4 py-3 border-b bg-card flex items-center gap-3">
+                <div className="flex-shrink-0 px-4 py-3 border-b bg-card flex items-center gap-3 z-10">
                   <Button
                     size="icon"
                     variant="ghost"
@@ -918,7 +919,7 @@ const Chat = () => {
                 </ScrollArea>
 
                 {/* Fixed Input Bar */}
-                <div className="flex-shrink-0 p-4 pb-6 border-t bg-card">
+                <div className="flex-shrink-0 p-4 pb-safe border-t bg-card z-10 md:pb-4">
                   {replyingTo && (
                     <ReplyPreview
                       username={replyingTo.profiles?.display_name || replyingTo.profiles?.username || "Unknown"}
@@ -968,33 +969,41 @@ const Chat = () => {
                           toast.error('Failed to send photo');
                         }
                       }}
-                      onVoiceStart={() => {
-                        // Voice recording handled by VoiceRecorder component state
-                      }}
+                      onVoiceStart={() => setIsRecordingVoice(true)}
                       onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)}
                       onGifSelect={handleGifMessage}
                       disabled={!threadId}
                     />
 
-                    <Input
-                      placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
-                      value={newMessage}
-                      onChange={(e) => {
-                        setNewMessage(e.target.value);
-                        handleTyping();
-                      }}
-                      onKeyPress={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                      className="flex-1"
-                    />
-                    
-                    <Button onClick={handleSendMessage} size="icon" disabled={!newMessage.trim()}>
-                      <Send className="w-4 h-4" />
-                    </Button>
+                    {isRecordingVoice ? (
+                      <VoiceRecorder
+                        threadId={threadId!}
+                        userId={user!.id}
+                        onVoiceRecorded={handleVoiceMessage}
+                      />
+                    ) : (
+                      <>
+                        <Input
+                          placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
+                          value={newMessage}
+                          onChange={(e) => {
+                            setNewMessage(e.target.value);
+                            handleTyping();
+                          }}
+                          onKeyPress={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault();
+                              handleSendMessage();
+                            }
+                          }}
+                          className="flex-1"
+                        />
+                        
+                        <Button onClick={handleSendMessage} size="icon" disabled={!newMessage.trim()}>
+                          <Send className="w-4 h-4" />
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1261,33 +1270,41 @@ const Chat = () => {
                               toast.error('Failed to send photo');
                             }
                           }}
-                          onVoiceStart={() => {
-                            // Voice recording handled by VoiceRecorder component state
-                          }}
+                          onVoiceStart={() => setIsRecordingVoice(true)}
                           onEmojiSelect={(emoji) => setNewMessage(prev => prev + emoji)}
                           onGifSelect={handleGifMessage}
                           disabled={!threadId}
                         />
 
-                        <Input
-                          placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
-                          value={newMessage}
-                          onChange={(e) => {
-                            setNewMessage(e.target.value);
-                            handleTyping();
-                          }}
-                          onKeyPress={(e) => {
-                            if (e.key === "Enter" && !e.shiftKey) {
-                              e.preventDefault();
-                              handleSendMessage();
-                            }
-                          }}
-                          className="flex-1"
-                        />
-                        
-                        <Button onClick={handleSendMessage} size="icon" disabled={!newMessage.trim()}>
-                          <Send className="w-4 h-4" />
-                        </Button>
+                        {isRecordingVoice ? (
+                          <VoiceRecorder
+                            threadId={threadId!}
+                            userId={user!.id}
+                            onVoiceRecorded={handleVoiceMessage}
+                          />
+                        ) : (
+                          <>
+                            <Input
+                              placeholder={replyingTo ? "Type your reply..." : "Type a message..."}
+                              value={newMessage}
+                              onChange={(e) => {
+                                setNewMessage(e.target.value);
+                                handleTyping();
+                              }}
+                              onKeyPress={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault();
+                                  handleSendMessage();
+                                }
+                              }}
+                              className="flex-1"
+                            />
+                            
+                            <Button onClick={handleSendMessage} size="icon" disabled={!newMessage.trim()}>
+                              <Send className="w-4 h-4" />
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </>

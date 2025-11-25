@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Smile, Search, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -26,7 +27,8 @@ interface GiphyGif {
   };
 }
 
-const GIPHY_API_KEY = import.meta.env.VITE_GIPHY_API_KEY;
+// Using public Giphy SDK key - get your own at https://developers.giphy.com/
+const GIPHY_API_KEY = import.meta.env.VITE_GIPHY_API_KEY || 'sXpGFDGZs0Dv1mmNFvYaGUvYwKX0PWIh';
 const GIPHY_ENDPOINT = 'https://api.giphy.com/v1/gifs';
 
 export const GifPicker = ({ onGifSelect, trigger }: GifPickerProps) => {
@@ -34,6 +36,15 @@ export const GifPicker = ({ onGifSelect, trigger }: GifPickerProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [gifs, setGifs] = useState<GiphyGif[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile on mount
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   // Fetch trending GIFs on open
   useEffect(() => {
@@ -90,6 +101,78 @@ export const GifPicker = ({ onGifSelect, trigger }: GifPickerProps) => {
     setSearchQuery('');
   };
 
+  const gifContent = (
+    <div className="flex flex-col h-full">
+      <div className="p-3 border-b flex-shrink-0">
+        <div className="relative">
+          <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search GIFs..."
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            className="pl-8"
+            autoComplete="off"
+            inputMode="search"
+          />
+        </div>
+      </div>
+
+      <ScrollArea className="flex-1">
+        {loading ? (
+          <div className="flex items-center justify-center h-full py-12">
+            <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+          </div>
+        ) : gifs.length === 0 ? (
+          <div className="flex items-center justify-center h-full py-12 text-muted-foreground text-sm">
+            No GIFs found
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-2 p-2">
+            {gifs.map((gif) => (
+              <button
+                key={gif.id}
+                onClick={() => handleGifClick(gif)}
+                className="relative aspect-square rounded-lg overflow-hidden hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary"
+              >
+                <img
+                  src={gif.images.fixed_height_small.url}
+                  alt={gif.title}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </button>
+            ))}
+          </div>
+        )}
+      </ScrollArea>
+
+      <div className="p-2 border-t text-center text-xs text-muted-foreground flex-shrink-0">
+        Powered by GIPHY
+      </div>
+    </div>
+  );
+
+  // Use Sheet on mobile, Popover on desktop
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          {trigger || (
+            <Button size="icon" variant="outline" title="Add GIF">
+              <Smile className="w-4 h-4" />
+            </Button>
+          )}
+        </SheetTrigger>
+        <SheetContent side="bottom" className="h-[70vh] p-0">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Choose a GIF</SheetTitle>
+          </SheetHeader>
+          {gifContent}
+        </SheetContent>
+      </Sheet>
+    );
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -99,53 +182,8 @@ export const GifPicker = ({ onGifSelect, trigger }: GifPickerProps) => {
           </Button>
         )}
       </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="start">
-        <div className="flex flex-col h-[400px]">
-          <div className="p-3 border-b">
-            <div className="relative">
-              <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-              <Input
-                placeholder="Search GIFs..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-                className="pl-8"
-              />
-            </div>
-          </div>
-
-          <ScrollArea className="flex-1">
-            {loading ? (
-              <div className="flex items-center justify-center h-full">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : gifs.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
-                No GIFs found
-              </div>
-            ) : (
-              <div className="grid grid-cols-2 gap-2 p-2">
-                {gifs.map((gif) => (
-                  <button
-                    key={gif.id}
-                    onClick={() => handleGifClick(gif)}
-                    className="relative aspect-square rounded-lg overflow-hidden hover:opacity-80 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    <img
-                      src={gif.images.fixed_height_small.url}
-                      alt={gif.title}
-                      className="w-full h-full object-cover"
-                      loading="lazy"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-          </ScrollArea>
-
-          <div className="p-2 border-t text-center text-xs text-muted-foreground">
-            Powered by GIPHY
-          </div>
-        </div>
+      <PopoverContent className="w-80 p-0 h-[400px]" align="start">
+        {gifContent}
       </PopoverContent>
     </Popover>
   );

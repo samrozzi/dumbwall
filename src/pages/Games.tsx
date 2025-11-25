@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import Navigation from "@/components/Navigation";
-import { NotificationCenter } from "@/components/NotificationCenter";
+import { CircleHeader } from "@/components/CircleHeader";
 import { GameCard } from "@/components/games/GameCard";
 import { GameInvites } from "@/components/games/GameInvites";
 import { QuickPollDialog } from "@/components/games/InstantPlay/QuickPollDialog";
@@ -183,16 +183,11 @@ const Games = () => {
       
       <div className="px-4 sm:pl-24 sm:pr-8 py-8">
         <div className="max-w-7xl mx-auto space-y-6">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-2">
-              <div className="flex items-center gap-3">
-                <Gamepad2 className="w-8 h-8 text-primary" />
-                <h1 className="text-3xl font-bold">Games</h1>
-              </div>
-              
+          <CircleHeader
+            circleId={circleId}
+            pageTitle="Games"
+            actions={
               <div className="flex items-center gap-2">
-                <NotificationCenter />
                 <Button variant="secondary" size="sm" onClick={() => document.getElementById('instant-play')?.scrollIntoView({ behavior: 'smooth' })}>
                   <Zap className="w-4 h-4 mr-2" />
                   Quick Play
@@ -204,61 +199,60 @@ const Games = () => {
                       Create Game
                     </Button>
                   </DialogTrigger>
-              <DialogContent>
-                <DialogHeader>
-                  <DialogTitle>Create New Game</DialogTitle>
-                </DialogHeader>
-                <div className="space-y-4 pt-4">
-                  <div className="space-y-2">
-                    <Label>Game Type</Label>
-                    <Select value={gameType} onValueChange={setGameType}>
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">Classic Games</div>
-                        <SelectItem value="tic_tac_toe">Tic Tac Toe</SelectItem>
-                        <SelectItem value="checkers">Checkers</SelectItem>
-                        <SelectItem value="connect_four">Connect Four</SelectItem>
-                        <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground border-t mt-2 pt-2">Social Games</div>
-                        <SelectItem value="poll">Poll</SelectItem>
-                        <SelectItem value="would_you_rather">Would You Rather</SelectItem>
-                        <SelectItem value="question_of_the_day">Question of the Day</SelectItem>
-                        <SelectItem value="story_chain">Story Chain</SelectItem>
-                        <SelectItem value="rate_this">Rate This</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Create New Game</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4 pt-4">
+                      <div className="space-y-2">
+                        <Label>Game Type</Label>
+                        <Select value={gameType} onValueChange={setGameType}>
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground">Classic Games</div>
+                            <SelectItem value="tic_tac_toe">Tic Tac Toe</SelectItem>
+                            <SelectItem value="checkers">Checkers</SelectItem>
+                            <SelectItem value="connect_four">Connect Four</SelectItem>
+                            <div className="px-2 py-1.5 text-sm font-semibold text-muted-foreground border-t mt-2 pt-2">Social Games</div>
+                            <SelectItem value="poll">Poll</SelectItem>
+                            <SelectItem value="would_you_rather">Would You Rather</SelectItem>
+                            <SelectItem value="question_of_the_day">Question of the Day</SelectItem>
+                            <SelectItem value="story_chain">Story Chain</SelectItem>
+                            <SelectItem value="rate_this">Rate This</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label>Title</Label>
-                    <Input
-                      value={title}
-                      onChange={(e) => setTitle(e.target.value)}
-                      placeholder="Enter game title"
-                    />
-                  </div>
+                      <div className="space-y-2">
+                        <Label>Title</Label>
+                        <Input
+                          value={title}
+                          onChange={(e) => setTitle(e.target.value)}
+                          placeholder="Enter game title"
+                        />
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label>Description (Optional)</Label>
-                    <Textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Add a description"
-                      rows={3}
-                    />
-                  </div>
+                      <div className="space-y-2">
+                        <Label>Description (Optional)</Label>
+                        <Textarea
+                          value={description}
+                          onChange={(e) => setDescription(e.target.value)}
+                          placeholder="Add a description"
+                          rows={3}
+                        />
+                      </div>
 
-                  <Button onClick={handleCreateGame} className="w-full">
-                    Create Game
-                  </Button>
-                </div>
-              </DialogContent>
-            </Dialog>
+                      <Button onClick={handleCreateGame} className="w-full">
+                        Create Game
+                      </Button>
+                    </div>
+                  </DialogContent>
+                </Dialog>
               </div>
-            </div>
-            <p className="text-sm text-muted-foreground">Play with your circle – turns, polls, and more.</p>
-          </div>
+            }
+          />
 
           {/* Game Invites */}
           <GameInvites />

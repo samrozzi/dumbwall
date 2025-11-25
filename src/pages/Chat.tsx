@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import Navigation from "@/components/Navigation";
-import { NotificationCenter } from "@/components/NotificationCenter";
+import { CircleHeader } from "@/components/CircleHeader";
 import { toast } from "sonner";
 import { MessageSquare, Plus, Send, UserPlus, ArrowLeft, Camera, Search as SearchIcon, Sparkles, Mic, Loader2, Trash2, Pin, X, Image as ImageIcon } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -942,11 +942,11 @@ const Chat = () => {
           <>
             {!threadId ? (
               /* Thread List View */
-              <div className="flex flex-col gap-4 h-full">
-                <div className="flex items-center justify-between mb-4 px-4">
-                  <h2 className="text-2xl font-bold">Threads</h2>
-                  <div className="flex items-center gap-2">
-                    <NotificationCenter />
+              <div className="flex flex-col gap-4 h-full px-4">
+                <CircleHeader
+                  circleId={circleId!}
+                  pageTitle="Threads"
+                  actions={
                     <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                       <DialogTrigger asChild>
                         <Button size="sm" variant="default">
@@ -985,8 +985,8 @@ const Chat = () => {
                         </div>
                       </DialogContent>
                     </Dialog>
-                  </div>
-                </div>
+                  }
+                />
                 
                 <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
                   <TabsList className="w-full">
@@ -1333,10 +1333,10 @@ const Chat = () => {
             {/* Threads Sidebar Panel */}
             <ResizablePanel defaultSize={sidebarSize} minSize={25} maxSize={50}>
               <div className="flex flex-col gap-4 h-full pr-2">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-2xl font-bold">Threads</h2>
-                  <div className="flex items-center gap-2">
-                    <NotificationCenter />
+                <CircleHeader
+                  circleId={circleId!}
+                  pageTitle="Threads"
+                  actions={
                     <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                       <DialogTrigger asChild>
                         <Button size="sm" variant="default">
@@ -1375,8 +1375,8 @@ const Chat = () => {
                         </div>
                       </DialogContent>
                     </Dialog>
-                  </div>
-                </div>
+                  }
+                />
 
                 <Tabs value={filter} onValueChange={(v) => setFilter(v as any)}>
                   <TabsList className="w-full">

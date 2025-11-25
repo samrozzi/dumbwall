@@ -622,10 +622,10 @@ const Settings = () => {
   const daysRemaining = getDaysUntilUsernameChange();
 
   return (
-    <div className="min-h-screen bg-background pb-24 md:pb-8">
+    <div className="min-h-screen bg-background flex flex-col">
       <Navigation circleId={circleId} />
 
-      <div className={`${isMobile ? 'pb-24' : 'pl-24 pr-8'} pt-8 ${isMobile ? 'max-w-full px-4' : 'max-w-5xl'} mx-auto relative`}>
+      <div className={`flex-1 overflow-y-auto ${isMobile ? 'pb-24' : 'pl-24 pr-8'} pt-8 ${isMobile ? 'max-w-full px-4' : 'max-w-5xl'} mx-auto relative`}>
         {!isMobile && (
           <div className="absolute top-8 right-8 z-50">
             <NotificationCenter />

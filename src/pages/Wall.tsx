@@ -43,6 +43,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format } from "date-fns";
 
 type WallItemType = Database["public"]["Enums"]["wall_item_type"] | "announcement";
 type WallItemRow = Database["public"]["Tables"]["wall_items"]["Row"];
@@ -817,10 +818,10 @@ const Wall = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background overflow-x-hidden">
+    <div className="min-h-screen bg-background flex flex-col overflow-x-hidden">
       <Navigation circleId={circleId} />
 
-      <div className={`${isMobile ? 'px-2 pt-4 pb-24' : 'pl-24 pr-8 pt-8'}`}>
+      <div className={`flex-1 flex flex-col ${isMobile ? 'px-2 pt-4' : 'pl-24 pr-8 pt-8'}`}>
         {/* Desktop Header */}
         <div className="hidden sm:flex justify-between items-center mb-6">
           <h1 className="text-2xl md:text-3xl font-bold">The Wall</h1>
@@ -891,8 +892,8 @@ const Wall = () => {
         </div>
 
         {viewMode === "wall" && isMobile ? (
-          <ScrollArea className="flex-1 overflow-y-auto pb-20">
-            <div className="flex flex-col gap-4 w-full px-4 py-2">
+          <ScrollArea className="flex-1 h-[calc(100vh-200px)]">
+            <div className="flex flex-col gap-4 w-full px-4 py-2 pb-24">
               {items
                 .filter(item => item.id !== pendingDelete?.id)
                 .sort((a, b) => {
@@ -1045,6 +1046,31 @@ const Wall = () => {
               })}
             </div>
           </ScrollArea>
+        ) : viewMode === "list" && isMobile ? (
+          <ScrollArea className="flex-1 h-[calc(100vh-200px)]">
+            <div className="space-y-2 pb-24">
+              {items.filter(item => item.id !== pendingDelete?.id).map((item) => (
+                <div
+                  key={item.id}
+                  className="p-4 bg-card border border-border rounded-lg flex items-center gap-4 hover:bg-muted/50 cursor-pointer"
+                  onClick={() => {
+                    setSelectedItem(item);
+                    setViewerDialogOpen(true);
+                  }}
+                >
+                  <span className="text-2xl">{getItemIcon(item.type)}</span>
+                  <div className="flex-1">
+                    <h3 className="font-semibold">
+                      {getItemDisplayTitle(item)}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">
+                      {format(new Date(item.created_at), "MMM d, h:mm a")}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
         ) : viewMode === "wall" ? (
           // Desktop canvas view
           <div
@@ -1129,8 +1155,8 @@ const Wall = () => {
                 {renderItem(item)}
               </div>
             ))}
-            </div>
           </div>
+        </div>
         ) : (
           <div className="space-y-2">
             {items.filter(item => item.id !== pendingDelete?.id).map((item) => {

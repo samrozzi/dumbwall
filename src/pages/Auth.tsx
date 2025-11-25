@@ -37,6 +37,17 @@ const Auth = () => {
   const [checkingUsername, setCheckingUsername] = useState(false);
   const navigate = useNavigate();
 
+  // Redirect authenticated users away from auth page
+  useEffect(() => {
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session) {
+        navigate("/circles");
+      }
+    };
+    checkAuth();
+  }, [navigate]);
+
   useEffect(() => {
     if (inviteToken) {
       loadInviteInfo();

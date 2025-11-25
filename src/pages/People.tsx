@@ -60,7 +60,7 @@ const People = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="h-screen bg-background flex flex-col">
       <Navigation circleId={circleId} />
 
       <div className={`flex-1 flex flex-col ${!isMobile ? 'pl-24 pr-8' : 'px-4'} pt-8 min-h-0`}>

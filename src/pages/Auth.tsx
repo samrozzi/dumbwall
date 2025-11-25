@@ -193,7 +193,7 @@ const Auth = () => {
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <Card className="w-full max-w-md p-8 bg-card border-border">
         <div className="flex flex-col items-center justify-center mb-8">
-          <img src={wallLogo} alt="The Wall" className="w-24 h-24 mb-4 object-contain" />
+          <img src={wallLogo} alt="The Wall" className="w-24 h-24 mb-4 object-contain" loading="eager" fetchPriority="high" />
           <h1 className="text-3xl font-bold bg-gradient-to-r from-primary via-secondary to-accent bg-clip-text text-transparent">
             The Wall
           </h1>

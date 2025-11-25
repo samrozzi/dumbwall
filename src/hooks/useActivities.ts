@@ -64,7 +64,7 @@ export const useActivities = (circleId: string, limit: number = 20) => {
         .from("circle_activities")
         .select(`
           *,
-          profiles!user_id(username, display_name, avatar_url)
+          profiles!circle_activities_user_id_fkey(username, display_name, avatar_url)
         `)
         .eq("circle_id", circleId)
         .order("created_at", { ascending: false })

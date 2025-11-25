@@ -1,6 +1,6 @@
 import { StoryAvatar } from "./StoryAvatar";
 import { formatDistanceToNow } from "date-fns";
-import { ChevronRight, Trophy, MessageCircle, Users } from "lucide-react";
+import { ChevronRight, Trophy, MessageCircle, Users, Zap } from "lucide-react";
 import { AudioClip } from "@/components/wall/AudioClip";
 import StickyNote from "@/components/wall/StickyNote";
 import { QuickPoll } from "@/components/wall/QuickPoll";
@@ -179,25 +179,50 @@ export const ActivityCard = ({ activity }: ActivityCardProps) => {
         );
         
       case 'doodle':
-        return (
-          <div className="mt-3">
-            <p className="text-sm text-foreground/70 mb-2">{getActionText()}</p>
-            <div 
-              onClick={() => setSelectedItem({type: 'doodle', content: wallItem.content, itemId: wallItem.id})}
-              className="cursor-pointer hover:opacity-90 transition-opacity"
-            >
-              <div className="bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/20 dark:to-cyan-950/20 border-2 border-teal-200 dark:border-teal-800 rounded-lg p-4 flex items-center justify-center max-h-[280px]">
+          return (
+            <div className="mt-3">
+              <p className="text-sm text-foreground/70 mb-2">{getActionText()}</p>
+              <div 
+                className="bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-950/20 dark:to-cyan-950/20 border-2 border-teal-200 dark:border-teal-800 rounded-lg p-4 flex items-center justify-center max-h-[280px] cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => setSelectedItem({
+                  itemId: wallItem.id,
+                  type: 'doodle',
+                  content: wallItem.content as { imageUrl: string; caption?: string }
+                })}
+              >
                 <img 
-                  src={wallItem.content.imageUrl}
+                  src={(wallItem.content as any).imageUrl} 
                   alt="Doodle"
                   className="max-h-[240px] w-auto object-contain rounded"
                 />
               </div>
+              <ActivityInteractions 
+                wallItemId={wallItem.id}
+                currentUserId={currentUserId || undefined}
+              />
             </div>
-            <ActivityInteractions 
-              wallItemId={wallItem.id}
-              currentUserId={currentUserId || undefined}
-            />
+          );
+          
+      case 'challenge':
+        return (
+          <div className="mt-3">
+            <p className="text-sm text-foreground/70 mb-2">{getActionText()}</p>
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20 border-2 border-purple-200 dark:border-purple-800 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Zap className="w-5 h-5 text-purple-500" />
+                <span className="text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase">
+                  {(wallItem.content as any).category || 'Challenge'}
+                </span>
+              </div>
+              <p className="text-sm font-medium">
+                {(wallItem.content as any).prompt}
+              </p>
+              {(wallItem.content as any).responses && (wallItem.content as any).responses.length > 0 && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  {(wallItem.content as any).responses.length} {(wallItem.content as any).responses.length === 1 ? 'response' : 'responses'}
+                </p>
+              )}
+            </div>
           </div>
         );
         

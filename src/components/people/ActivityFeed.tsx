@@ -3,15 +3,43 @@ import { ActivityCard } from "./ActivityCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ActivityFeedProps {
   circleId: string;
 }
 
 export const ActivityFeed = ({ circleId }: ActivityFeedProps) => {
-  const { activities, loading, hasMore, loadMore } = useActivities(circleId);
+  const { activities, loading, hasMore, loadMore, refresh } = useActivities(circleId);
 
   console.log("ActivityFeed - activities count:", activities.length, activities);
+
+  // Add realtime subscription for wall_items changes
+  useEffect(() => {
+    if (!circleId) return;
+
+    const channel = supabase
+      .channel(`activity_wall_items_${circleId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "wall_items",
+          filter: `circle_id=eq.${circleId}`,
+        },
+        () => {
+          console.log("🔄 Wall item changed - refreshing activity feed");
+          refresh();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [circleId, refresh]);
 
   if (loading && activities.length === 0) {
     return (

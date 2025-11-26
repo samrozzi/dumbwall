@@ -5,10 +5,25 @@ import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// Get allowed origins from environment variable or use defaults
+const allowedOrigins = Deno.env.get("ALLOWED_ORIGINS")?.split(',') || [
+  'http://localhost:8080',
+  'http://localhost:5173',
+  'https://lovable.dev',
+  // Add your production domain here
+];
+
+const getCorsHeaders = (origin: string | null) => {
+  const isAllowed = origin && allowedOrigins.some(allowed => origin.includes(allowed));
+  return {
+    'Access-Control-Allow-Origin': isAllowed ? origin : allowedOrigins[0],
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Max-Age': '86400',
+  };
 };
+
+const corsHeaders = getCorsHeaders(null); // Default headers for preflight
 
 const client = createClient(supabaseUrl, supabaseServiceRoleKey, {
   auth: { persistSession: false },
@@ -24,9 +39,12 @@ async function getUser(req: Request) {
 }
 
 serve(async (req: Request) => {
+  const origin = req.headers.get('Origin');
+  const headers = getCorsHeaders(origin);
+
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response(null, { headers });
   }
 
   try {
@@ -36,7 +54,7 @@ serve(async (req: Request) => {
 
     const user = await getUser(req);
     if (!user) {
-      return json({ error: "Unauthorized" }, 401);
+      return json({ error: "Unauthorized" }, 401, origin);
     }
 
     // Helper: parse JSON body
@@ -63,7 +81,7 @@ serve(async (req: Request) => {
     const subPath = parts[1];
 
     if (!gameId) {
-      return json({ error: "Not found" }, 404);
+      return json({ error: "Not found" }, 404, origin);
     }
 
     // GET /games/:id
@@ -82,10 +100,10 @@ serve(async (req: Request) => {
       return await gameAction(req, user.id, gameId, body);
     }
 
-    return json({ error: "Not found" }, 404);
+    return json({ error: "Not found" }, 404, origin);
   } catch (err) {
     console.error("Games function error:", err);
-    return json({ error: "Server error" }, 500);
+    return json({ error: "Server error" }, 500, origin);
   }
 });
 
@@ -357,11 +375,11 @@ async function gameAction(
 // Helper for JSON responses
 // ============================================================================
 
-function json(body: unknown, status = 200): Response {
+function json(body: unknown, status = 200, origin: string | null = null): Response {
   return new Response(JSON.stringify(body), {
     status,
     headers: {
-      ...corsHeaders,
+      ...getCorsHeaders(origin),
       "Content-Type": "application/json",
     },
   });

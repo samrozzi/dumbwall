@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "sonner";
-import { Upload, LogOut, Trash2, Users, Plus, AlertTriangle, Settings2, Eye, ArrowLeft, User } from "lucide-react";
+import { Upload, LogOut, Trash2, Users, Plus, AlertTriangle, Settings2, Eye, ArrowLeft, User, Star } from "lucide-react";
 import { CircleSettingsDialog } from "@/components/CircleSettingsDialog";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ProfileHeader } from "@/components/profile/ProfileHeader";
@@ -49,6 +49,7 @@ interface UserProfile {
   pronouns_public: boolean;
   interests_public: boolean;
   social_links_public: boolean;
+  favorite_circle_id: string | null;
 }
 
 interface UserCircle {
@@ -95,6 +96,7 @@ const Settings = () => {
   const [settingsCircleId, setSettingsCircleId] = useState<string | null>(null);
   const [settingsCircleName, setSettingsCircleName] = useState("");
   const [circleSettings, setCircleSettings] = useState<Record<string, 'anyone' | 'owner_only'>>({});
+  const [favoriteCircleId, setFavoriteCircleId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) {
@@ -131,6 +133,7 @@ const Settings = () => {
     setPronouns(data.pronouns || "");
     setStatus(data.status_mode || "auto");
     setShowPresence(data.show_presence ?? true);
+    setFavoriteCircleId(data.favorite_circle_id || null);
 
     // Load interests
     const { data: interestsData } = await supabase
@@ -596,6 +599,28 @@ const Settings = () => {
     }
   };
 
+  const handleToggleFavorite = async (circleId: string) => {
+    if (!user) return;
+
+    try {
+      // If this circle is already favorited, unfavorite it
+      // Otherwise, set it as favorite (which will automatically unset any other favorite)
+      const newFavoriteId = favoriteCircleId === circleId ? null : circleId;
+
+      const { error } = await supabase
+        .from("profiles")
+        .update({ favorite_circle_id: newFavoriteId })
+        .eq("id", user.id);
+
+      if (error) throw error;
+
+      setFavoriteCircleId(newFavoriteId);
+      toast.success(newFavoriteId ? "Circle set as favorite!" : "Favorite removed");
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  };
+
   const handlePasswordReset = async () => {
     if (!userEmail) return;
 
@@ -941,20 +966,41 @@ const Settings = () => {
                     }`}
                   >
                     <div className="flex flex-wrap gap-2 items-center justify-between sm:flex-nowrap">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <h3 className="font-semibold text-lg">{circle.name}</h3>
-                          {circle.isActive && (
-                            <Badge variant="default">Active</Badge>
-                          )}
-                          <Badge variant="outline">
-                            {circle.role === "owner" ? "Owner" : "Member"}
-                          </Badge>
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleToggleFavorite(circle.id)}
+                          className={`flex-shrink-0 ${
+                            favoriteCircleId === circle.id
+                              ? "text-yellow-500 hover:text-yellow-600"
+                              : "text-muted-foreground hover:text-yellow-500"
+                          }`}
+                          title={favoriteCircleId === circle.id ? "Remove from favorites" : "Set as favorite circle"}
+                        >
+                          <Star
+                            className="w-5 h-5"
+                            fill={favoriteCircleId === circle.id ? "currentColor" : "none"}
+                          />
+                        </Button>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <h3 className="font-semibold text-lg">{circle.name}</h3>
+                            {circle.isActive && (
+                              <Badge variant="default">Active</Badge>
+                            )}
+                            {favoriteCircleId === circle.id && (
+                              <Badge variant="outline" className="border-yellow-500 text-yellow-500">Favorite</Badge>
+                            )}
+                            <Badge variant="outline">
+                              {circle.role === "owner" ? "Owner" : "Member"}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-1">
+                            <Users className="w-3 h-3 inline mr-1" />
+                            {circle.memberCount} {circle.memberCount === 1 ? "member" : "members"}
+                          </p>
                         </div>
-                        <p className="text-sm text-muted-foreground mt-1">
-                          <Users className="w-3 h-3 inline mr-1" />
-                          {circle.memberCount} {circle.memberCount === 1 ? "member" : "members"}
-                        </p>
                       </div>
                       <div className="flex flex-wrap gap-2 sm:justify-end w-full sm:w-auto">
                         {!circle.isActive && (

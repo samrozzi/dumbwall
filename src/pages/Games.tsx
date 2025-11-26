@@ -478,10 +478,11 @@ const Games = () => {
         <div className="max-w-7xl mx-auto space-y-8">
           {/* Header */}
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h1 className="text-3xl font-bold">Games</h1>
-              <div className="flex items-center gap-2">
-                <NotificationCenter />
+            <CircleHeader
+              circleId={circleId!}
+              pageTitle="Games"
+              onAddMember={() => {}}
+              actions={
                 <Button
                   size="sm"
                   onClick={() => document.getElementById('category-games')?.scrollIntoView({ behavior: 'smooth' })}
@@ -489,8 +490,8 @@ const Games = () => {
                   <Plus className="w-4 h-4 mr-2" />
                   New Game
                 </Button>
-              </div>
-            </div>
+              }
+            />
 
             {/* Category Tabs */}
             <Tabs value={selectedCategory} onValueChange={(v) => setSelectedCategory(v as any)}>

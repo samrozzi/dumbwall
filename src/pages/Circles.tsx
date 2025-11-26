@@ -55,9 +55,48 @@ const Circles = () => {
       navigate("/auth");
       return;
     }
-    loadCircles();
-    loadPendingInvites();
+    checkFavoriteCircle();
   }, [user, navigate]);
+
+  const checkFavoriteCircle = async () => {
+    if (!user) return;
+
+    try {
+      // Load user's favorite circle
+      const { data: profileData, error: profileError } = await supabase
+        .from("profiles")
+        .select("favorite_circle_id")
+        .eq("id", user.id)
+        .single();
+
+      if (profileError) throw profileError;
+
+      // If user has a favorite circle, check if they're still a member
+      if (profileData?.favorite_circle_id) {
+        const { data: memberData, error: memberError } = await supabase
+          .from("circle_members")
+          .select("circle_id")
+          .eq("user_id", user.id)
+          .eq("circle_id", profileData.favorite_circle_id)
+          .single();
+
+        // If they're still a member of the favorite circle, auto-redirect
+        if (!memberError && memberData) {
+          navigate(`/circle/${profileData.favorite_circle_id}/wall`);
+          return;
+        }
+      }
+
+      // No favorite or not a member anymore - show circle selector
+      loadCircles();
+      loadPendingInvites();
+    } catch (error: any) {
+      console.error("Error checking favorite circle:", error);
+      // On error, just load circles normally
+      loadCircles();
+      loadPendingInvites();
+    }
+  };
 
   const loadCircles = async () => {
     try {

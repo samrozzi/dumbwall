@@ -280,6 +280,7 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
                     fen: newFen,
                     currentTurn: 'white',
                     moveHistory: newMoveHistory,
+                    lastMove: { from: move.from, to: move.to },
                     gameStatus,
                     winnerUserId,
                   });

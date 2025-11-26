@@ -561,9 +561,11 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
               winnerUserId: winner ? userId : null,
             });
           }}
-            onRematch={handleRematch}
-            isFinished={game.status === 'finished'}
-            isCreatingRematch={isCreatingRematch}
+          onRematch={handleRematch}
+          onForfeit={() => handleAction('forfeit', {}, 'cancelled')}
+          isFinished={game.status === 'finished'}
+          isCreatingRematch={isCreatingRematch}
+          canForfeit={true}
         />
       );
 

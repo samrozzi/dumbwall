@@ -47,6 +47,7 @@ const GameDetail = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [game, setGame] = useState<Game | null>(null);
+  const [participants, setParticipants] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [showInviteDialog, setShowInviteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -66,6 +67,7 @@ const GameDetail = () => {
       setLoading(true);
       const data = await getGame(gameId!);
       setGame(data.game);
+      setParticipants(data.participants || []);
     } catch (error) {
       console.error("Error loading game:", error);
       notify("Error loading game");
@@ -163,14 +165,17 @@ const GameDetail = () => {
           {/* Action buttons */}
           {game.status === "waiting" && (
             <div className="flex items-center gap-2">
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setShowInviteDialog(true)}
-              >
-                <UserPlus className="w-4 h-4 mr-2" />
-                Invite Player
-              </Button>
+              {/* Only show invite button if not a computer game and not full */}
+              {!game.metadata?.isComputerOpponent && participants.length < 2 && (
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setShowInviteDialog(true)}
+                >
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  Invite Player
+                </Button>
+              )}
               {game.created_by === user.id && (
                 <Button
                   variant="destructive"
@@ -186,7 +191,7 @@ const GameDetail = () => {
           )}
 
           {/* Forfeit button for active games */}
-          {game.status === "in_progress" && game.created_by === user.id && (
+          {(game.status === "in_progress" || game.status === "waiting") && participants.some(p => p.user_id === user.id) && (
             <div className="flex items-center gap-2">
               <Button
                 variant="destructive"

@@ -18,8 +18,10 @@ interface TicTacToeGameProps {
   }>;
   onMove: (row: number, col: number) => void;
   onRematch: () => void;
+  onForfeit?: () => void;
   isFinished: boolean;
   isCreatingRematch?: boolean;
+  canForfeit?: boolean;
 }
 
 export const TicTacToeGame = ({
@@ -29,8 +31,10 @@ export const TicTacToeGame = ({
   participants,
   onMove,
   onRematch,
+  onForfeit,
   isFinished,
   isCreatingRematch,
+  canForfeit,
 }: TicTacToeGameProps) => {
   const isMyTurn = metadata.nextTurnUserId === userId;
   const winner = metadata.winnerUserId;
@@ -105,11 +109,24 @@ export const TicTacToeGame = ({
           )}
         </div>
         
-        {(isFinished || isDraw) && (
-          <Button onClick={onRematch} className="w-full" disabled={isCreatingRematch}>
-            {isCreatingRematch ? "Creating..." : "Rematch"}
-          </Button>
-        )}
+        <div className="flex flex-col gap-2">
+          {(isFinished || isDraw) && (
+            <Button onClick={onRematch} className="w-full" disabled={isCreatingRematch}>
+              {isCreatingRematch ? "Creating..." : "Rematch"}
+            </Button>
+          )}
+          
+          {!isFinished && !isDraw && canForfeit && onForfeit && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={onForfeit}
+              className="w-full"
+            >
+              Forfeit Game
+            </Button>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

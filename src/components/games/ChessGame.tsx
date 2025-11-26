@@ -29,57 +29,54 @@ interface ChessGameProps {
 
 // Minimal chess piece SVG component matching reference design
 const ChessPiece = ({ type, color }: { type: string; color: 'w' | 'b' }) => {
-  // Minimal rounded Staunton-like silhouettes
-  const pieces: Record<string, JSX.Element> = {
-    'k': ( // King - crown with cross
-      <svg viewBox="0 0 45 45" className="piece-svg">
-        <path d="M22.5 11.63V6M20 8h5M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5zM11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10V37z" />
-      </svg>
-    ),
-    'q': ( // Queen - crown with multiple points
-      <svg viewBox="0 0 45 45" className="piece-svg">
-        <path d="M9 26c2.5-2.5 4-4 6.5-5.5 2.5-1.5 3.5 1 5.5 1s3-2.5 5.5-1c2.5 1.5 4 3 6.5 5.5 2.5 2.5 2.5 4 2.5 7.5V38H6.5v-4.5c0-3.5 0-5 2.5-7.5z" />
-        <circle cx="9" cy="26" r="2" />
-        <circle cx="15" cy="20" r="2" />
-        <circle cx="22.5" cy="18" r="2" />
-        <circle cx="30" cy="20" r="2" />
-        <circle cx="36" cy="26" r="2" />
-      </svg>
-    ),
-    'r': ( // Rook - castle tower
-      <svg viewBox="0 0 45 45" className="piece-svg">
-        <path d="M9 39h27v-3H9v3zM12 36v-4h21v4H12zM11 14V9h4v2h5V9h5v2h5V9h4v5H11z" />
-        <path d="M34 14l-3 3H14l-3-3v-3h23v3z" />
-        <path d="M31 17v12.5H14V17h17z" />
-        <path d="M13 29.5h19V32H13v-2.5z" />
-      </svg>
-    ),
-    'b': ( // Bishop - mitre with rounded top
-      <svg viewBox="0 0 45 45" className="piece-svg">
-        <path d="M22.5 9c-2 0-3.5 1.5-3.5 3.5s1.5 3.5 3.5 3.5 3.5-1.5 3.5-3.5S24.5 9 22.5 9z" />
-        <path d="M22.5 16c-2 2-8 8-8 13 0 3 1.5 5 4 6h8c2.5-1 4-3 4-6 0-5-6-11-8-13z" />
-        <path d="M12 35.5h21v2.5H12v-2.5z" />
-      </svg>
-    ),
-    'n': ( // Knight - horse head profile
-      <svg viewBox="0 0 45 45" className="piece-svg">
-        <path d="M22 10c-2 0-4 2-5 4-1 2-1 4-1 6v3c0 3 2 5 4 6l-2 8h4l2-8c3-1 5-3 5-6v-3c0-2 0-4-1-6-1-2-3-4-6-4z" />
-        <circle cx="25" cy="15" r="1.5" />
-        <path d="M11 36c3 1 8 2 14 2s11-1 14-2c0-2-4-4-14-4s-14 2-14 4z" />
-      </svg>
-    ),
-    'p': ( // Pawn - simple rounded figure
-      <svg viewBox="0 0 45 45" className="piece-svg">
-        <circle cx="22.5" cy="12" r="4.5" />
-        <path d="M22.5 17c-3 0-5 2-5 5v5c0 2 1.5 3.5 3.5 3.5h3c2 0 3.5-1.5 3.5-3.5v-5c0-3-2-5-5-5z" />
-        <path d="M13 32h19v4H13v-4z" />
-      </svg>
-    )
+  const sideClass = color === 'w' ? 'white' : 'black';
+  
+  const getPieceSvg = (pieceType: string) => {
+    switch (pieceType.toLowerCase()) {
+      case 'p':
+        return (
+          <svg viewBox="0 0 45 45" className="w-full h-full">
+            <path d="M 22.5 9 C 19.5 9 17 11.5 17 14.5 C 17 16.5 18 18 19.5 19 C 18.5 19.5 18 20.5 18 21.5 L 18 23 C 18 24 18.5 25 19.5 25.5 L 19.5 31 C 19.5 32 20 33 21 33 L 24 33 C 25 33 25.5 32 25.5 31 L 25.5 25.5 C 26.5 25 27 24 27 23 L 27 21.5 C 27 20.5 26.5 19.5 25.5 19 C 27 18 28 16.5 28 14.5 C 28 11.5 25.5 9 22.5 9 Z M 18 33 C 17 33.5 16 34 16 35 L 16 36 C 16 36.5 16.5 37 17 37 L 28 37 C 28.5 37 29 36.5 29 36 L 29 35 C 29 34 28 33.5 27 33 L 18 33 Z" />
+          </svg>
+        );
+      case 'r':
+        return (
+          <svg viewBox="0 0 45 45" className="w-full h-full">
+            <path d="M 11 36 C 11 36 15 35 15 34 L 15 14 C 15 14 15 13 16 13 L 17 13 L 17 11 L 18 11 L 18 13 L 20 13 L 20 11 L 21 11 L 21 13 L 24 13 L 24 11 L 25 11 L 25 13 L 27 13 L 27 11 L 28 11 L 28 13 L 29 13 C 30 13 30 14 30 14 L 30 34 C 30 35 34 36 34 36 L 34 37 L 11 37 L 11 36 Z M 17 34 L 28 34 L 28 16 L 17 16 L 17 34 Z" />
+          </svg>
+        );
+      case 'n':
+        return (
+          <svg viewBox="0 0 45 45" className="w-full h-full">
+            <path d="M 22 10 C 19 10 17 11 15 13 C 14 14 13 16 13 18 C 13 20 14 22 15 23 L 13 25 C 12 26 11 28 12 30 C 13 32 15 33 17 32 L 20 29 C 21 30 22 30.5 24 30.5 C 26 30.5 28 30 29 29 C 31 28 32 26 32 24 C 32 22 31 20 30 19 L 28 17 C 28 15 27 13 25 12 C 24 11 23 10 22 10 Z M 15 32 C 14 32.5 13 33.5 13 35 L 13 36 C 13 36.5 13.5 37 14 37 L 31 37 C 31.5 37 32 36.5 32 36 L 32 35 C 32 33.5 31 32.5 30 32 L 15 32 Z" />
+          </svg>
+        );
+      case 'b':
+        return (
+          <svg viewBox="0 0 45 45" className="w-full h-full">
+            <path d="M 22.5 8 C 20.5 8 19 9.5 19 11.5 C 19 12.5 19.5 13.5 20 14 L 19 15 C 17.5 15.5 16 17 16 19 L 16 31 C 16 32.5 17 33.5 18 34 L 27 34 C 28 33.5 29 32.5 29 31 L 29 19 C 29 17 27.5 15.5 26 15 L 25 14 C 25.5 13.5 26 12.5 26 11.5 C 26 9.5 24.5 8 22.5 8 Z M 18 34 C 17 34.5 16 35 16 36 L 16 36.5 C 16 37 16.5 37.5 17 37.5 L 28 37.5 C 28.5 37.5 29 37 29 36.5 L 29 36 C 29 35 28 34.5 27 34 L 18 34 Z" />
+          </svg>
+        );
+      case 'q':
+        return (
+          <svg viewBox="0 0 45 45" className="w-full h-full">
+            <path d="M 9 26 C 9 26 11 25 11.5 23 L 11.5 15 C 11 14 9.5 12 9.5 10.5 C 9.5 9 10.5 8 12 8 C 13.5 8 14.5 9 14.5 10.5 C 14.5 11.5 14 12.5 13.5 13.5 L 15 15 L 17 13.5 C 16.5 12.5 16 11.5 16 10.5 C 16 9 17 8 18.5 8 C 20 8 21 9 21 10.5 C 21 11.5 20.5 12.5 20 13.5 L 22.5 15.5 L 25 13.5 C 24.5 12.5 24 11.5 24 10.5 C 24 9 25 8 26.5 8 C 28 8 29 9 29 10.5 C 29 11.5 28.5 12.5 28 13.5 L 30 15 L 31.5 13.5 C 31 12.5 30.5 11.5 30.5 10.5 C 30.5 9 31.5 8 33 8 C 34.5 8 35.5 9 35.5 10.5 C 35.5 12 34 14 33.5 15 L 33.5 23 C 34 25 36 26 36 26 L 36 27 C 36 28 35 29 34 29.5 L 33 31 C 32.5 32 31.5 33 30 33 L 15 33 C 13.5 33 12.5 32 12 31 L 11 29.5 C 10 29 9 28 9 27 L 9 26 Z M 13 33 C 12 33.5 11 34.5 11 36 L 11 36.5 C 11 37 11.5 37.5 12 37.5 L 33 37.5 C 33.5 37.5 34 37 34 36.5 L 34 36 C 34 34.5 33 33.5 32 33 L 13 33 Z" />
+          </svg>
+        );
+      case 'k':
+        return (
+          <svg viewBox="0 0 45 45" className="w-full h-full">
+            <path d="M 20.5 6 L 20.5 8 L 18.5 8 L 18.5 10 L 20.5 10 L 20.5 12 L 24.5 12 L 24.5 10 L 26.5 10 L 26.5 8 L 24.5 8 L 24.5 6 L 20.5 6 Z M 22.5 13 C 20 13 18 15 18 17.5 C 18 19 18.5 20.5 19.5 21.5 L 18 23 C 17 24 16 26 16 28 L 16 30 C 16 31.5 17 32.5 18 33 L 27 33 C 28 32.5 29 31.5 29 30 L 29 28 C 29 26 28 24 27 23 L 25.5 21.5 C 26.5 20.5 27 19 27 17.5 C 27 15 25 13 22.5 13 Z M 16 33 C 15 33.5 14 34.5 14 36 L 14 36.5 C 14 37 14.5 37.5 15 37.5 L 30 37.5 C 30.5 37.5 31 37 31 36.5 L 31 36 C 31 34.5 30 33.5 29 33 L 16 33 Z" />
+          </svg>
+        );
+      default:
+        return null;
+    }
   };
 
   return (
-    <div className={`chess-piece ${color === 'w' ? 'white' : 'black'}`}>
-      {pieces[type.toLowerCase()]}
+    <div className={`chess-piece ${sideClass}`}>
+      {getPieceSvg(type)}
     </div>
   );
 };
@@ -444,12 +441,12 @@ export const ChessGame = ({
                       
                       {/* Chess piece */}
                       {piece && !isAnimatingFrom && (
-                        <div 
-                          className="absolute inset-[8%]" 
-                          style={isAnimatingTo ? animationStyle : {}}
-                        >
-                          <ChessPiece type={piece.type} color={piece.color} />
-                        </div>
+                    <div 
+                      className="absolute inset-[8%] pointer-events-none" 
+                      style={isAnimatingTo ? animationStyle : {}}
+                    >
+                      <ChessPiece type={piece.type} color={piece.color} />
+                    </div>
                       )}
                       
                       {/* Coordinate labels */}

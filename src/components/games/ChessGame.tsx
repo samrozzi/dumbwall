@@ -4,7 +4,7 @@ import { ChessMetadata } from "@/types/games";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Chess, Square } from "chess.js";
 import { cn } from "@/lib/utils";
 
@@ -48,7 +48,14 @@ const ChessPiece = ({ type, color }: { type: string; color: 'w' | 'b' }) => {
       case 'n':
         return (
           <svg viewBox="0 0 45 45" className="w-full h-full">
-            <path d="M 22 10 C 19 10 17 11 15 13 C 14 14 13 16 13 18 C 13 20 14 22 15 23 L 13 25 C 12 26 11 28 12 30 C 13 32 15 33 17 32 L 20 29 C 21 30 22 30.5 24 30.5 C 26 30.5 28 30 29 29 C 31 28 32 26 32 24 C 32 22 31 20 30 19 L 28 17 C 28 15 27 13 25 12 C 24 11 23 10 22 10 Z M 15 32 C 14 32.5 13 33.5 13 35 L 13 36 C 13 36.5 13.5 37 14 37 L 31 37 C 31.5 37 32 36.5 32 36 L 32 35 C 32 33.5 31 32.5 30 32 L 15 32 Z" />
+            <g>
+              {/* Horse head shape */}
+              <path d="M 22 10 C 32.5 11 38.5 18 38 39 L 15 39 C 15 30 25 32.5 23 18" />
+              {/* Horse ear and mane */}
+              <path d="M 24 18 C 24.38 20.91 18.45 25.37 16 27 C 13 29 13.18 31.34 11 31 C 9.958 30.06 12.41 27.96 11 28 C 10 28 11.19 29.23 10 30 C 9 30 5.997 31 6 26 C 6 24 12 14 12 14 C 12 14 13.89 12.1 14 10.5 C 13.27 9.506 13.5 8.5 13.5 7.5 C 14.5 6.5 16.5 10 16.5 10 L 18.5 10 C 18.5 10 19.28 8.008 21 7 C 22 7 22 10 22 10" />
+              {/* Horse eye */}
+              <circle cx="16" cy="18" r="1.5" />
+            </g>
           </svg>
         );
       case 'b':
@@ -106,6 +113,7 @@ export const ChessGame = ({
     to: string;
     piece: { type: string; color: 'w' | 'b' };
   } | null>(null);
+  const lastAnimatedMoveRef = useRef<string | null>(null);
 
   const isWhite = metadata.whitePlayer === userId;
   const isBlack = metadata.blackPlayer === userId;
@@ -120,20 +128,26 @@ export const ChessGame = ({
   useEffect(() => {
     chess.load(metadata.fen);
     
-    // Use lastMove from metadata for instant animation feedback
+    // Only animate if this is a NEW move we haven't animated yet
     if (metadata.lastMove) {
-      const piece = chess.get(metadata.lastMove.to as Square);
-      if (piece) {
-        setAnimatingMove({
-          from: metadata.lastMove.from,
-          to: metadata.lastMove.to,
-          piece: { type: piece.type, color: piece.color }
-        });
+      const moveKey = `${metadata.lastMove.from}-${metadata.lastMove.to}`;
+      
+      if (lastAnimatedMoveRef.current !== moveKey) {
+        lastAnimatedMoveRef.current = moveKey;
         
-        // Clear animation after it completes
-        setTimeout(() => {
-          setAnimatingMove(null);
-        }, 300);
+        const piece = chess.get(metadata.lastMove.to as Square);
+        if (piece) {
+          setAnimatingMove({
+            from: metadata.lastMove.from,
+            to: metadata.lastMove.to,
+            piece: { type: piece.type, color: piece.color }
+          });
+          
+          // Clear animation after it completes
+          setTimeout(() => {
+            setAnimatingMove(null);
+          }, 300);
+        }
       }
     }
   }, [metadata.fen, metadata.lastMove, chess]);
@@ -283,7 +297,7 @@ export const ChessGame = ({
   }
 
   return (
-    <Card className="w-full border-2 border-primary/20 bg-gradient-to-br from-background via-background to-primary/5">
+    <Card className="w-full border-2 border-primary/20 bg-gradient-to-br from-background via-background to-primary/5 overflow-hidden">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>{title || "Chess"}</span>
@@ -487,13 +501,13 @@ export const ChessGame = ({
 
         {/* Captured Pieces */}
         {(whiteCaptured.length > 0 || blackCaptured.length > 0) && (
-          <div className="flex justify-between items-center px-2 py-2 rounded-lg bg-muted/30">
+          <div className="flex justify-between items-center px-2 py-2 rounded-lg bg-muted/30 min-h-[44px]">
             {/* Black's captured pieces (what White has taken) */}
             <div className="flex gap-0.5 items-center">
               <span className="text-xs text-muted-foreground mr-1">Captured:</span>
               {blackCaptured.length > 0 ? (
                 blackCaptured.map((type, i) => (
-                  <div key={i} className="w-5 h-5 opacity-50">
+                  <div key={i} className="w-6 h-6 opacity-80">
                     <ChessPiece type={type} color="b" />
                   </div>
                 ))
@@ -505,7 +519,7 @@ export const ChessGame = ({
             <div className="flex gap-0.5 items-center">
               {whiteCaptured.length > 0 ? (
                 whiteCaptured.map((type, i) => (
-                  <div key={i} className="w-5 h-5 opacity-50">
+                  <div key={i} className="w-6 h-6 opacity-80">
                     <ChessPiece type={type} color="w" />
                   </div>
                 ))

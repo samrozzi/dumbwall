@@ -27,55 +27,60 @@ interface ChessGameProps {
   isCreatingRematch: boolean;
 }
 
-// Custom SVG chess piece component with Liquid Glass styling
+// Minimal chess piece SVG component matching reference design
 const ChessPiece = ({ type, color }: { type: string; color: 'w' | 'b' }) => {
-  const isWhite = color === 'w';
-  const baseColor = isWhite ? 'rgba(255, 255, 255, 0.95)' : 'rgba(30, 41, 59, 0.95)';
-  const strokeColor = isWhite ? 'rgba(0, 0, 0, 0.6)' : 'rgba(255, 255, 255, 0.4)';
-  const glowColor = isWhite ? 'rgba(167, 139, 250, 0.5)' : 'rgba(139, 92, 246, 0.5)';
-
-  // Proper, recognizable chess piece SVG paths
-  const paths: Record<string, string> = {
-    // King - Crown with cross on top
-    'k': 'M12 2l-1 2h2l-1-2zm-1 3v1h2V5h-1zm-3 2h8l-1 3v4l1 2v2H7v-2l1-2V10l-1-3zm1 9h6v2H9v-2z',
-    // Queen - Crown with multiple points
-    'q': 'M6 6l1.5 2 1.5-2 1.5 2L12 6l1.5 2 1.5-2 1.5 2L18 6l-1 4v3l1 2v2H6v-2l1-2v-3L6 6zm2 11h8v2H8v-2z',
-    // Rook - Castle tower
-    'r': 'M7 5h2v2H7zm4 0h2v2h-2zm4 0h2v2h-2zM7 8h10v5c0 1.5-1 2.5-2.5 2.5h-5C8 15.5 7 14.5 7 13V8zm0 9h10v2H7v-2z',
-    // Bishop - Mitre with circle on top
-    'b': 'M12 3c-.5 0-1 .5-1 1s.5 1 1 1 1-.5 1-1-.5-1-1-1zm-2 3l2 3 2-3 1 5v2l1 2v2H8v-2l1-2v-2l1-5zm-2 12h8v2H8v-2z',
-    // Knight - Horse head
-    'n': 'M14 4c-1 0-2 1-2 2 0 .5.2 1 .5 1.3L11 9c-.5.8-1 1.5-1 2.5V13l1 2v2l1 1H8v-2l1-2v-1.5c0-1.5 1-3 2-4l1.5-2C12 6.3 12 6 12 6c0-.5.5-1 1-1h1c.5 0 1 .5 1 1l-1 2zm-6 14h8v2H8v-2z',
-    // Pawn - Simple rounded figure
-    'p': 'M12 5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm-2 5c-.5 0-1 .5-1 1v2c0 1 .5 2 1.5 2h3c1 0 1.5-1 1.5-2v-2c0-.5-.5-1-1-1h-4zm-1 7h6v2H9v-2z'
+  // Minimal rounded Staunton-like silhouettes
+  const pieces: Record<string, JSX.Element> = {
+    'k': ( // King - crown with cross
+      <svg viewBox="0 0 45 45" className="piece-svg">
+        <path d="M22.5 11.63V6M20 8h5M22.5 25s4.5-7.5 3-10.5c0 0-1-2.5-3-2.5s-3 2.5-3 2.5c-1.5 3 3 10.5 3 10.5zM11.5 37c5.5 3.5 15.5 3.5 21 0v-7s9-4.5 6-10.5c-4-6.5-13.5-3.5-16 4V27v-3.5c-3.5-7.5-13-10.5-16-4-3 6 5 10 5 10V37z" />
+      </svg>
+    ),
+    'q': ( // Queen - crown with multiple points
+      <svg viewBox="0 0 45 45" className="piece-svg">
+        <path d="M9 26c2.5-2.5 4-4 6.5-5.5 2.5-1.5 3.5 1 5.5 1s3-2.5 5.5-1c2.5 1.5 4 3 6.5 5.5 2.5 2.5 2.5 4 2.5 7.5V38H6.5v-4.5c0-3.5 0-5 2.5-7.5z" />
+        <circle cx="9" cy="26" r="2" />
+        <circle cx="15" cy="20" r="2" />
+        <circle cx="22.5" cy="18" r="2" />
+        <circle cx="30" cy="20" r="2" />
+        <circle cx="36" cy="26" r="2" />
+      </svg>
+    ),
+    'r': ( // Rook - castle tower
+      <svg viewBox="0 0 45 45" className="piece-svg">
+        <path d="M9 39h27v-3H9v3zM12 36v-4h21v4H12zM11 14V9h4v2h5V9h5v2h5V9h4v5H11z" />
+        <path d="M34 14l-3 3H14l-3-3v-3h23v3z" />
+        <path d="M31 17v12.5H14V17h17z" />
+        <path d="M13 29.5h19V32H13v-2.5z" />
+      </svg>
+    ),
+    'b': ( // Bishop - mitre with rounded top
+      <svg viewBox="0 0 45 45" className="piece-svg">
+        <path d="M22.5 9c-2 0-3.5 1.5-3.5 3.5s1.5 3.5 3.5 3.5 3.5-1.5 3.5-3.5S24.5 9 22.5 9z" />
+        <path d="M22.5 16c-2 2-8 8-8 13 0 3 1.5 5 4 6h8c2.5-1 4-3 4-6 0-5-6-11-8-13z" />
+        <path d="M12 35.5h21v2.5H12v-2.5z" />
+      </svg>
+    ),
+    'n': ( // Knight - horse head profile
+      <svg viewBox="0 0 45 45" className="piece-svg">
+        <path d="M22 10c-2 0-4 2-5 4-1 2-1 4-1 6v3c0 3 2 5 4 6l-2 8h4l2-8c3-1 5-3 5-6v-3c0-2 0-4-1-6-1-2-3-4-6-4z" />
+        <circle cx="25" cy="15" r="1.5" />
+        <path d="M11 36c3 1 8 2 14 2s11-1 14-2c0-2-4-4-14-4s-14 2-14 4z" />
+      </svg>
+    ),
+    'p': ( // Pawn - simple rounded figure
+      <svg viewBox="0 0 45 45" className="piece-svg">
+        <circle cx="22.5" cy="12" r="4.5" />
+        <path d="M22.5 17c-3 0-5 2-5 5v5c0 2 1.5 3.5 3.5 3.5h3c2 0 3.5-1.5 3.5-3.5v-5c0-3-2-5-5-5z" />
+        <path d="M13 32h19v4H13v-4z" />
+      </svg>
+    )
   };
 
   return (
-    <svg viewBox="0 0 24 24" className="w-full h-full drop-shadow-lg">
-      <defs>
-        <filter id={`glow-${color}-${type}`}>
-          <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
-          <feMerge>
-            <feMergeNode in="coloredBlur"/>
-            <feMergeNode in="SourceGraphic"/>
-          </feMerge>
-        </filter>
-        <linearGradient id={`grad-${color}-${type}`} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" style={{ stopColor: baseColor, stopOpacity: 1 }} />
-          <stop offset="100%" style={{ stopColor: isWhite ? 'rgba(226, 232, 240, 0.95)' : 'rgba(15, 23, 42, 0.95)', stopOpacity: 1 }} />
-        </linearGradient>
-      </defs>
-      <path
-        d={paths[type.toLowerCase()]}
-        fill={`url(#grad-${color}-${type})`}
-        stroke={strokeColor}
-        strokeWidth="0.8"
-        strokeLinejoin="round"
-        strokeLinecap="round"
-        filter={`url(#glow-${color}-${type})`}
-        style={{ filter: `drop-shadow(0 3px 6px ${glowColor})` }}
-      />
-    </svg>
+    <div className={`chess-piece ${color === 'w' ? 'white' : 'black'}`}>
+      {pieces[type.toLowerCase()]}
+    </div>
   );
 };
 
@@ -375,13 +380,10 @@ export const ChessGame = ({
           </div>
         </div>
 
-        {/* Liquid Glass Chess Board */}
+        {/* Premium Chess Board with Dark Navy Aesthetic */}
         <div className="w-full mx-auto">
-          <div className="aspect-square bg-gradient-to-br from-primary/20 via-primary/10 to-accent/20 p-2 sm:p-4 rounded-2xl border-2 border-primary/30 shadow-2xl backdrop-blur-sm">
-            <div className="grid grid-cols-8 gap-0 w-full h-full rounded-xl overflow-hidden shadow-inner relative">
-              {/* Frosted glass overlay */}
-              <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent pointer-events-none rounded-xl" />
-              
+          <div className="chess-board-frame">
+            <div className="chess-board-grid">
               {RANKS.map((rank, rankIdx) =>
                 FILES.map((file, fileIdx) => {
                   const square = `${file}${rank}`;
@@ -389,6 +391,9 @@ export const ChessGame = ({
                   const isSelected = selectedSquare === square;
                   const isLegalMove = legalMoves.includes(square);
                   const piece = getPieceAt(square);
+                  
+                  // Check if this is part of last move (derive from move history and board state)
+                  const isLastMove = false; // Remove this feature for now since we don't track from/to squares directly
                   
                   // Check if this square has the animating piece
                   const isAnimatingFrom = animatingMove?.from === square;
@@ -421,40 +426,40 @@ export const ChessGame = ({
                       }}
                       onContextMenu={(e) => e.preventDefault()}
                       className={cn(
-                        "relative flex items-center justify-center transition-all duration-200",
+                        "chess-square relative transition-all duration-150",
                         "active:scale-95 min-h-[44px] touch-manipulation select-none",
                         (!isMyTurn || isFinished || gameOver) && "cursor-not-allowed",
-                        isLight
-                          ? "bg-white/20 backdrop-blur-sm hover:bg-white/30" 
-                          : "bg-slate-900/40 backdrop-blur-sm hover:bg-slate-900/50",
-                        isSelected && "ring-4 ring-primary ring-inset bg-primary/20 shadow-lg",
-                        isLegalMove && "ring-2 ring-accent ring-inset shadow-accent/50"
+                        isLight ? "light" : "dark",
+                        isSelected && "selected",
+                        isLastMove && "last-move"
                       )}
                     >
+                      {/* Legal move indicators */}
+                      {isLegalMove && !piece && (
+                        <div className="legal-dot" />
+                      )}
+                      {isLegalMove && piece && (
+                        <div className="capture-dot" />
+                      )}
+                      
+                      {/* Chess piece */}
                       {piece && !isAnimatingFrom && (
                         <div 
-                          className="w-[85%] h-[85%]" 
+                          className="absolute inset-[8%]" 
                           style={isAnimatingTo ? animationStyle : {}}
                         >
                           <ChessPiece type={piece.type} color={piece.color} />
                         </div>
                       )}
-                      {isLegalMove && !piece && (
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                          <div className="w-3 h-3 rounded-full bg-accent/70 shadow-lg shadow-accent/50 animate-pulse" />
-                        </div>
-                      )}
-                      {isLegalMove && piece && (
-                        <div className="absolute inset-0 bg-accent/20 pointer-events-none ring-2 ring-accent/60 ring-inset" />
-                      )}
+                      
                       {/* Coordinate labels */}
                       {fileIdx === 0 && (
-                        <span className="absolute left-0.5 sm:left-1 top-0.5 text-[8px] sm:text-[10px] font-mono text-primary/60 select-none font-semibold">
+                        <span className="chess-coordinate chess-coordinate-rank">
                           {rank}
                         </span>
                       )}
                       {rankIdx === 7 && (
-                        <span className="absolute right-0.5 sm:right-1 bottom-0.5 text-[8px] sm:text-[10px] font-mono text-primary/60 select-none font-semibold">
+                        <span className="chess-coordinate chess-coordinate-file">
                           {file}
                         </span>
                       )}

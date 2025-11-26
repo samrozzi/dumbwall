@@ -118,44 +118,16 @@ export const ChessGame = ({
 
   // Update chess instance when FEN changes and trigger animation
   useEffect(() => {
-    const prevFen = chess.fen();
     chess.load(metadata.fen);
     
-    // Detect the move by comparing FENs
-    if (metadata.moveHistory.length > 0 && prevFen !== metadata.fen) {
-      const lastMoveStr = metadata.moveHistory[metadata.moveHistory.length - 1];
-      // Parse algebraic notation to get from/to squares
-      // For simplicity, we'll track the last two positions that changed
-      const prevBoard = new Chess(prevFen);
-      const currBoard = new Chess(metadata.fen);
-      
-      // Find which piece moved by comparing boards
-      let fromSquare = '';
-      let toSquare = '';
-      let movedPiece = null;
-      
-      for (let rank of RANKS) {
-        for (let file of FILES) {
-          const sq = `${file}${rank}` as Square;
-          const prevPiece = prevBoard.get(sq);
-          const currPiece = currBoard.get(sq);
-          
-          if (prevPiece && !currPiece) {
-            fromSquare = sq;
-            movedPiece = prevPiece;
-          } else if (!prevPiece && currPiece && movedPiece && 
-                     currPiece.type === movedPiece.type && 
-                     currPiece.color === movedPiece.color) {
-            toSquare = sq;
-          }
-        }
-      }
-      
-      if (fromSquare && toSquare && movedPiece) {
+    // Use lastMove from metadata for instant animation feedback
+    if (metadata.lastMove) {
+      const piece = chess.get(metadata.lastMove.to as Square);
+      if (piece) {
         setAnimatingMove({
-          from: fromSquare,
-          to: toSquare,
-          piece: { type: movedPiece.type, color: movedPiece.color }
+          from: metadata.lastMove.from,
+          to: metadata.lastMove.to,
+          piece: { type: piece.type, color: piece.color }
         });
         
         // Clear animation after it completes
@@ -164,7 +136,7 @@ export const ChessGame = ({
         }, 300);
       }
     }
-  }, [metadata.fen, chess, metadata.moveHistory]);
+  }, [metadata.fen, metadata.lastMove, chess]);
 
   const winnerProfile = winner
     ? participants.find(p => p.user_id === winner)?.profiles
@@ -251,6 +223,51 @@ export const ChessGame = ({
   const isSquareLight = (file: number, rank: number) => {
     return (file + rank) % 2 === 0;
   };
+
+  // Calculate captured pieces
+  const calculateCapturedPieces = () => {
+    const startingPieces: Record<string, number> = {
+      'w_p': 8, 'w_r': 2, 'w_n': 2, 'w_b': 2, 'w_q': 1, 'w_k': 1,
+      'b_p': 8, 'b_r': 2, 'b_n': 2, 'b_b': 2, 'b_q': 1, 'b_k': 1,
+    };
+    
+    const currentPieces: Record<string, number> = {
+      'w_p': 0, 'w_r': 0, 'w_n': 0, 'w_b': 0, 'w_q': 0, 'w_k': 0,
+      'b_p': 0, 'b_r': 0, 'b_n': 0, 'b_b': 0, 'b_q': 0, 'b_k': 0,
+    };
+    
+    // Count current pieces on the board
+    for (let rank of RANKS) {
+      for (let file of FILES) {
+        const sq = `${file}${rank}` as Square;
+        const piece = chess.get(sq);
+        if (piece) {
+          const key = `${piece.color}_${piece.type}`;
+          currentPieces[key]++;
+        }
+      }
+    }
+    
+    // Calculate captured (missing pieces)
+    const whiteCaptured: string[] = [];
+    const blackCaptured: string[] = [];
+    
+    for (const [key, startCount] of Object.entries(startingPieces)) {
+      const [color, type] = key.split('_');
+      const missing = startCount - currentPieces[key];
+      for (let i = 0; i < missing; i++) {
+        if (color === 'w') {
+          whiteCaptured.push(type);
+        } else {
+          blackCaptured.push(type);
+        }
+      }
+    }
+    
+    return { whiteCaptured, blackCaptured };
+  };
+
+  const { whiteCaptured, blackCaptured } = calculateCapturedPieces();
 
   // Format move history properly (pair white and black moves)
   const formattedMoves = [];
@@ -468,6 +485,38 @@ export const ChessGame = ({
           </div>
         </div>
 
+        {/* Captured Pieces */}
+        {(whiteCaptured.length > 0 || blackCaptured.length > 0) && (
+          <div className="flex justify-between items-center px-2 py-2 rounded-lg bg-muted/30">
+            {/* Black's captured pieces (what White has taken) */}
+            <div className="flex gap-0.5 items-center">
+              <span className="text-xs text-muted-foreground mr-1">Captured:</span>
+              {blackCaptured.length > 0 ? (
+                blackCaptured.map((type, i) => (
+                  <div key={i} className="w-5 h-5 opacity-50">
+                    <ChessPiece type={type} color="b" />
+                  </div>
+                ))
+              ) : (
+                <span className="text-xs text-muted-foreground">None</span>
+              )}
+            </div>
+            {/* White's captured pieces (what Black has taken) */}
+            <div className="flex gap-0.5 items-center">
+              {whiteCaptured.length > 0 ? (
+                whiteCaptured.map((type, i) => (
+                  <div key={i} className="w-5 h-5 opacity-50">
+                    <ChessPiece type={type} color="w" />
+                  </div>
+                ))
+              ) : (
+                <span className="text-xs text-muted-foreground">None</span>
+              )}
+              <span className="text-xs text-muted-foreground ml-1">:Captured</span>
+            </div>
+          </div>
+        )}
+
         {/* Move History */}
         {formattedMoves.length > 0 && (
           <div className="space-y-2">
@@ -477,13 +526,18 @@ export const ChessGame = ({
             </h3>
             <ScrollArea className="h-[120px] rounded-lg border border-border/50 bg-muted/20 p-3">
               <div className="space-y-1">
+                {/* Column Headers */}
+                <div className="flex items-center gap-3 text-xs font-semibold text-muted-foreground pb-1 border-b border-border/30">
+                  <span className="w-6">#</span>
+                  <span className="flex-1">White</span>
+                  <span className="flex-1">Black</span>
+                </div>
+                {/* Move Rows */}
                 {formattedMoves.map((move) => (
                   <div key={move.moveNum} className="flex items-center gap-3 text-sm font-mono">
                     <span className="text-muted-foreground font-semibold w-6">{move.moveNum}.</span>
                     <span className="flex-1 text-foreground">{move.white}</span>
-                    {move.black && (
-                      <span className="flex-1 text-foreground">{move.black}</span>
-                    )}
+                    <span className="flex-1 text-foreground">{move.black || '-'}</span>
                   </div>
                 ))}
               </div>

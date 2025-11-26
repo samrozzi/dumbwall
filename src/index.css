@@ -177,11 +177,10 @@ All colors MUST be HSL.
 /* Premium Chess Board Styles */
 .chess-board-frame {
   background: #050814;
-  border-radius: 24px;
-  border: 1px solid rgba(230, 191, 112, 0.8);
-  padding: 10px;
+  border: 2px solid rgba(230, 191, 112, 0.8);
+  padding: 8px;
   width: 100%;
-  max-width: min(100%, 500px);
+  max-width: min(calc(100vw - 32px), 500px);
   margin: 0 auto;
   display: block;
 }
@@ -191,8 +190,7 @@ All colors MUST be HSL.
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   aspect-ratio: 1 / 1;
-  border-radius: 18px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .chess-square {
@@ -267,7 +265,7 @@ All colors MUST be HSL.
 }
 
 .chess-piece.white {
-  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.6));
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.8)) drop-shadow(0 1px 3px rgba(0, 0, 0, 0.6));
 }
 
 .chess-piece.white svg path,
@@ -276,7 +274,7 @@ All colors MUST be HSL.
 }
 
 .chess-piece.black {
-  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.5));
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.6));
 }
 
 .chess-piece.black svg path,

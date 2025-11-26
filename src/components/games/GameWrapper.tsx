@@ -42,7 +42,10 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
 
   // Computer move triggering
   useEffect(() => {
-    if (!game || game.status === 'finished' || !game.metadata.isComputerOpponent) return;
+    const isComputerGame = game?.metadata.isComputerOpponent || 
+      game?.metadata.blackPlayer === 'computer' || 
+      game?.metadata.yellowPlayer === 'computer';
+    if (!game || game.status === 'finished' || !isComputerGame) return;
 
     // Clear any existing timeout
     if (computerMoveTimeoutRef.current) {

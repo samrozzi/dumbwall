@@ -146,7 +146,7 @@ export const ChessGame = ({
           // Clear animation after it completes
           setTimeout(() => {
             setAnimatingMove(null);
-          }, 300);
+          }, 400);
         }
       }
     }
@@ -421,8 +421,9 @@ export const ChessGame = ({
                   const isLegalMove = legalMoves.includes(square);
                   const piece = getPieceAt(square);
                   
-                  // Check if this is part of last move (derive from move history and board state)
-                  const isLastMove = false; // Remove this feature for now since we don't track from/to squares directly
+                  // Check if this square is part of last move
+                  const isLastMoveFrom = metadata.lastMove?.from === square;
+                  const isLastMoveTo = metadata.lastMove?.to === square;
                   
                   // Check if this square has the animating piece
                   const isAnimatingFrom = animatingMove?.from === square;
@@ -439,7 +440,7 @@ export const ChessGame = ({
                     const deltaY = (fromRank - toRank) * 100;
                     
                     animationStyle = {
-                      animation: 'slideIn 300ms ease-out',
+                      animation: 'slideIn 400ms cubic-bezier(0.34, 1.56, 0.64, 1)',
                       '--slide-from-x': `${deltaX}%`,
                       '--slide-from-y': `${deltaY}%`,
                     } as React.CSSProperties;
@@ -460,7 +461,8 @@ export const ChessGame = ({
                         (!isMyTurn || isFinished || gameOver) && "cursor-not-allowed",
                         isLight ? "light" : "dark",
                         isSelected && "selected",
-                        isLastMove && "last-move"
+                        isLastMoveFrom && "last-move-from",
+                        isLastMoveTo && "last-move-to"
                       )}
                     >
                       {/* Legal move indicators */}
@@ -500,37 +502,27 @@ export const ChessGame = ({
           </div>
         </div>
 
-        {/* Captured Pieces */}
-        {(whiteCaptured.length > 0 || blackCaptured.length > 0) && (
-          <div className="flex justify-between items-center px-2 py-2 rounded-lg bg-muted/30 min-h-[44px]">
-            {/* Black's captured pieces (what White has taken) */}
-            <div className="flex gap-0.5 items-center">
-              <span className="text-xs text-muted-foreground mr-1">Captured:</span>
-              {blackCaptured.length > 0 ? (
-                blackCaptured.map((type, i) => (
-                  <div key={i} className="w-6 h-6 opacity-80">
-                    <ChessPiece type={type} color="b" />
-                  </div>
-                ))
-              ) : (
-                <span className="text-xs text-muted-foreground">None</span>
-              )}
-            </div>
-            {/* White's captured pieces (what Black has taken) */}
-            <div className="flex gap-0.5 items-center">
-              {whiteCaptured.length > 0 ? (
-                whiteCaptured.map((type, i) => (
-                  <div key={i} className="w-6 h-6 opacity-80">
-                    <ChessPiece type={type} color="w" />
-                  </div>
-                ))
-              ) : (
-                <span className="text-xs text-muted-foreground">None</span>
-              )}
-              <span className="text-xs text-muted-foreground ml-1">:Captured</span>
-            </div>
+        {/* Captured Pieces - Always visible with stable layout */}
+        <div className="flex justify-between items-start px-3 py-2 rounded-lg bg-muted/30 min-h-[52px]">
+          {/* Black's captured pieces (what White has taken) */}
+          <div className="flex flex-wrap gap-1 items-center max-w-[45%]">
+            <span className="text-xs text-muted-foreground mr-1 shrink-0">Captured:</span>
+            {blackCaptured.map((type, i) => (
+              <div key={i} className="w-5 h-5 bg-slate-300/50 rounded-sm p-0.5">
+                <ChessPiece type={type} color="b" />
+              </div>
+            ))}
           </div>
-        )}
+          {/* White's captured pieces (what Black has taken) */}
+          <div className="flex flex-wrap gap-1 items-center justify-end max-w-[45%]">
+            {whiteCaptured.map((type, i) => (
+              <div key={i} className="w-5 h-5 bg-slate-700/50 rounded-sm p-0.5">
+                <ChessPiece type={type} color="w" />
+              </div>
+            ))}
+            <span className="text-xs text-muted-foreground ml-1 shrink-0">:Captured</span>
+          </div>
+        </div>
 
         {/* Move History */}
         {formattedMoves.length > 0 && (

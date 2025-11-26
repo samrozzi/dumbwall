@@ -166,11 +166,13 @@ All colors MUST be HSL.
 }
 
 @keyframes slideIn {
-  from {
-    transform: translate(var(--slide-from-x, 0), var(--slide-from-y, 0));
+  0% {
+    transform: translate(var(--slide-from-x, 0), var(--slide-from-y, 0)) scale(1.05);
+    opacity: 0.8;
   }
-  to {
-    transform: translate(0, 0);
+  100% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
   }
 }
 
@@ -280,6 +282,8 @@ All colors MUST be HSL.
 .chess-piece.black svg path,
 .chess-piece.black svg circle {
   fill: #131722;
+  stroke: #6b7280;
+  stroke-width: 0.8;
 }
 
 /* Coordinate labels */
@@ -300,4 +304,23 @@ All colors MUST be HSL.
 .chess-coordinate-file {
   right: 2px;
   bottom: 2px;
+}
+
+/* Last move highlighting - source square */
+.chess-square.last-move-from {
+  background-color: rgba(100, 180, 255, 0.35) !important;
+}
+
+.chess-square.last-move-from.light {
+  background-color: rgba(100, 180, 255, 0.25) !important;
+}
+
+.chess-square.last-move-from.dark {
+  background-color: rgba(100, 180, 255, 0.45) !important;
+}
+
+/* Last move highlighting - destination square */
+.chess-square.last-move-to {
+  background-color: rgba(240, 194, 91, 0.5) !important;
+  box-shadow: inset 0 0 8px rgba(240, 194, 91, 0.3);
 }

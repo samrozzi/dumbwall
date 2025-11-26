@@ -285,10 +285,11 @@ export const ChessGame = ({
 
   // Format move history properly (pair white and black moves)
   const formattedMoves = [];
-  for (let i = 0; i < metadata.moveHistory.length; i += 2) {
+  const moveHistoryArray = metadata.moveHistory || [];
+  for (let i = 0; i < moveHistoryArray.length; i += 2) {
     const moveNum = Math.floor(i / 2) + 1;
-    const whiteMove = metadata.moveHistory[i];
-    const blackMove = metadata.moveHistory[i + 1];
+    const whiteMove = moveHistoryArray[i];
+    const blackMove = moveHistoryArray[i + 1];
     formattedMoves.push({
       moveNum,
       white: whiteMove,
@@ -536,7 +537,7 @@ export const ChessGame = ({
           <div className="space-y-2">
             <h3 className="font-semibold text-sm flex items-center gap-2">
               <span>Move History</span>
-              <Badge variant="secondary" className="text-xs">{metadata.moveHistory.length}</Badge>
+              <Badge variant="secondary" className="text-xs">{(metadata.moveHistory || []).length}</Badge>
             </h3>
             <ScrollArea className="h-[120px] rounded-lg border border-border/50 bg-muted/20 p-3">
               <div className="space-y-1">

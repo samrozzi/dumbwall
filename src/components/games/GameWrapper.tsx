@@ -823,13 +823,13 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
       return (
         <ChessGame
           gameId={gameId}
-          title={game.title}
-          metadata={game.metadata}
+          title={displayGame.title}
+          metadata={displayGame.metadata}
           userId={userId}
           participants={participants}
           onMove={(from, to, promotion) => {
-            console.log('♟️ GameWrapper onMove called:', { from, to, promotion, currentFen: game.metadata.fen });
-            const chess = new Chess(game.metadata.fen);
+            console.log('♟️ GameWrapper onMove called:', { from, to, promotion, currentFen: displayGame.metadata.fen });
+            const chess = new Chess(displayGame.metadata.fen);
 
             const move = chess.move({ from, to, promotion });
             if (!move) {
@@ -840,7 +840,7 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
 
             console.log('✅ Move valid:', move.san);
             const newFen = chess.fen();
-            const newMoveHistory = [...game.metadata.moveHistory, move.san];
+            const newMoveHistory = [...(displayGame.metadata.moveHistory || []), move.san];
 
             let gameStatus: any = 'active';
             let winnerUserId = null;

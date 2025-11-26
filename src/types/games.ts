@@ -135,6 +135,7 @@ export interface ChessMetadata {
   whitePlayer: string;
   blackPlayer: string;
   moveHistory: string[];
+  lastMove?: { from: string; to: string };
   winnerUserId?: string | null;
   gameStatus?: 'active' | 'check' | 'checkmate' | 'stalemate' | 'draw';
   isComputerOpponent?: boolean;

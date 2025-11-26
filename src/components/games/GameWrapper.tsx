@@ -858,12 +858,27 @@ export const GameWrapper = ({ gameId, userId }: GameWrapperProps) => {
               ? 'finished'
               : undefined;
 
+            // Optimistic UI update - show the move immediately
+            setOptimisticGame({
+              ...game,
+              metadata: {
+                ...game.metadata,
+                fen: newFen,
+                currentTurn: game.metadata.currentTurn === 'white' ? 'black' : 'white',
+                moveHistory: newMoveHistory,
+                lastMove: { from, to },
+                gameStatus,
+                winnerUserId,
+              }
+            });
+
             handleAction('move', { from, to, promotion }, status, {
               fen: newFen,
               currentTurn: game.metadata.currentTurn === 'white' ? 'black' : 'white',
               whitePlayer: game.metadata.whitePlayer,
               blackPlayer: game.metadata.blackPlayer,
               moveHistory: newMoveHistory,
+              lastMove: { from, to },
               gameStatus,
               winnerUserId,
               isComputerOpponent: game.metadata.isComputerOpponent,

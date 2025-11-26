@@ -348,13 +348,13 @@ export const ChessGame = ({
           </div>
         )}
 
-        {/* Turn Indicator - Moved to top for mobile visibility */}
+        {/* Turn Indicator - Fixed height to prevent layout shift */}
         {!isFinished && !gameOver && (
-          <div className="text-center">
+          <div className="text-center h-10 flex items-center justify-center">
             {isMyTurn ? (
               <Badge className="bg-primary text-primary-foreground px-6 py-2 text-base">Your turn</Badge>
             ) : (
-              <span className="text-muted-foreground">Opponent's turn</span>
+              <span className="text-muted-foreground text-sm">Opponent's turn</span>
             )}
           </div>
         )}
@@ -425,6 +425,12 @@ export const ChessGame = ({
                   const isLastMoveFrom = metadata.lastMove?.from === square;
                   const isLastMoveTo = metadata.lastMove?.to === square;
                   
+                  // Determine if the last move was made by opponent
+                  const isEnemyLastMove = metadata.lastMove && (
+                    (metadata.currentTurn === 'white' && isWhite) || // Black just moved, I'm white
+                    (metadata.currentTurn === 'black' && isBlack)    // White just moved, I'm black
+                  );
+                  
                   // Check if this square has the animating piece
                   const isAnimatingFrom = animatingMove?.from === square;
                   const isAnimatingTo = animatingMove?.to === square;
@@ -461,8 +467,8 @@ export const ChessGame = ({
                         (!isMyTurn || isFinished || gameOver) && "cursor-not-allowed",
                         isLight ? "light" : "dark",
                         isSelected && "selected",
-                        isLastMoveFrom && "last-move-from",
-                        isLastMoveTo && "last-move-to"
+                        isLastMoveFrom && (isEnemyLastMove ? "enemy-move-from" : "last-move-from"),
+                        isLastMoveTo && (isEnemyLastMove ? "enemy-move-to" : "last-move-to")
                       )}
                     >
                       {/* Legal move indicators */}

@@ -292,46 +292,51 @@ const Wall = () => {
     const itemWidth = 280;
     const itemHeight = 320;
     const padding = 40;
-    // Use dynamic maxY based on current canvas height or items
+
+    // Calculate max allowed Y position (1.5x viewport height)
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight - 120 : 800;
+    const maxAllowedY = viewportHeight * 1.5 - itemHeight - padding;
+
+    // Use constrained maxY
     const maxItemY = items.length > 0 ? Math.max(...items.map(item => item.y)) : 0;
-    const maxY = Math.max(600, maxItemY + 400); // Grow with content, min 600
-    
+    const maxY = Math.min(maxAllowedY, Math.max(600, maxItemY + 400));
+
     // Random starting position with some variation
     let x = 60 + Math.floor(Math.random() * 200);
     let y = 60 + Math.floor(Math.random() * 150);
     let attempts = 0;
-    
+
     while (attempts < 25) {
       const hasOverlap = items.some(item => {
         const distX = Math.abs(item.x - x);
         const distY = Math.abs(item.y - y);
         return distX < 200 && distY < 200;
       });
-      
+
       if (!hasOverlap) break;
-      
+
       // Move to next position
       x += 90;
-      
+
       // Wrap x if needed
       if (x + itemWidth > canvasWidth - padding) {
         x = 60 + Math.floor(Math.random() * 100);
         y += 100;
       }
-      
+
       // CRITICAL: Wrap y back to top if too far down
       if (y > maxY) {
         y = 60 + Math.floor(Math.random() * 100);
         x += 150; // Shift right when wrapping back up
       }
-      
+
       attempts++;
     }
-    
+
     // Final bounds check
     x = Math.max(padding, Math.min(x, canvasWidth - itemWidth - padding));
     y = Math.max(padding, Math.min(y, maxY));
-    
+
     return { x, y };
   };
 
@@ -475,8 +480,13 @@ const Wall = () => {
     }
 
     const canvasRect = canvasRef.current.getBoundingClientRect();
+
+    // Calculate max allowed Y position (1.5x viewport height minus item height)
+    const viewportHeight = window.innerHeight - 120;
+    const maxAllowedY = viewportHeight * 1.5 - 320; // 320 is approx item height
+
     const newX = Math.max(0, Math.min(e.clientX - canvasRect.left - dragOffset.x, canvasRect.width - 280));
-    const newY = Math.max(0, e.clientY - canvasRect.top - dragOffset.y);
+    const newY = Math.max(0, Math.min(e.clientY - canvasRect.top - dragOffset.y, maxAllowedY));
 
     setItems(items.map(item =>
       item.id === draggedItem ? { ...item, x: newX, y: newY } : item

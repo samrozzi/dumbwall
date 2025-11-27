@@ -1321,11 +1321,12 @@ const Chat = () => {
           </>
         ) : (
           /* Desktop: Show threads sidebar and chat area with resizable panels */
-          <ResizablePanelGroup 
+          <ResizablePanelGroup
             direction="horizontal"
             onLayout={(sizes) => {
-              if (sizes[0]) {
+              if (sizes[0] !== undefined) {
                 localStorage.setItem('chat-sidebar-width', sizes[0].toString());
+                setSidebarSize(sizes[0]);
               }
             }}
           >

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -50,15 +50,7 @@ const Circles = () => {
   const navigate = useNavigate();
   const isMobile = useIsMobile();
 
-  useEffect(() => {
-    if (!user) {
-      navigate("/auth");
-      return;
-    }
-    checkFavoriteCircle();
-  }, [user, navigate]);
-
-  const checkFavoriteCircle = async () => {
+  const checkFavoriteCircle = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -96,7 +88,15 @@ const Circles = () => {
       loadCircles();
       loadPendingInvites();
     }
-  };
+  }, [user, navigate]);
+
+  useEffect(() => {
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    checkFavoriteCircle();
+  }, [user, navigate, checkFavoriteCircle]);
 
   const loadCircles = async () => {
     try {

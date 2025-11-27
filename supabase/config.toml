@@ -2,3 +2,6 @@ project_id = "giwalyevnaqfamswluya"
 
 [functions.games]
 verify_jwt = false
+
+[functions.mobile-wall]
+verify_jwt = true

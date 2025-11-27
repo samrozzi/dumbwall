@@ -63,6 +63,14 @@ const Circles = () => {
 
       if (profileError) throw profileError;
 
+      // Check if the column exists in the response
+      if (!profileData?.hasOwnProperty('favorite_circle_id')) {
+        // Column doesn't exist yet - just load circles normally
+        loadCircles();
+        loadPendingInvites();
+        return;
+      }
+
       // If user has a favorite circle, check if they're still a member
       if (profileData?.favorite_circle_id) {
         const { data: memberData, error: memberError } = await supabase

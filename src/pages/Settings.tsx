@@ -97,6 +97,7 @@ const Settings = () => {
   const [settingsCircleName, setSettingsCircleName] = useState("");
   const [circleSettings, setCircleSettings] = useState<Record<string, 'anyone' | 'owner_only'>>({});
   const [favoriteCircleId, setFavoriteCircleId] = useState<string | null>(null);
+  const [favoriteFeatureAvailable, setFavoriteFeatureAvailable] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -133,7 +134,14 @@ const Settings = () => {
     setPronouns(data.pronouns || "");
     setStatus(data.status_mode || "auto");
     setShowPresence(data.show_presence ?? true);
-    setFavoriteCircleId(data.favorite_circle_id || null);
+
+    // Check if favorite_circle_id column exists (feature flag)
+    if (data.hasOwnProperty('favorite_circle_id')) {
+      setFavoriteCircleId(data.favorite_circle_id || null);
+      setFavoriteFeatureAvailable(true);
+    } else {
+      setFavoriteFeatureAvailable(false);
+    }
 
     // Load interests
     const { data: interestsData } = await supabase
@@ -612,12 +620,23 @@ const Settings = () => {
         .update({ favorite_circle_id: newFavoriteId })
         .eq("id", user.id);
 
-      if (error) throw error;
+      if (error) {
+        // Check if error is due to missing column
+        if (error.message?.includes('favorite_circle_id') || error.message?.includes('column')) {
+          toast.error("Favorite circles feature not yet available", {
+            description: "This feature will be enabled after the next deployment."
+          });
+          setFavoriteFeatureAvailable(false);
+          return;
+        }
+        throw error;
+      }
 
       setFavoriteCircleId(newFavoriteId);
       toast.success(newFavoriteId ? "Circle set as favorite!" : "Favorite removed");
     } catch (error: any) {
-      toast.error(error.message);
+      console.error("Error toggling favorite:", error);
+      toast.error(error.message || "Failed to update favorite");
     }
   };
 
@@ -967,22 +986,24 @@ const Settings = () => {
                   >
                     <div className="flex flex-wrap gap-2 items-center justify-between sm:flex-nowrap">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleToggleFavorite(circle.id)}
-                          className={`flex-shrink-0 ${
-                            favoriteCircleId === circle.id
-                              ? "text-yellow-500 hover:text-yellow-600"
-                              : "text-muted-foreground hover:text-yellow-500"
-                          }`}
-                          title={favoriteCircleId === circle.id ? "Remove from favorites" : "Set as favorite circle"}
-                        >
-                          <Star
-                            className="w-5 h-5"
-                            fill={favoriteCircleId === circle.id ? "currentColor" : "none"}
-                          />
-                        </Button>
+                        {favoriteFeatureAvailable && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleToggleFavorite(circle.id)}
+                            className={`flex-shrink-0 ${
+                              favoriteCircleId === circle.id
+                                ? "text-yellow-500 hover:text-yellow-600"
+                                : "text-muted-foreground hover:text-yellow-500"
+                            }`}
+                            title={favoriteCircleId === circle.id ? "Remove from favorites" : "Set as favorite circle"}
+                          >
+                            <Star
+                              className="w-5 h-5"
+                              fill={favoriteCircleId === circle.id ? "currentColor" : "none"}
+                            />
+                          </Button>
+                        )}
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-wrap items-center gap-2">
                             <h3 className="font-semibold text-lg">{circle.name}</h3>

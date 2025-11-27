@@ -190,7 +190,13 @@ const Wall = () => {
     if (items.length === 0) return 0;
     // Find the bottommost item (y position + estimated height)
     const maxItemY = Math.max(...items.map(item => item.y + 400));
-    return maxItemY + 100;
+    const calculatedHeight = maxItemY + 100;
+
+    // Limit max height to prevent infinite scroll - allow about 1.5x viewport height
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight - 120 : 800;
+    const maxAllowedHeight = viewportHeight * 1.5;
+
+    return Math.min(calculatedHeight, maxAllowedHeight);
   }, [items]);
 
   // Check if wall content overflows vertically (for scroll indicator)
@@ -1126,7 +1132,7 @@ const Wall = () => {
           </div>
         </div>
         ) : (
-          <ScrollArea className="flex-1">
+          <ScrollArea className="flex-1 h-[calc(100vh-200px)]">
             <div className="space-y-2 pb-32">
               {items.filter(item => item.id !== pendingDelete?.id).map((item) => {
                 return (

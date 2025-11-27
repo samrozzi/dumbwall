@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { render, screen } from '@/test/utils';
+import { render, screen, fireEvent } from '@/test/utils';
 import { Button } from '@/components/ui/button';
 
 describe('Button', () => {
@@ -8,11 +8,11 @@ describe('Button', () => {
     expect(screen.getByText('Click me')).toBeInTheDocument();
   });
 
-  it('calls onClick when clicked', async () => {
+  it('calls onClick when clicked', () => {
     const handleClick = vi.fn();
-    const { user } = render(<Button onClick={handleClick}>Click me</Button>);
+    render(<Button onClick={handleClick}>Click me</Button>);
 
-    await user.click(screen.getByText('Click me'));
+    fireEvent.click(screen.getByText('Click me'));
     expect(handleClick).toHaveBeenCalledTimes(1);
   });
 

@@ -1,5 +1,5 @@
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
-import { StickyNote, MessageCircle, Users, Settings, Gamepad2, ArrowLeft } from "lucide-react";
+import { StickyNote, MessageCircle, Users, Settings, Gamepad2, ArrowLeft, Activity } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Button } from "@/components/ui/button";
@@ -159,7 +159,7 @@ const Navigation = ({ circleId, hideBackButton }: NavigationProps) => {
     { icon: StickyNote, label: "Wall", path: `/circle/${circleId}/wall` },
     { icon: Gamepad2, label: "Games", path: `/circle/${circleId}/games` },
     { icon: MessageCircle, label: "Chat", path: `/circle/${circleId}/chat` },
-    { icon: Users, label: "Pulse", path: `/circle/${circleId}/people` },
+    { icon: Activity, label: "Pulse", path: `/circle/${circleId}/people` },
     { icon: Settings, label: "Settings", path: `/circle/${circleId}/settings` },
   ];
 

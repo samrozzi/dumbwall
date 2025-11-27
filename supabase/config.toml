@@ -5,3 +5,9 @@ verify_jwt = false
 
 [functions.mobile-wall]
 verify_jwt = true
+
+[functions.mobile-circles]
+verify_jwt = true
+
+[functions.mobile-wall-post]
+verify_jwt = true

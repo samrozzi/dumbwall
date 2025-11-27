@@ -811,6 +811,7 @@ export type Database = {
           created_at: string
           display_name: string | null
           email: string | null
+          favorite_circle_id: string | null
           id: string
           interests_public: boolean | null
           last_active_at: string | null
@@ -837,6 +838,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           email?: string | null
+          favorite_circle_id?: string | null
           id: string
           interests_public?: boolean | null
           last_active_at?: string | null
@@ -863,6 +865,7 @@ export type Database = {
           created_at?: string
           display_name?: string | null
           email?: string | null
+          favorite_circle_id?: string | null
           id?: string
           interests_public?: boolean | null
           last_active_at?: string | null
@@ -881,7 +884,15 @@ export type Database = {
           updated_at?: string
           username?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_favorite_circle_id_fkey"
+            columns: ["favorite_circle_id"]
+            isOneToOne: false
+            referencedRelation: "circles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       social_links: {
         Row: {

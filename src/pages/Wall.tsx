@@ -192,9 +192,9 @@ const Wall = () => {
     const maxItemY = Math.max(...items.map(item => item.y + 400));
     const calculatedHeight = maxItemY + 100;
 
-    // Limit max height to prevent infinite scroll - allow about 1.5x viewport height
+    // Limit max height to prevent infinite scroll - allow up to 2.5x viewport height
     const viewportHeight = typeof window !== 'undefined' ? window.innerHeight - 120 : 800;
-    const maxAllowedHeight = viewportHeight * 1.5;
+    const maxAllowedHeight = viewportHeight * 2.5;
 
     return Math.min(calculatedHeight, maxAllowedHeight);
   }, [items]);
@@ -293,9 +293,11 @@ const Wall = () => {
     const itemHeight = 320;
     const padding = 40;
 
-    // Calculate max allowed Y position (1.5x viewport height)
+    // Calculate max allowed Y position - allow placement down to near the AddItemMenu button
+    // AddItemMenu is at bottom-8 (32px) + button height (~80px) = ~110px from bottom
     const viewportHeight = typeof window !== 'undefined' ? window.innerHeight - 120 : 800;
-    const maxAllowedY = viewportHeight * 1.5 - itemHeight - padding;
+    const bottomMargin = 120; // Space for AddItemMenu button
+    const maxAllowedY = viewportHeight * 2.5 - bottomMargin; // Allow generous vertical space
 
     // Use constrained maxY
     const maxItemY = items.length > 0 ? Math.max(...items.map(item => item.y)) : 0;
@@ -481,9 +483,10 @@ const Wall = () => {
 
     const canvasRect = canvasRef.current.getBoundingClientRect();
 
-    // Calculate max allowed Y position (1.5x viewport height minus item height)
+    // Calculate max allowed Y position - match AddItemMenu button level
     const viewportHeight = window.innerHeight - 120;
-    const maxAllowedY = viewportHeight * 1.5 - 320; // 320 is approx item height
+    const bottomMargin = 120; // Space for AddItemMenu button
+    const maxAllowedY = viewportHeight * 2.5 - bottomMargin;
 
     const newX = Math.max(0, Math.min(e.clientX - canvasRect.left - dragOffset.x, canvasRect.width - 280));
     const newY = Math.max(0, Math.min(e.clientY - canvasRect.top - dragOffset.y, maxAllowedY));

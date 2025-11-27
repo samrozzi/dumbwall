@@ -949,8 +949,7 @@ const Chat = () => {
                     <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                       <DialogTrigger asChild>
                         <Button size="sm" variant="default">
-                          <Plus className="w-4 h-4 mr-2" />
-                          New
+                          <Plus className="w-4 h-4" />
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-w-md">
@@ -1322,11 +1321,15 @@ const Chat = () => {
         ) : (
           /* Desktop: Show threads sidebar and chat area with resizable panels */
           <ResizablePanelGroup
+            key={`chat-panels-${sidebarSize}`}
             direction="horizontal"
             onLayout={(sizes) => {
               if (sizes[0] !== undefined) {
-                localStorage.setItem('chat-sidebar-width', sizes[0].toString());
-                setSidebarSize(sizes[0]);
+                const newSize = sizes[0];
+                if (Math.abs(newSize - sidebarSize) > 0.1) { // Only update if changed significantly
+                  localStorage.setItem('chat-sidebar-width', newSize.toString());
+                  setSidebarSize(newSize);
+                }
               }
             }}
           >
@@ -1340,8 +1343,7 @@ const Chat = () => {
                     <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
                       <DialogTrigger asChild>
                         <Button size="sm" variant="default">
-                          <Plus className="w-4 h-4 mr-2" />
-                          New
+                          <Plus className="w-4 h-4" />
                         </Button>
                       </DialogTrigger>
                       <DialogContent className="max-w-md">

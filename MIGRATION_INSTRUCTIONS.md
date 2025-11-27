@@ -1,14 +1,13 @@
-# Database Migration Instructions
+# Database Migration Required
 
 ## Favorite Circle Feature
 
 The favorite circle feature requires a database migration to add a new column to the `profiles` table.
 
-### To Apply the Migration:
+### Migration File Location:
+`supabase/migrations/20251126000000_add_favorite_circle.sql`
 
-1. Go to your Supabase Dashboard
-2. Navigate to the SQL Editor
-3. Run the following SQL:
+### What the Migration Does:
 
 ```sql
 -- Add favorite_circle_id to profiles table
@@ -22,18 +21,22 @@ CREATE INDEX idx_profiles_favorite_circle ON profiles(favorite_circle_id);
 COMMENT ON COLUMN profiles.favorite_circle_id IS 'The user''s favorite circle for auto-redirect on login';
 ```
 
-Alternatively, you can find this migration in:
-`supabase/migrations/20251126000000_add_favorite_circle.sql`
+### Deployment:
+
+This migration is included in the PR and will be automatically applied when:
+- The PR is merged and deployed
+- Your CI/CD pipeline runs Supabase migrations
+- OR someone with database access runs: `supabase db push` (if using Supabase CLI)
 
 ### What This Enables:
 
-- Users can star/favorite one circle in Settings
-- On login, users are automatically redirected to their favorite circle
-- If no favorite is set, users see the normal circle selector
+- ⭐ Users can star/favorite one circle in Settings
+- 🚀 On login, users are automatically redirected to their favorite circle
+- 📋 If no favorite is set, users see the normal circle selector
 
-### Verification:
+### Current Status:
 
-After running the migration, check that:
-1. The `profiles` table has a `favorite_circle_id` column
-2. The index `idx_profiles_favorite_circle` exists
-3. Users can successfully star circles in Settings without errors
+⚠️ **The migration has NOT been applied yet** - that's why you're seeing the error:
+"Could not find the 'favorite_circle_id' column of 'profiles' in the schema cache"
+
+The favorite circle UI is ready, but won't work until this migration is applied during deployment.

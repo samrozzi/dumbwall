@@ -708,6 +708,33 @@ export type Database = {
         }
         Relationships: []
       }
+      overrun_submissions: {
+        Row: {
+          contact_email: string | null
+          description: string | null
+          id: string
+          order_name: string
+          quantity: number
+          submitted_at: string
+        }
+        Insert: {
+          contact_email?: string | null
+          description?: string | null
+          id?: string
+          order_name: string
+          quantity: number
+          submitted_at?: string
+        }
+        Update: {
+          contact_email?: string | null
+          description?: string | null
+          id?: string
+          order_name?: string
+          quantity?: number
+          submitted_at?: string
+        }
+        Relationships: []
+      }
       pinned_threads: {
         Row: {
           id: string

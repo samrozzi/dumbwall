@@ -11,6 +11,7 @@ import { usePresenceTracking } from "./hooks/usePresenceTracking";
 import Auth from "./pages/Auth";
 import Circles from "./pages/Circles";
 import Wall from "./pages/Wall";
+import PrivateOverrun from "./pages/PrivateOverrun";
 import Games from "./pages/Games";
 import GameDetail from "./pages/GameDetail";
 import Chat from "./pages/Chat";
@@ -37,6 +38,7 @@ const AppContent = () => {
       <Route path="/circle/:circleId/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       <Route path="/u/:username" element={<PublicProfile />} />
+      <Route path="/private/overrun" element={<PrivateOverrun />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
